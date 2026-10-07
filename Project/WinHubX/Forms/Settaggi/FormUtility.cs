@@ -8,8 +8,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormUtility : Form
     {
-        private Form1 form1;
-        private FormSettaggi formSettaggi;
+        private readonly Form1 form1;
+        private readonly FormSettaggi formSettaggi;
         private int tIndex = -1;
         private int totalSteps = 0;
         public FormUtility(FormSettaggi formSettaggi, Form1 form1)
@@ -35,7 +35,7 @@ namespace WinHubX.Forms.Settaggi
             };
         }
 
-        private void checkedListBox1_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox1_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaUtility.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -49,7 +49,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void checkedListBox2_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox2_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = AbilitaUtility.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -74,9 +74,9 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetCheckboxState(string itemName, bool isChecked)
         {
-            using (RegistryKey key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
             {
-                key.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
+                key?.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
             }
         }
 
@@ -86,7 +86,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 if (key != null)
                 {
-                    object value = key.GetValue(itemName);
+                    object? value = key.GetValue(itemName);
                     if (value != null)
                     {
                         return (int)value == 1;
@@ -95,7 +95,7 @@ namespace WinHubX.Forms.Settaggi
             }
             return false;
         }
-        private void btnSuggeriti_Click(object sender, EventArgs e)
+        private void btnSuggeriti_Click(object? sender, EventArgs e)
         {
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX\\Computer\\osehardware.json");
@@ -105,7 +105,7 @@ namespace WinHubX.Forms.Settaggi
             if (File.Exists(path))
             {
                 string json = File.ReadAllText(path);
-                HardwareInfo info = JsonSerializer.Deserialize<HardwareInfo>(json);
+                HardwareInfo? info = JsonSerializer.Deserialize<HardwareInfo>(json);
                 tipoDisk = info?.Hardware?.Disk ?? "";
                 if (int.TryParse(info?.Hardware?.RAM?.Replace(" GB", ""), out int parsedRam))
                     ramGB = parsedRam;
@@ -234,7 +234,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void btnAvviaSelezionatiUti_Click(object sender, EventArgs e)
+        private void btnAvviaSelezionatiUti_Click(object? sender, EventArgs e)
         {
             totalSteps = 0;
 
@@ -371,7 +371,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void backgroundWorker1_DoWork(object? sender, System.ComponentModel.DoWorkEventArgs e)
         {
             int currentStep = 0;
             if (DisabilitaUtility.CheckedItems.Contains("Disabilita Background App"))
@@ -1641,12 +1641,12 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
+        private void backgroundWorker1_ProgressChanged(object? sender, System.ComponentModel.ProgressChangedEventArgs e)
         {
             progressBar1.Value = Math.Min(e.ProgressPercentage, progressBar1.MaxValue);
         }
 
-        private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+        private void backgroundWorker1_RunWorkerCompleted(object? sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             RestartExplorer();
             string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
@@ -1659,7 +1659,7 @@ namespace WinHubX.Forms.Settaggi
             );
         }
 
-        private void AbilitaUtility_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void AbilitaUtility_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
@@ -1676,7 +1676,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void DisabilitaUtility_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void DisabilitaUtility_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
@@ -1693,7 +1693,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void AbilitaUtility_MouseDown(object sender, MouseEventArgs e)
+        private void AbilitaUtility_MouseDown(object? sender, MouseEventArgs e)
         {
             int index = AbilitaUtility.IndexFromPoint(e.Location);
             if (index != ListBox.NoMatches)
@@ -1703,7 +1703,7 @@ namespace WinHubX.Forms.Settaggi
             AbilitaUtility.ClearSelected();
         }
 
-        private void DisabilitaUtility_MouseDown(object sender, MouseEventArgs e)
+        private void DisabilitaUtility_MouseDown(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaUtility.IndexFromPoint(e.Location);
             if (index != ListBox.NoMatches)
@@ -1713,7 +1713,7 @@ namespace WinHubX.Forms.Settaggi
             DisabilitaUtility.ClearSelected();
         }
 
-        private void btnReset_Click(object sender, EventArgs e)
+        private void btnReset_Click(object? sender, EventArgs e)
         {
             for (int i = 0; i < AbilitaUtility.Items.Count; i++)
             {
