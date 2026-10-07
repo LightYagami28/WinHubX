@@ -4,6 +4,8 @@
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<AnalysisLevel>latest</AnalysisLevel>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
@@ -19,7 +21,6 @@
 		<DebugSymbols>false</DebugSymbols>
 		<Optimize>true</Optimize>
 		<Deterministic>true</Deterministic>
-		<SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
 		<SatelliteResourceLanguages>it;en</SatelliteResourceLanguages>
 		<PublishSingleFile>true</PublishSingleFile>
 		<TrimMode>partial</TrimMode>
@@ -238,10 +239,10 @@
   <ItemGroup>
     <PackageReference Include="CuoreUI.Winforms" Version="2025.10.18.1" />
     <PackageReference Include="DiscUtils.Udf" Version="0.16.13" />
-    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
-    <PackageReference Include="Microsoft.PowerShell.Native" Version="7.4.0" />
-    <PackageReference Include="System.Management.Automation" Version="7.4.13" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageReference Include="Microsoft.PowerShell.Native" Version="700.0.0" />
+    <PackageReference Include="System.Management.Automation" Version="7.6.6" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.12" />
     <PackageReference Include="TaskScheduler" Version="2.12.2" />
   </ItemGroup>
 
