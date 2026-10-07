@@ -1293,11 +1293,11 @@ namespace WinHubX.Forms.Settaggi
                 {
                     string remoteAssistanceKey64 = @"SYSTEM\CurrentControlSet\Control\Remote Assistance";
                     string remoteAssistanceKey32 = @"SOFTWARE\WOW6432Node\SYSTEM\CurrentControlSet\Control\Remote Assistance";
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey64, true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey64, true))
                     {
                         key64?.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey32, true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey32, true))
                     {
                         key32?.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
                     }
@@ -1375,7 +1375,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
                     {
                         if (key64 != null)
                         {
@@ -1386,7 +1386,7 @@ namespace WinHubX.Forms.Settaggi
 
                         }
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
                     {
                         if (key32 != null)
                         {
@@ -1431,7 +1431,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
                     {
                         if (key64 != null)
                         {
@@ -1445,7 +1445,7 @@ namespace WinHubX.Forms.Settaggi
 
                         }
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\SYSTEM\GameConfigStore", writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\SYSTEM\GameConfigStore", writable: true))
                     {
                         if (key32 != null)
                         {
