@@ -8,7 +8,6 @@ using WinHubX.Forms.Base;
 using WinHubX.Forms.CreaISO;
 using WinHubX.Forms.ImpostazioniApp;
 using WinHubX.Impostazioni;
-using static System.Net.WebRequestMethods;
 
 namespace WinHubX
 {

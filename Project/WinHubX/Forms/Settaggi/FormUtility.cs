@@ -640,10 +640,10 @@ namespace WinHubX.Forms.Settaggi
                     {
                         FileName = "powershell.exe",
                         Arguments = @"
-                $obj = Get-WmiObject -Class Win32_Volume -Filter ""DriveLetter='$Drive'"";
+                $obj = Get-CimInstance -ClassName Win32_Volume -Filter ""DriveLetter='$Drive'"";
                 $indexing = $obj.IndexingEnabled;
                 if ($indexing -eq $True) {
-                    $obj | Set-WmiInstance -Arguments @{IndexingEnabled=$False} | Out-Null
+                    $obj | Set-CimInstance -Property @{IndexingEnabled=$False} | Out-Null
                 }
             ",
                         UseShellExecute = false,
@@ -1447,10 +1447,10 @@ namespace WinHubX.Forms.Settaggi
                     {
                         FileName = "powershell.exe",
                         Arguments = @"
-                $obj = Get-WmiObject -Class Win32_Volume -Filter ""DriveLetter='$Drive'"";
+                $obj = Get-CimInstance -ClassName Win32_Volume -Filter ""DriveLetter='$Drive'"";
                 $indexing = $obj.IndexingEnabled;
                 if ($indexing -eq $False) {
-                    $obj | Set-WmiInstance -Arguments @{IndexingEnabled=$True} | Out-Null
+                    $obj | Set-CimInstance -Property @{IndexingEnabled=$True} | Out-Null
                 }
             ",
                         UseShellExecute = false,

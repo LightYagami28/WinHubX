@@ -203,7 +203,7 @@ namespace WinHubX.Forms.CreaISO
 
             try
             {
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     token.ThrowIfCancellationRequested();
 
@@ -1296,7 +1296,7 @@ namespace WinHubX.Forms.CreaISO
 
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "inizioCreazioneISO"));
 
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     try
                     {
@@ -1323,7 +1323,7 @@ namespace WinHubX.Forms.CreaISO
                                     Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata"));
                                     return;
                                 }
-                                Thread.Sleep(100);
+                                await Task.Delay(100, token);
                             }
                         }
 
