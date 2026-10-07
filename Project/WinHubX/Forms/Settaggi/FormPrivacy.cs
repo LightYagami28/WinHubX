@@ -561,12 +561,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                               .OpenSubKey(@"SOFTWARE\Microsoft\Windows\Windows Error Reporting", writable: true))
                     {
                         key64?.SetValue("Disabled", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                               .OpenSubKey(@"SOFTWARE\Microsoft\Windows\Windows Error Reporting", writable: true))
                     {
                         key32?.SetValue("Disabled", 1, RegistryValueKind.DWord);
@@ -602,13 +602,13 @@ namespace WinHubX.Forms.Settaggi
                         service.WaitForStatus(ServiceControllerStatus.Stopped);
                     }
                     ExecutePowerShellScript(@"Set-Service -Name 'DiagTrack' -StartupType Disabled -ErrorAction SilentlyContinue");
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key64?.SetValue("DisableDiagnostics", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key32?.SetValue("DisableDiagnostics", 1, RegistryValueKind.DWord);
