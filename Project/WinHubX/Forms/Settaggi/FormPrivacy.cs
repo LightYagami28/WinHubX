@@ -847,7 +847,7 @@ namespace WinHubX.Forms.Settaggi
                 Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_EFSEFeatureFlags"" -Type Hex -Value 00000000;
                 Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_Enabled"" -Type DWord -Value 00000000;
             ", true);
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                              .OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
                     {
                         if (key64 != null)
@@ -858,7 +858,7 @@ namespace WinHubX.Forms.Settaggi
                             key64.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
                         }
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                              .OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
                     {
                         if (key32 != null)
@@ -1071,7 +1071,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                     string cloudContentPath = @"SOFTWARE\Policies\Microsoft\Windows\CloudContent";
-                    using (RegistryKey policyKey = Registry.LocalMachine.OpenSubKey(cloudContentPath, writable: true))
+                    using (RegistryKey? policyKey = Registry.LocalMachine.OpenSubKey(cloudContentPath, writable: true))
                     {
                         policyKey?.DeleteValue("DisableWindowsConsumerFeatures", false);
                     }
