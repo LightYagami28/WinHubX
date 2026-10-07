@@ -12,37 +12,37 @@ namespace WinHubX.Impostazioni
         public static bool SalvaFile { get; set; } = true;
         public static bool Installa { get; set; } = true;
 
-        public static string LastDownloadedFile { get; set; }
+        public static string? LastDownloadedFile { get; set; }
         public static bool HasPendingInstallation { get; set; }
-        public static string InstallationType { get; set; } // "Offline" o "Online"
+        public static string InstallationType { get; set; } = string.Empty; // "Offline" o "Online"
     }
 
     public class HardwareInfo
     {
-        public string Timestamp { get; set; }
-        public string OperatingSystem { get; set; }
-        public string Architettura { get; set; }
-        public Hardware Hardware { get; set; }
-        public Activation Activation { get; set; }
+        public string Timestamp { get; set; } = string.Empty;
+        public string OperatingSystem { get; set; } = string.Empty;
+        public string Architettura { get; set; } = string.Empty;
+        public Hardware Hardware { get; set; } = new();
+        public Activation Activation { get; set; } = new();
     }
 
     public class Hardware
     {
-        public string CPU { get; set; }
-        public string RAM { get; set; }
-        public string Disk { get; set; }
+        public string CPU { get; set; } = string.Empty;
+        public string RAM { get; set; } = string.Empty;
+        public string Disk { get; set; } = string.Empty;
     }
 
     public class Activation
     {
-        public string Windows { get; set; }
-        public string Office { get; set; }
+        public string Windows { get; set; } = string.Empty;
+        public string Office { get; set; } = string.Empty;
     }
 
     public class OfficeVersion
     {
-        public string Nome { get; set; } // Office2019, Office2021, ecc.
-        public Dictionary<string, Dictionary<string, string>> Lingue { get; set; }
+        public string Nome { get; set; } = string.Empty; // Office2019, Office2021, ecc.
+        public Dictionary<string, Dictionary<string, string>> Lingue { get; set; } = new();
     }
 
     public static class AppConfig
@@ -94,9 +94,8 @@ namespace WinHubX.Impostazioni
                     return;
 
                 string json = File.ReadAllText(SettingsFile);
-                dynamic data = JsonConvert.DeserializeObject(json);
-
-                CheckUpdatesOnStartup = data.CheckUpdatesOnStartup ?? true;
+                Newtonsoft.Json.Linq.JObject? data = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
+                CheckUpdatesOnStartup = data?["CheckUpdatesOnStartup"]?.Value<bool>() ?? true;
             }
             catch (Exception ex)
             {
