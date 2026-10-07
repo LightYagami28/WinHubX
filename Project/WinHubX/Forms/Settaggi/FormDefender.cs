@@ -8,8 +8,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormDefender : Form
     {
-        private Form1 form1;
-        private FormSettaggi formSettaggi;
+        private readonly Form1 form1;
+        private readonly FormSettaggi formSettaggi;
         private int totalSteps = 0;
         private int tIndex = -1;
         public FormDefender(FormSettaggi formSettaggi, Form1 form1)
@@ -47,7 +47,7 @@ namespace WinHubX.Forms.Settaggi
             };
         }
 
-        private void checkedListBox1_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox1_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaDefender.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -61,7 +61,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void checkedListBox2_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox2_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = AbilitaDefender.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -92,9 +92,9 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetCheckboxState(string itemName, bool isChecked)
         {
-            using (RegistryKey key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
             {
-                key.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
+                key?.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
             }
         }
 
@@ -104,7 +104,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 if (key != null)
                 {
-                    object value = key.GetValue(itemName);
+                    object? value = key.GetValue(itemName);
                     if (value != null)
                     {
                         return (int)value == 1;
@@ -158,7 +158,7 @@ namespace WinHubX.Forms.Settaggi
         }
 
 
-        private void btnAvviaSelezionatiDef_Click(object sender, EventArgs e)
+        private void btnAvviaSelezionatiDef_Click(object? sender, EventArgs e)
         {
             totalSteps = 0;
 
@@ -173,7 +173,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void btnRipristinaDefender_Click(object sender, EventArgs e)
+        private void btnRipristinaDefender_Click(object? sender, EventArgs e)
         {
             try
             {
@@ -355,7 +355,7 @@ namespace WinHubX.Forms.Settaggi
             process.WaitForExit();
         }
 
-        private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void backgroundWorker1_DoWork(object? sender, System.ComponentModel.DoWorkEventArgs e)
         {
             int currentStep = 0;
             if (DisabilitaDefender.CheckedItems.Contains("Disabilita Controllo Accesso Cartella"))
@@ -945,7 +945,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void btnProtezioneMinima_Click(object sender, EventArgs e)
+        private void btnProtezioneMinima_Click(object? sender, EventArgs e)
         {
             try
             {
@@ -981,12 +981,12 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
+        private void backgroundWorker1_ProgressChanged(object? sender, System.ComponentModel.ProgressChangedEventArgs e)
         {
             progressBar1.Value = Math.Min(e.ProgressPercentage, progressBar1.MaxValue);
         }
 
-        private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+        private void backgroundWorker1_RunWorkerCompleted(object? sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
             _ = MessageBox.Show(
@@ -997,7 +997,7 @@ namespace WinHubX.Forms.Settaggi
             );
         }
 
-        private void btnSuggeriti_Click(object sender, EventArgs e)
+        private void btnSuggeriti_Click(object? sender, EventArgs e)
         {
             var daDisabilitare = new List<string>
     {
@@ -1016,7 +1016,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void AbilitaDefender_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void AbilitaDefender_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
@@ -1033,7 +1033,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void DisabilitaDefender_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void DisabilitaDefender_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             {
                 if (e.NewValue == CheckState.Checked)
@@ -1052,7 +1052,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void DisabilitaDefender_MouseDown(object sender, MouseEventArgs e)
+        private void DisabilitaDefender_MouseDown(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaDefender.IndexFromPoint(e.Location);
             if (index != ListBox.NoMatches)
@@ -1062,7 +1062,7 @@ namespace WinHubX.Forms.Settaggi
             DisabilitaDefender.ClearSelected();
         }
 
-        private void AbilitaDefender_MouseDown(object sender, MouseEventArgs e)
+        private void AbilitaDefender_MouseDown(object? sender, MouseEventArgs e)
         {
             int index = AbilitaDefender.IndexFromPoint(e.Location);
             if (index != ListBox.NoMatches)
@@ -1072,7 +1072,7 @@ namespace WinHubX.Forms.Settaggi
             AbilitaDefender.ClearSelected();
         }
 
-        private void btnReset_Click(object sender, EventArgs e)
+        private void btnReset_Click(object? sender, EventArgs e)
         {
             for (int i = 0; i < AbilitaDefender.Items.Count; i++)
             {
