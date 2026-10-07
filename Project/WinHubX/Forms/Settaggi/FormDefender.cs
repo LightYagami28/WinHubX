@@ -100,7 +100,7 @@ namespace WinHubX.Forms.Settaggi
 
         private bool GetCheckboxState(string itemName)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
             {
                 if (key != null)
                 {
@@ -273,11 +273,11 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(keyPath, writable: true))
+                using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(keyPath, writable: true))
                 {
                     key64?.DeleteValue(valueName, throwOnMissingValue: false);
                 }
-                using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(keyPath, writable: true))
+                using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(keyPath, writable: true))
                 {
                     key32?.DeleteValue(valueName, throwOnMissingValue: false);
                 }
@@ -292,13 +292,14 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView).OpenSubKey(keyPath, writable: true))
+                using (RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView).OpenSubKey(keyPath, writable: true))
                 {
                     if (key != null)
                     {
                         RegistrySecurity security = key.GetAccessControl();
                         WindowsIdentity identity = WindowsIdentity.GetCurrent();
-                        SecurityIdentifier sid = identity.User;
+                        SecurityIdentifier sid = identity.User
+                            ?? throw new InvalidOperationException("Impossibile determinare l'identità Windows corrente.");
                         security.AddAccessRule(new RegistryAccessRule(sid, RegistryRights.TakeOwnership, AccessControlType.Allow));
                         key.SetAccessControl(security);
                         key.SetAccessControl(new RegistrySecurity { });
@@ -338,7 +339,8 @@ namespace WinHubX.Forms.Settaggi
                 Verb = "runas",
                 UseShellExecute = true
             };
-            var process = System.Diagnostics.Process.Start(psi);
+            using var process = System.Diagnostics.Process.Start(psi)
+                ?? throw new InvalidOperationException("Impossibile avviare takeown.");
             process.WaitForExit();
         }
 
@@ -351,7 +353,8 @@ namespace WinHubX.Forms.Settaggi
                 Verb = "runas",
                 UseShellExecute = true
             };
-            var process = System.Diagnostics.Process.Start(psi);
+            using var process = System.Diagnostics.Process.Start(psi)
+                ?? throw new InvalidOperationException("Impossibile avviare Set-MpPreference.");
             process.WaitForExit();
         }
 
@@ -413,7 +416,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runas"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare la modifica di Windows Defender."))
                     {
                         process.WaitForExit();
 
@@ -700,7 +704,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runas"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare la modifica di Windows Defender."))
                     {
                         process.WaitForExit();
 
@@ -1020,7 +1025,7 @@ namespace WinHubX.Forms.Settaggi
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = AbilitaDefender.Items[e.Index].ToString();
+                string itemName = AbilitaDefender.Items[e.Index]?.ToString() ?? string.Empty;
                 string disabilitaName = itemName.Replace("Abilita", "Disabilita");
 
                 int index = DisabilitaDefender.Items.IndexOf(disabilitaName);
@@ -1038,7 +1043,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 if (e.NewValue == CheckState.Checked)
                 {
-                    string itemName = DisabilitaDefender.Items[e.Index].ToString();
+                    string itemName = DisabilitaDefender.Items[e.Index]?.ToString() ?? string.Empty;
                     string abilitaName = itemName.Replace("Disabilita", "Abilita");
 
                     int index = AbilitaDefender.Items.IndexOf(abilitaName);
