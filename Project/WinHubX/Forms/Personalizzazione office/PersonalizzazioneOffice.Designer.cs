@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Personalizzazione_office
+namespace WinHubX.Forms.Personalizzazione_office
 {
     partial class PersonalizzazioneOffice
     {
@@ -312,9 +312,7 @@
             btn_CreaISOVerdi.HoverImageTint = Color.White;
             btn_CreaISOVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btn_CreaISOVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btn_CreaISOVerdi.ImageAutoCenter = true;
             btn_CreaISOVerdi.ImageExpand = new Point(0, 0);
-            btn_CreaISOVerdi.ImageOffset = new Point(0, 0);
             btn_CreaISOVerdi.Name = "btn_CreaISOVerdi";
             btn_CreaISOVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btn_CreaISOVerdi.NormalForeColor = Color.White;
@@ -327,7 +325,6 @@
             btn_CreaISOVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btn_CreaISOVerdi.Rounding = new Padding(8);
             btn_CreaISOVerdi.TextAlignment = StringAlignment.Center;
-            btn_CreaISOVerdi.TextOffset = new Point(0, 0);
             btn_CreaISOVerdi.Click += btn_avviainstallazione_Click;
             // 
             // PersonalizzazioneOffice

@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.ImpostazioniApp
+namespace WinHubX.Forms.ImpostazioniApp
 {
     partial class FormImpostazioniApp
     {
@@ -115,9 +115,7 @@
             btnApplicaVerdi.HoverImageTint = Color.White;
             btnApplicaVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnApplicaVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btnApplicaVerdi.ImageAutoCenter = true;
             btnApplicaVerdi.ImageExpand = new Point(0, 0);
-            btnApplicaVerdi.ImageOffset = new Point(0, 0);
             btnApplicaVerdi.Name = "btnApplicaVerdi";
             btnApplicaVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnApplicaVerdi.NormalForeColor = Color.White;
@@ -130,7 +128,6 @@
             btnApplicaVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnApplicaVerdi.Rounding = new Padding(8);
             btnApplicaVerdi.TextAlignment = StringAlignment.Center;
-            btnApplicaVerdi.TextOffset = new Point(0, 0);
             btnApplicaVerdi.Click += btnInstallaVerdi_Click;
             // 
             // cuiPanel6
@@ -293,9 +290,7 @@
             btnAggiornamento.HoverImageTint = Color.White;
             btnAggiornamento.HoverOutline = Color.FromArgb(0, 126, 249);
             btnAggiornamento.Image = Properties.Resources.pngclick;
-            btnAggiornamento.ImageAutoCenter = true;
             btnAggiornamento.ImageExpand = new Point(0, 0);
-            btnAggiornamento.ImageOffset = new Point(0, 0);
             btnAggiornamento.Name = "btnAggiornamento";
             btnAggiornamento.NormalBackground = Color.FromArgb(37, 38, 39);
             btnAggiornamento.NormalForeColor = Color.White;
@@ -308,7 +303,6 @@
             btnAggiornamento.PressedOutline = Color.FromArgb(0, 126, 249);
             btnAggiornamento.Rounding = new Padding(8);
             btnAggiornamento.TextAlignment = StringAlignment.Center;
-            btnAggiornamento.TextOffset = new Point(0, 0);
             btnAggiornamento.Click += btnAggiornamento_Click;
             // 
             // switch_aggiornamentoavvio
@@ -318,7 +312,6 @@
             switch_aggiornamentoavvio.CheckedBackground = Color.FromArgb(0, 126, 249);
             switch_aggiornamentoavvio.CheckedForeground = Color.White;
             switch_aggiornamentoavvio.CheckedOutlineColor = Color.Empty;
-            switch_aggiornamentoavvio.CheckedSymbolColor = Color.FromArgb(0, 126, 249);
             switch_aggiornamentoavvio.Name = "switch_aggiornamentoavvio";
             switch_aggiornamentoavvio.OutlineThickness = 1F;
             switch_aggiornamentoavvio.ShowSymbols = false;
@@ -326,7 +319,6 @@
             switch_aggiornamentoavvio.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             switch_aggiornamentoavvio.UncheckedForeground = Color.White;
             switch_aggiornamentoavvio.UncheckedOutlineColor = Color.Empty;
-            switch_aggiornamentoavvio.UncheckedSymbolColor = Color.Gray;
             switch_aggiornamentoavvio.CheckedChanged += switch_aggiornamentoavvio_CheckedChanged;
             // 
             // label6

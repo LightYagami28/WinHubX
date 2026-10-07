@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Base
+namespace WinHubX.Forms.Base
 {
     partial class FormCreaISO
     {
@@ -579,9 +579,7 @@
             btn_browserBianco.HoverImageTint = Color.Black;
             btn_browserBianco.HoverOutline = Color.White;
             btn_browserBianco.Image = Properties.Resources.pngUploadCreaISO;
-            btn_browserBianco.ImageAutoCenter = true;
             btn_browserBianco.ImageExpand = new Point(0, 0);
-            btn_browserBianco.ImageOffset = new Point(0, 0);
             btn_browserBianco.Name = "btn_browserBianco";
             btn_browserBianco.NormalBackground = Color.FromArgb(37, 38, 39);
             btn_browserBianco.NormalForeColor = Color.White;
@@ -594,7 +592,6 @@
             btn_browserBianco.PressedOutline = Color.White;
             btn_browserBianco.Rounding = new Padding(8);
             btn_browserBianco.TextAlignment = StringAlignment.Center;
-            btn_browserBianco.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btn_browserBianco, resources.GetString("btn_browserBianco.ToolTip"));
             btn_browserBianco.Click += btn_browser_Click;
             // 
@@ -678,9 +675,7 @@
             btn_CreaISOVerdi.HoverImageTint = Color.White;
             btn_CreaISOVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btn_CreaISOVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btn_CreaISOVerdi.ImageAutoCenter = true;
             btn_CreaISOVerdi.ImageExpand = new Point(0, 0);
-            btn_CreaISOVerdi.ImageOffset = new Point(0, 0);
             btn_CreaISOVerdi.Name = "btn_CreaISOVerdi";
             btn_CreaISOVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btn_CreaISOVerdi.NormalForeColor = Color.White;
@@ -693,7 +688,6 @@
             btn_CreaISOVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btn_CreaISOVerdi.Rounding = new Padding(8);
             btn_CreaISOVerdi.TextAlignment = StringAlignment.Center;
-            btn_CreaISOVerdi.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btn_CreaISOVerdi, resources.GetString("btn_CreaISOVerdi.ToolTip"));
             btn_CreaISOVerdi.Click += btn_CreaISO_Click;
             // 
@@ -714,9 +708,7 @@
             btn_cambiaBianco.HoverImageTint = Color.White;
             btn_cambiaBianco.HoverOutline = Color.White;
             btn_cambiaBianco.Image = null;
-            btn_cambiaBianco.ImageAutoCenter = true;
             btn_cambiaBianco.ImageExpand = new Point(0, 0);
-            btn_cambiaBianco.ImageOffset = new Point(0, 0);
             btn_cambiaBianco.Name = "btn_cambiaBianco";
             btn_cambiaBianco.NormalBackground = Color.FromArgb(37, 38, 39);
             btn_cambiaBianco.NormalForeColor = Color.White;
@@ -729,7 +721,6 @@
             btn_cambiaBianco.PressedOutline = Color.White;
             btn_cambiaBianco.Rounding = new Padding(8);
             btn_cambiaBianco.TextAlignment = StringAlignment.Center;
-            btn_cambiaBianco.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btn_cambiaBianco, resources.GetString("btn_cambiaBianco.ToolTip"));
             btn_cambiaBianco.Click += btn_cambia_Click;
             // 

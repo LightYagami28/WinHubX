@@ -237,7 +237,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CuoreUI.Winforms" Version="2025.10.18.1" />
+    <PackageReference Include="CuoreUI.Winforms" Version="2026.4.25" />
     <PackageReference Include="DiscUtils.Udf" Version="0.16.13" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageReference Include="Microsoft.PowerShell.Native" Version="700.0.0" />

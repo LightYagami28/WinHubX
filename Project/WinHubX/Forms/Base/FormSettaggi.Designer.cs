@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Base
+namespace WinHubX.Forms.Base
 {
     partial class FormSettaggi
     {
@@ -69,9 +69,7 @@
             btnWSATweaksDisattivo.HoverImageTint = Color.White;
             btnWSATweaksDisattivo.HoverOutline = Color.White;
             btnWSATweaksDisattivo.Image = Properties.Resources.pngWSATweaks;
-            btnWSATweaksDisattivo.ImageAutoCenter = true;
             btnWSATweaksDisattivo.ImageExpand = new Point(0, 0);
-            btnWSATweaksDisattivo.ImageOffset = new Point(0, 0);
             btnWSATweaksDisattivo.Name = "btnWSATweaksDisattivo";
             btnWSATweaksDisattivo.NormalBackground = Color.FromArgb(37, 38, 39);
             btnWSATweaksDisattivo.NormalForeColor = Color.Gray;
@@ -84,7 +82,6 @@
             btnWSATweaksDisattivo.PressedOutline = Color.White;
             btnWSATweaksDisattivo.Rounding = new Padding(8);
             btnWSATweaksDisattivo.TextAlignment = StringAlignment.Center;
-            btnWSATweaksDisattivo.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnWSATweaksDisattivo, resources.GetString("btnWSATweaksDisattivo.ToolTip"));
             btnWSATweaksDisattivo.Click += cuiButton1_Click;
             // 
@@ -106,9 +103,7 @@
             btnPersonalizzazioneTweaksPrinci.HoverImageTint = Color.White;
             btnPersonalizzazioneTweaksPrinci.HoverOutline = Color.White;
             btnPersonalizzazioneTweaksPrinci.Image = Properties.Resources.pngPersonalizzazione;
-            btnPersonalizzazioneTweaksPrinci.ImageAutoCenter = true;
             btnPersonalizzazioneTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnPersonalizzazioneTweaksPrinci.ImageOffset = new Point(0, 0);
             btnPersonalizzazioneTweaksPrinci.Name = "btnPersonalizzazioneTweaksPrinci";
             btnPersonalizzazioneTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnPersonalizzazioneTweaksPrinci.NormalForeColor = Color.White;
@@ -121,7 +116,6 @@
             btnPersonalizzazioneTweaksPrinci.PressedOutline = Color.White;
             btnPersonalizzazioneTweaksPrinci.Rounding = new Padding(8);
             btnPersonalizzazioneTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnPersonalizzazioneTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnPersonalizzazioneTweaksPrinci, resources.GetString("btnPersonalizzazioneTweaksPrinci.ToolTip"));
             btnPersonalizzazioneTweaksPrinci.Click += btnPersonalizzazione_Click;
             // 
@@ -143,9 +137,7 @@
             btnDefenderTweaksPrinci.HoverImageTint = Color.White;
             btnDefenderTweaksPrinci.HoverOutline = Color.White;
             btnDefenderTweaksPrinci.Image = Properties.Resources.pngDefenderWin;
-            btnDefenderTweaksPrinci.ImageAutoCenter = true;
             btnDefenderTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnDefenderTweaksPrinci.ImageOffset = new Point(0, 0);
             btnDefenderTweaksPrinci.Name = "btnDefenderTweaksPrinci";
             btnDefenderTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnDefenderTweaksPrinci.NormalForeColor = Color.White;
@@ -158,7 +150,6 @@
             btnDefenderTweaksPrinci.PressedOutline = Color.White;
             btnDefenderTweaksPrinci.Rounding = new Padding(8);
             btnDefenderTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnDefenderTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnDefenderTweaksPrinci, resources.GetString("btnDefenderTweaksPrinci.ToolTip"));
             btnDefenderTweaksPrinci.Click += btnDefender_Click;
             // 
@@ -180,9 +171,7 @@
             btnPrivacyTweaksPrinci.HoverImageTint = Color.White;
             btnPrivacyTweaksPrinci.HoverOutline = Color.White;
             btnPrivacyTweaksPrinci.Image = Properties.Resources.pngPrivacyTweaks;
-            btnPrivacyTweaksPrinci.ImageAutoCenter = true;
             btnPrivacyTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnPrivacyTweaksPrinci.ImageOffset = new Point(0, 0);
             btnPrivacyTweaksPrinci.Name = "btnPrivacyTweaksPrinci";
             btnPrivacyTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnPrivacyTweaksPrinci.NormalForeColor = Color.White;
@@ -195,7 +184,6 @@
             btnPrivacyTweaksPrinci.PressedOutline = Color.White;
             btnPrivacyTweaksPrinci.Rounding = new Padding(8);
             btnPrivacyTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnPrivacyTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnPrivacyTweaksPrinci, resources.GetString("btnPrivacyTweaksPrinci.ToolTip"));
             btnPrivacyTweaksPrinci.Click += btnPrivacy_Click;
             // 
@@ -217,9 +205,7 @@
             btnWSLTweaksPrinci.HoverImageTint = Color.White;
             btnWSLTweaksPrinci.HoverOutline = Color.White;
             btnWSLTweaksPrinci.Image = Properties.Resources.pngWSLTweaks;
-            btnWSLTweaksPrinci.ImageAutoCenter = true;
             btnWSLTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnWSLTweaksPrinci.ImageOffset = new Point(0, 0);
             btnWSLTweaksPrinci.Name = "btnWSLTweaksPrinci";
             btnWSLTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnWSLTweaksPrinci.NormalForeColor = Color.White;
@@ -232,7 +218,6 @@
             btnWSLTweaksPrinci.PressedOutline = Color.White;
             btnWSLTweaksPrinci.Rounding = new Padding(8);
             btnWSLTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnWSLTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnWSLTweaksPrinci, resources.GetString("btnWSLTweaksPrinci.ToolTip"));
             btnWSLTweaksPrinci.Click += btnAttivaWSL_Click;
             // 
@@ -254,9 +239,7 @@
             btnRipristinoeTestTweaksPrinci.HoverImageTint = Color.White;
             btnRipristinoeTestTweaksPrinci.HoverOutline = Color.White;
             btnRipristinoeTestTweaksPrinci.Image = Properties.Resources.pngRipristinoTestTweaks;
-            btnRipristinoeTestTweaksPrinci.ImageAutoCenter = true;
             btnRipristinoeTestTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnRipristinoeTestTweaksPrinci.ImageOffset = new Point(0, 0);
             btnRipristinoeTestTweaksPrinci.Name = "btnRipristinoeTestTweaksPrinci";
             btnRipristinoeTestTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnRipristinoeTestTweaksPrinci.NormalForeColor = Color.White;
@@ -269,7 +252,6 @@
             btnRipristinoeTestTweaksPrinci.PressedOutline = Color.White;
             btnRipristinoeTestTweaksPrinci.Rounding = new Padding(8);
             btnRipristinoeTestTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnRipristinoeTestTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnRipristinoeTestTweaksPrinci, resources.GetString("btnRipristinoeTestTweaksPrinci.ToolTip"));
             btnRipristinoeTestTweaksPrinci.Click += btnRipristinaSO_Click;
             // 
@@ -291,9 +273,7 @@
             btnUpdateTweaksPrinci.HoverImageTint = Color.White;
             btnUpdateTweaksPrinci.HoverOutline = Color.White;
             btnUpdateTweaksPrinci.Image = Properties.Resources.pngUpdateWin;
-            btnUpdateTweaksPrinci.ImageAutoCenter = true;
             btnUpdateTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnUpdateTweaksPrinci.ImageOffset = new Point(0, 0);
             btnUpdateTweaksPrinci.Name = "btnUpdateTweaksPrinci";
             btnUpdateTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnUpdateTweaksPrinci.NormalForeColor = Color.White;
@@ -306,7 +286,6 @@
             btnUpdateTweaksPrinci.PressedOutline = Color.White;
             btnUpdateTweaksPrinci.Rounding = new Padding(8);
             btnUpdateTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnUpdateTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnUpdateTweaksPrinci, resources.GetString("btnUpdateTweaksPrinci.ToolTip"));
             btnUpdateTweaksPrinci.Click += btnUpdate_Click;
             // 
@@ -328,9 +307,7 @@
             btnUtilityTweaksPrinci.HoverImageTint = Color.White;
             btnUtilityTweaksPrinci.HoverOutline = Color.White;
             btnUtilityTweaksPrinci.Image = Properties.Resources.pngUtilityTweaks;
-            btnUtilityTweaksPrinci.ImageAutoCenter = true;
             btnUtilityTweaksPrinci.ImageExpand = new Point(0, 0);
-            btnUtilityTweaksPrinci.ImageOffset = new Point(0, 0);
             btnUtilityTweaksPrinci.Name = "btnUtilityTweaksPrinci";
             btnUtilityTweaksPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnUtilityTweaksPrinci.NormalForeColor = Color.White;
@@ -343,7 +320,6 @@
             btnUtilityTweaksPrinci.PressedOutline = Color.White;
             btnUtilityTweaksPrinci.Rounding = new Padding(8);
             btnUtilityTweaksPrinci.TextAlignment = StringAlignment.Center;
-            btnUtilityTweaksPrinci.TextOffset = new Point(0, 0);
             toolTip1.SetToolTip(btnUtilityTweaksPrinci, resources.GetString("btnUtilityTweaksPrinci.ToolTip"));
             btnUtilityTweaksPrinci.Click += btnUtility_Click;
             // 

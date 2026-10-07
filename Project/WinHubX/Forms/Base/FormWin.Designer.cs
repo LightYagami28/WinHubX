@@ -1,4 +1,4 @@
-﻿namespace WinHubX
+namespace WinHubX
 {
     partial class FormWin
     {
@@ -65,9 +65,7 @@
             btnDriverRSTPrinci.HoverImageTint = Color.White;
             btnDriverRSTPrinci.HoverOutline = Color.White;
             btnDriverRSTPrinci.Image = Properties.Resources.pngDriverRST1;
-            btnDriverRSTPrinci.ImageAutoCenter = true;
             btnDriverRSTPrinci.ImageExpand = new Point(0, 0);
-            btnDriverRSTPrinci.ImageOffset = new Point(0, 0);
             btnDriverRSTPrinci.Name = "btnDriverRSTPrinci";
             btnDriverRSTPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnDriverRSTPrinci.NormalForeColor = Color.White;
@@ -80,7 +78,6 @@
             btnDriverRSTPrinci.PressedOutline = Color.White;
             btnDriverRSTPrinci.Rounding = new Padding(8);
             btnDriverRSTPrinci.TextAlignment = StringAlignment.Center;
-            btnDriverRSTPrinci.TextOffset = new Point(0, 0);
             btnDriverRSTPrinci.Click += btnDriverRSTPrinci_Click;
             // 
             // btnDownloadIsoPrinci
@@ -100,9 +97,7 @@
             btnDownloadIsoPrinci.HoverImageTint = Color.White;
             btnDownloadIsoPrinci.HoverOutline = Color.White;
             btnDownloadIsoPrinci.Image = Properties.Resources.pngDownloadISO;
-            btnDownloadIsoPrinci.ImageAutoCenter = true;
             btnDownloadIsoPrinci.ImageExpand = new Point(0, 0);
-            btnDownloadIsoPrinci.ImageOffset = new Point(0, 0);
             btnDownloadIsoPrinci.Name = "btnDownloadIsoPrinci";
             btnDownloadIsoPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnDownloadIsoPrinci.NormalForeColor = Color.White;
@@ -115,7 +110,6 @@
             btnDownloadIsoPrinci.PressedOutline = Color.White;
             btnDownloadIsoPrinci.Rounding = new Padding(8);
             btnDownloadIsoPrinci.TextAlignment = StringAlignment.Center;
-            btnDownloadIsoPrinci.TextOffset = new Point(0, 0);
             btnDownloadIsoPrinci.Click += btnDownloadIsoPrinci_Click;
             // 
             // btnAttivaWindowsPrinci
@@ -135,9 +129,7 @@
             btnAttivaWindowsPrinci.HoverImageTint = Color.White;
             btnAttivaWindowsPrinci.HoverOutline = Color.White;
             btnAttivaWindowsPrinci.Image = Properties.Resources.pngAttivaWindows;
-            btnAttivaWindowsPrinci.ImageAutoCenter = true;
             btnAttivaWindowsPrinci.ImageExpand = new Point(0, 0);
-            btnAttivaWindowsPrinci.ImageOffset = new Point(0, 0);
             btnAttivaWindowsPrinci.Name = "btnAttivaWindowsPrinci";
             btnAttivaWindowsPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnAttivaWindowsPrinci.NormalForeColor = Color.White;
@@ -150,7 +142,6 @@
             btnAttivaWindowsPrinci.PressedOutline = Color.White;
             btnAttivaWindowsPrinci.Rounding = new Padding(8);
             btnAttivaWindowsPrinci.TextAlignment = StringAlignment.Center;
-            btnAttivaWindowsPrinci.TextOffset = new Point(0, 0);
             btnAttivaWindowsPrinci.Click += btnAttivaWin_Click;
             // 
             // btnCambiaEdizionePrinci
@@ -170,9 +161,7 @@
             btnCambiaEdizionePrinci.HoverImageTint = Color.White;
             btnCambiaEdizionePrinci.HoverOutline = Color.White;
             btnCambiaEdizionePrinci.Image = Properties.Resources.pngCambioEdizione;
-            btnCambiaEdizionePrinci.ImageAutoCenter = true;
             btnCambiaEdizionePrinci.ImageExpand = new Point(0, 0);
-            btnCambiaEdizionePrinci.ImageOffset = new Point(0, 0);
             btnCambiaEdizionePrinci.Name = "btnCambiaEdizionePrinci";
             btnCambiaEdizionePrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnCambiaEdizionePrinci.NormalForeColor = Color.White;
@@ -185,7 +174,6 @@
             btnCambiaEdizionePrinci.PressedOutline = Color.White;
             btnCambiaEdizionePrinci.Rounding = new Padding(8);
             btnCambiaEdizionePrinci.TextAlignment = StringAlignment.Center;
-            btnCambiaEdizionePrinci.TextOffset = new Point(0, 0);
             btnCambiaEdizionePrinci.Click += btnCambioEdizione_Click;
             // 
             // btnCreaIsoPrinci
@@ -205,9 +193,7 @@
             btnCreaIsoPrinci.HoverImageTint = Color.White;
             btnCreaIsoPrinci.HoverOutline = Color.White;
             btnCreaIsoPrinci.Image = Properties.Resources.pngCreaISO;
-            btnCreaIsoPrinci.ImageAutoCenter = true;
             btnCreaIsoPrinci.ImageExpand = new Point(0, 0);
-            btnCreaIsoPrinci.ImageOffset = new Point(0, 0);
             btnCreaIsoPrinci.Name = "btnCreaIsoPrinci";
             btnCreaIsoPrinci.NormalBackground = Color.FromArgb(37, 38, 39);
             btnCreaIsoPrinci.NormalForeColor = Color.White;
@@ -220,7 +206,6 @@
             btnCreaIsoPrinci.PressedOutline = Color.White;
             btnCreaIsoPrinci.Rounding = new Padding(8);
             btnCreaIsoPrinci.TextAlignment = StringAlignment.Center;
-            btnCreaIsoPrinci.TextOffset = new Point(0, 0);
             btnCreaIsoPrinci.Click += btnCreaIso_Click;
             // 
             // FormWin

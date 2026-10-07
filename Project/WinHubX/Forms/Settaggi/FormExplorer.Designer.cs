@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Settaggi
+namespace WinHubX.Forms.Settaggi
 {
     partial class FormExplorer
     {
@@ -140,9 +140,7 @@
             btnApplyVerdi.HoverImageTint = Color.White;
             btnApplyVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnApplyVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btnApplyVerdi.ImageAutoCenter = true;
             btnApplyVerdi.ImageExpand = new Point(0, 0);
-            btnApplyVerdi.ImageOffset = new Point(0, 0);
             btnApplyVerdi.Name = "btnApplyVerdi";
             btnApplyVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnApplyVerdi.NormalForeColor = Color.White;
@@ -155,7 +153,6 @@
             btnApplyVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnApplyVerdi.Rounding = new Padding(8);
             btnApplyVerdi.TextAlignment = StringAlignment.Center;
-            btnApplyVerdi.TextOffset = new Point(0, 0);
             btnApplyVerdi.Click += BtnApply_Click;
             // 
             // FormExplorer

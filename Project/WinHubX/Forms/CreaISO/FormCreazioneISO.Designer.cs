@@ -1,4 +1,4 @@
-﻿using CuoreUI.Controls;
+using CuoreUI.Controls;
 
 namespace WinHubX.Forms.CreaISO
 {
@@ -98,9 +98,7 @@ namespace WinHubX.Forms.CreaISO
             btnStopVerdi.HoverImageTint = Color.White;
             btnStopVerdi.HoverOutline = Color.FromArgb(192, 0, 0);
             btnStopVerdi.Image = Properties.Resources.pngCloseCreazioneISO;
-            btnStopVerdi.ImageAutoCenter = true;
             btnStopVerdi.ImageExpand = new Point(0, 0);
-            btnStopVerdi.ImageOffset = new Point(0, 0);
             btnStopVerdi.Name = "btnStopVerdi";
             btnStopVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnStopVerdi.NormalForeColor = Color.White;
@@ -113,7 +111,6 @@ namespace WinHubX.Forms.CreaISO
             btnStopVerdi.PressedOutline = Color.FromArgb(192, 0, 0);
             btnStopVerdi.Rounding = new Padding(8);
             btnStopVerdi.TextAlignment = StringAlignment.Center;
-            btnStopVerdi.TextOffset = new Point(0, 0);
             btnStopVerdi.Click += btnStop_Click;
             // 
             // FormCreazioneISO

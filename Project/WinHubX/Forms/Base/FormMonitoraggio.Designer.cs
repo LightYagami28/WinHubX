@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Base
+namespace WinHubX.Forms.Base
 {
     partial class FormMonitoraggio
     {
@@ -196,9 +196,7 @@
             btnSvuotaTemp.HoverImageTint = Color.White;
             btnSvuotaTemp.HoverOutline = Color.FromArgb(46, 125, 50);
             btnSvuotaTemp.Image = Properties.Resources.pngSvuotaMonitoraggio;
-            btnSvuotaTemp.ImageAutoCenter = true;
             btnSvuotaTemp.ImageExpand = new Point(0, 0);
-            btnSvuotaTemp.ImageOffset = new Point(0, 0);
             btnSvuotaTemp.Name = "btnSvuotaTemp";
             btnSvuotaTemp.NormalBackground = Color.FromArgb(37, 38, 39);
             btnSvuotaTemp.NormalForeColor = Color.White;
@@ -211,7 +209,6 @@
             btnSvuotaTemp.PressedOutline = Color.FromArgb(46, 125, 50);
             btnSvuotaTemp.Rounding = new Padding(8);
             btnSvuotaTemp.TextAlignment = StringAlignment.Center;
-            btnSvuotaTemp.TextOffset = new Point(0, 0);
             btnSvuotaTemp.Click += btnSvuotaTemp_Click;
             // 
             // BarDISCOtext
@@ -282,7 +279,6 @@
             cuiSwitch_gradicpu.CheckedBackground = Color.FromArgb(0, 126, 249);
             cuiSwitch_gradicpu.CheckedForeground = Color.White;
             cuiSwitch_gradicpu.CheckedOutlineColor = Color.Empty;
-            cuiSwitch_gradicpu.CheckedSymbolColor = Color.FromArgb(0, 126, 249);
             cuiSwitch_gradicpu.Name = "cuiSwitch_gradicpu";
             cuiSwitch_gradicpu.OutlineThickness = 1F;
             cuiSwitch_gradicpu.ShowSymbols = false;
@@ -290,7 +286,6 @@
             cuiSwitch_gradicpu.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             cuiSwitch_gradicpu.UncheckedForeground = Color.White;
             cuiSwitch_gradicpu.UncheckedOutlineColor = Color.Empty;
-            cuiSwitch_gradicpu.UncheckedSymbolColor = Color.Gray;
             cuiSwitch_gradicpu.CheckedChanged += cuiSwitch_gradicpu_CheckedChanged;
             // 
             // limiteCPU
@@ -306,7 +301,6 @@
             puliziaautomaticoCPU.CheckedBackground = Color.FromArgb(0, 126, 249);
             puliziaautomaticoCPU.CheckedForeground = Color.White;
             puliziaautomaticoCPU.CheckedOutlineColor = Color.Empty;
-            puliziaautomaticoCPU.CheckedSymbolColor = Color.FromArgb(0, 126, 249);
             puliziaautomaticoCPU.Name = "puliziaautomaticoCPU";
             puliziaautomaticoCPU.OutlineThickness = 1F;
             puliziaautomaticoCPU.ShowSymbols = false;
@@ -314,7 +308,6 @@
             puliziaautomaticoCPU.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             puliziaautomaticoCPU.UncheckedForeground = Color.White;
             puliziaautomaticoCPU.UncheckedOutlineColor = Color.Empty;
-            puliziaautomaticoCPU.UncheckedSymbolColor = Color.Gray;
             // 
             // label7
             // 
@@ -351,9 +344,7 @@
             btnPulisciCPU.HoverImageTint = Color.White;
             btnPulisciCPU.HoverOutline = Color.FromArgb(46, 125, 50);
             btnPulisciCPU.Image = Properties.Resources.pngPulisciMonitoraggio;
-            btnPulisciCPU.ImageAutoCenter = true;
             btnPulisciCPU.ImageExpand = new Point(0, 0);
-            btnPulisciCPU.ImageOffset = new Point(0, 0);
             btnPulisciCPU.Name = "btnPulisciCPU";
             btnPulisciCPU.NormalBackground = Color.FromArgb(37, 38, 39);
             btnPulisciCPU.NormalForeColor = Color.White;
@@ -366,7 +357,6 @@
             btnPulisciCPU.PressedOutline = Color.FromArgb(46, 125, 50);
             btnPulisciCPU.Rounding = new Padding(8);
             btnPulisciCPU.TextAlignment = StringAlignment.Center;
-            btnPulisciCPU.TextOffset = new Point(0, 0);
             btnPulisciCPU.Click += btn_puliscicpu_Click;
             // 
             // labelCpuTemp
@@ -444,7 +434,6 @@
             puliziaautomaticRAM.CheckedBackground = Color.FromArgb(0, 126, 249);
             puliziaautomaticRAM.CheckedForeground = Color.White;
             puliziaautomaticRAM.CheckedOutlineColor = Color.Empty;
-            puliziaautomaticRAM.CheckedSymbolColor = Color.FromArgb(0, 126, 249);
             puliziaautomaticRAM.Name = "puliziaautomaticRAM";
             puliziaautomaticRAM.OutlineThickness = 1F;
             puliziaautomaticRAM.ShowSymbols = false;
@@ -452,7 +441,6 @@
             puliziaautomaticRAM.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             puliziaautomaticRAM.UncheckedForeground = Color.White;
             puliziaautomaticRAM.UncheckedOutlineColor = Color.Empty;
-            puliziaautomaticRAM.UncheckedSymbolColor = Color.Gray;
             // 
             // label8
             // 
@@ -489,9 +477,7 @@
             btnPulisciRam.HoverImageTint = Color.White;
             btnPulisciRam.HoverOutline = Color.FromArgb(46, 125, 50);
             btnPulisciRam.Image = Properties.Resources.pngPulisciMonitoraggio;
-            btnPulisciRam.ImageAutoCenter = true;
             btnPulisciRam.ImageExpand = new Point(0, 0);
-            btnPulisciRam.ImageOffset = new Point(0, 0);
             btnPulisciRam.Name = "btnPulisciRam";
             btnPulisciRam.NormalBackground = Color.FromArgb(37, 38, 39);
             btnPulisciRam.NormalForeColor = Color.White;
@@ -504,7 +490,6 @@
             btnPulisciRam.PressedOutline = Color.FromArgb(46, 125, 50);
             btnPulisciRam.Rounding = new Padding(8);
             btnPulisciRam.TextAlignment = StringAlignment.Center;
-            btnPulisciRam.TextOffset = new Point(0, 0);
             btnPulisciRam.Click += btn_pulisciram_Click;
             // 
             // BarRAMtext
@@ -570,7 +555,6 @@
             cuiSwitch_gputemperatura.CheckedBackground = Color.FromArgb(0, 126, 249);
             cuiSwitch_gputemperatura.CheckedForeground = Color.White;
             cuiSwitch_gputemperatura.CheckedOutlineColor = Color.Empty;
-            cuiSwitch_gputemperatura.CheckedSymbolColor = Color.FromArgb(0, 126, 249);
             cuiSwitch_gputemperatura.Name = "cuiSwitch_gputemperatura";
             cuiSwitch_gputemperatura.OutlineThickness = 1F;
             cuiSwitch_gputemperatura.ShowSymbols = false;
@@ -578,7 +562,6 @@
             cuiSwitch_gputemperatura.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             cuiSwitch_gputemperatura.UncheckedForeground = Color.White;
             cuiSwitch_gputemperatura.UncheckedOutlineColor = Color.Empty;
-            cuiSwitch_gputemperatura.UncheckedSymbolColor = Color.Gray;
             cuiSwitch_gputemperatura.CheckedChanged += cuiSwitch2_CheckedChanged;
             // 
             // label2

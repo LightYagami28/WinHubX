@@ -1,4 +1,4 @@
-﻿namespace WinHubX
+namespace WinHubX
 {
     partial class FormHome
     {
@@ -196,9 +196,7 @@
             btnVerificaVerdi.HoverImageTint = Color.White;
             btnVerificaVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnVerificaVerdi.Image = Properties.Resources.pngclick;
-            btnVerificaVerdi.ImageAutoCenter = true;
             btnVerificaVerdi.ImageExpand = new Point(0, 0);
-            btnVerificaVerdi.ImageOffset = new Point(0, 0);
             btnVerificaVerdi.Name = "btnVerificaVerdi";
             btnVerificaVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnVerificaVerdi.NormalForeColor = Color.White;
@@ -211,7 +209,6 @@
             btnVerificaVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnVerificaVerdi.Rounding = new Padding(8);
             btnVerificaVerdi.TextAlignment = StringAlignment.Center;
-            btnVerificaVerdi.TextOffset = new Point(0, 0);
             btnVerificaVerdi.Click += btnVerifica_Click;
             // 
             // label5

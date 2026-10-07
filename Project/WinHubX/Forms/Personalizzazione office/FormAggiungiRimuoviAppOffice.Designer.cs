@@ -1,4 +1,4 @@
-﻿using System.Windows.Forms;
+using System.Windows.Forms;
 
 namespace WinHubX.Forms.Personalizzazione_office
 {
@@ -154,9 +154,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             btn_avviaVerdi.HoverImageTint = Color.White;
             btn_avviaVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btn_avviaVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btn_avviaVerdi.ImageAutoCenter = true;
             btn_avviaVerdi.ImageExpand = new Point(0, 0);
-            btn_avviaVerdi.ImageOffset = new Point(0, 0);
             btn_avviaVerdi.Name = "btn_avviaVerdi";
             btn_avviaVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btn_avviaVerdi.NormalForeColor = Color.White;
@@ -169,7 +167,6 @@ namespace WinHubX.Forms.Personalizzazione_office
             btn_avviaVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btn_avviaVerdi.Rounding = new Padding(8);
             btn_avviaVerdi.TextAlignment = StringAlignment.Center;
-            btn_avviaVerdi.TextOffset = new Point(0, 0);
             btn_avviaVerdi.Click += BtnInstall_Click;
             // 
             // progressBar1

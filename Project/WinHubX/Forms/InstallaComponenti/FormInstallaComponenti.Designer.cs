@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.InstallaComponenti
+namespace WinHubX.Forms.InstallaComponenti
 {
     partial class FormInstallaComponenti
     {
@@ -67,9 +67,7 @@
             btnInstallaVerdi.HoverImageTint = Color.White;
             btnInstallaVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnInstallaVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btnInstallaVerdi.ImageAutoCenter = true;
             btnInstallaVerdi.ImageExpand = new Point(0, 0);
-            btnInstallaVerdi.ImageOffset = new Point(0, 0);
             btnInstallaVerdi.Name = "btnInstallaVerdi";
             btnInstallaVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnInstallaVerdi.NormalForeColor = Color.White;
@@ -82,7 +80,6 @@
             btnInstallaVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnInstallaVerdi.Rounding = new Padding(8);
             btnInstallaVerdi.TextAlignment = StringAlignment.Center;
-            btnInstallaVerdi.TextOffset = new Point(0, 0);
             btnInstallaVerdi.Click += btnInstalla_Click;
             // 
             // pictureBoxPowerPoint

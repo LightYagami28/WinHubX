@@ -1,4 +1,4 @@
-﻿namespace WinHubX.Forms.Settaggi
+namespace WinHubX.Forms.Settaggi
 {
     partial class FormUpdate
     {
@@ -127,9 +127,7 @@
             btnSuggeritiVerdi.HoverImageTint = Color.White;
             btnSuggeritiVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnSuggeritiVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btnSuggeritiVerdi.ImageAutoCenter = true;
             btnSuggeritiVerdi.ImageExpand = new Point(0, 0);
-            btnSuggeritiVerdi.ImageOffset = new Point(0, 0);
             btnSuggeritiVerdi.Name = "btnSuggeritiVerdi";
             btnSuggeritiVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnSuggeritiVerdi.NormalForeColor = Color.White;
@@ -142,7 +140,6 @@
             btnSuggeritiVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnSuggeritiVerdi.Rounding = new Padding(8);
             btnSuggeritiVerdi.TextAlignment = StringAlignment.Center;
-            btnSuggeritiVerdi.TextOffset = new Point(0, 0);
             btnSuggeritiVerdi.Click += btnSuggeriti_Click;
             // 
             // label3
@@ -174,9 +171,7 @@
             btnRipristinaWinUpdateVerdi.HoverImageTint = Color.White;
             btnRipristinaWinUpdateVerdi.HoverOutline = Color.FromArgb(0, 126, 249);
             btnRipristinaWinUpdateVerdi.Image = Properties.Resources.pngRipristinaDefenderTweaks;
-            btnRipristinaWinUpdateVerdi.ImageAutoCenter = true;
             btnRipristinaWinUpdateVerdi.ImageExpand = new Point(0, 0);
-            btnRipristinaWinUpdateVerdi.ImageOffset = new Point(0, 0);
             btnRipristinaWinUpdateVerdi.Name = "btnRipristinaWinUpdateVerdi";
             btnRipristinaWinUpdateVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnRipristinaWinUpdateVerdi.NormalForeColor = Color.White;
@@ -189,7 +184,6 @@
             btnRipristinaWinUpdateVerdi.PressedOutline = Color.FromArgb(0, 126, 249);
             btnRipristinaWinUpdateVerdi.Rounding = new Padding(8);
             btnRipristinaWinUpdateVerdi.TextAlignment = StringAlignment.Center;
-            btnRipristinaWinUpdateVerdi.TextOffset = new Point(0, 0);
             btnRipristinaWinUpdateVerdi.Click += btnResetUpdate_Click;
             // 
             // btnUpdateEssenzialeVerdi
@@ -209,9 +203,7 @@
             btnUpdateEssenzialeVerdi.HoverImageTint = Color.White;
             btnUpdateEssenzialeVerdi.HoverOutline = Color.FromArgb(192, 0, 0);
             btnUpdateEssenzialeVerdi.Image = Properties.Resources.pngProtezioneMinimaDefender;
-            btnUpdateEssenzialeVerdi.ImageAutoCenter = true;
             btnUpdateEssenzialeVerdi.ImageExpand = new Point(0, 0);
-            btnUpdateEssenzialeVerdi.ImageOffset = new Point(0, 0);
             btnUpdateEssenzialeVerdi.Name = "btnUpdateEssenzialeVerdi";
             btnUpdateEssenzialeVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnUpdateEssenzialeVerdi.NormalForeColor = Color.White;
@@ -224,7 +216,6 @@
             btnUpdateEssenzialeVerdi.PressedOutline = Color.FromArgb(192, 0, 0);
             btnUpdateEssenzialeVerdi.Rounding = new Padding(8);
             btnUpdateEssenzialeVerdi.TextAlignment = StringAlignment.Center;
-            btnUpdateEssenzialeVerdi.TextOffset = new Point(0, 0);
             btnUpdateEssenzialeVerdi.Click += btnUpdateEssential_Click;
             // 
             // btnAvviaSelezionatiVerdi
@@ -244,9 +235,7 @@
             btnAvviaSelezionatiVerdi.HoverImageTint = Color.White;
             btnAvviaSelezionatiVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnAvviaSelezionatiVerdi.Image = Properties.Resources.pngCheckCreaISO;
-            btnAvviaSelezionatiVerdi.ImageAutoCenter = true;
             btnAvviaSelezionatiVerdi.ImageExpand = new Point(0, 0);
-            btnAvviaSelezionatiVerdi.ImageOffset = new Point(0, 0);
             btnAvviaSelezionatiVerdi.Name = "btnAvviaSelezionatiVerdi";
             btnAvviaSelezionatiVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnAvviaSelezionatiVerdi.NormalForeColor = Color.White;
@@ -259,7 +248,6 @@
             btnAvviaSelezionatiVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnAvviaSelezionatiVerdi.Rounding = new Padding(8);
             btnAvviaSelezionatiVerdi.TextAlignment = StringAlignment.Center;
-            btnAvviaSelezionatiVerdi.TextOffset = new Point(0, 0);
             btnAvviaSelezionatiVerdi.Click += btnAvviaSelezionatiUpda_Click;
             // 
             // progressBar2
@@ -290,9 +278,7 @@
             btnResetVerdi.HoverImageTint = Color.White;
             btnResetVerdi.HoverOutline = Color.FromArgb(0, 126, 249);
             btnResetVerdi.Image = Properties.Resources.pngRipristinaDefenderTweaks;
-            btnResetVerdi.ImageAutoCenter = true;
             btnResetVerdi.ImageExpand = new Point(0, 0);
-            btnResetVerdi.ImageOffset = new Point(0, 0);
             btnResetVerdi.Name = "btnResetVerdi";
             btnResetVerdi.NormalBackground = Color.FromArgb(37, 38, 39);
             btnResetVerdi.NormalForeColor = Color.White;
@@ -305,7 +291,6 @@
             btnResetVerdi.PressedOutline = Color.FromArgb(0, 126, 249);
             btnResetVerdi.Rounding = new Padding(8);
             btnResetVerdi.TextAlignment = StringAlignment.Center;
-            btnResetVerdi.TextOffset = new Point(0, 0);
             btnResetVerdi.Click += btnReset_Click;
             // 
             // backgroundWorker1
