@@ -10,8 +10,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormPrivacy : Form
     {
-        private Form1 form1;
-        private FormSettaggi formSettaggi;
+        private readonly Form1 form1;
+        private readonly FormSettaggi formSettaggi;
         private int tIndex = -1;
         private int totalSteps = 0;
         public FormPrivacy(FormSettaggi formSettaggi, Form1 form1)
@@ -37,7 +37,7 @@ namespace WinHubX.Forms.Settaggi
             };
         }
 
-        private void checkedListBox1_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox1_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaPrivacy.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -51,7 +51,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void checkedListBox2_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox2_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = AbilitaPrivacy.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -1708,7 +1708,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void AbilitaPrivacy_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void AbilitaPrivacy_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
@@ -1725,12 +1725,12 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void DisabilitaPrivacy_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void DisabilitaPrivacy_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             {
                 if (e.NewValue == CheckState.Checked)
                 {
-                    string itemName = DisabilitaPrivacy.Items[e.Index].ToString();
+                    string itemName = DisabilitaPrivacy.Items[e.Index]?.ToString() ?? string.Empty;
                     string abilitaName = itemName.Replace("Disabilita", "Abilita");
 
                     int index = AbilitaPrivacy.Items.IndexOf(abilitaName);
