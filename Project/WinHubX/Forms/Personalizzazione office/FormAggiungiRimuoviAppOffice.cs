@@ -9,10 +9,10 @@ namespace WinHubX.Forms.Personalizzazione_office
 {
     public partial class FormAggiungiRimuoviAppOffice : Form
     {
-        public string officeVersion;
-        public string platform;
-        public string product;
-        public string culture;
+        public string officeVersion = string.Empty;
+        public string platform = string.Empty;
+        public string product = string.Empty;
+        public string culture = string.Empty;
         [DllImport("advapi32.dll", CharSet = CharSet.Auto)]
         public static extern int RegOpenKeyEx(
     IntPtr hKey,
@@ -41,8 +41,8 @@ namespace WinHubX.Forms.Personalizzazione_office
             {"onedrive", "OneDrive"},
             {"teams", "M.Teams"}
         };
-        private Form1 form1;
-        private FormOffice formoffice;
+        private readonly Form1 form1;
+        private readonly FormOffice formoffice;
         public FormAggiungiRimuoviAppOffice(Form1 form1, FormOffice formoffice)
         {
             InitializeComponent();
@@ -334,7 +334,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             return exeMap.ContainsKey(appCode) ? exeMap[appCode] : $"{appCode}.EXE";
         }
 
-        private string SearchFileInDirectory(string directory, string fileName)
+        private string? SearchFileInDirectory(string directory, string fileName)
         {
             try
             {
@@ -379,7 +379,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             flowPanelAppsInstall.Controls.Clear();
             flowPanelAppsRimuovi.Controls.Clear();
 
-            Image GetImage(string name)
+            Image? GetImage(string name)
             {
                 bool is365 = product.Contains("365");
                 return is365 ? name switch
@@ -513,7 +513,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             return null;
         }
 
-        private async void BtnInstall_Click(object sender, EventArgs e)
+        private async void BtnInstall_Click(object? sender, EventArgs e)
         {
             string c2rExe = @"C:\Program Files\Common Files\Microsoft Shared\ClickToRun\OfficeClickToRun.exe";
             string arch = Environment.Is64BitOperatingSystem ? "x64" : "x32";
@@ -622,7 +622,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             };
         }
 
-        private string GetUpdateChannel(string edition)
+        private string? GetUpdateChannel(string edition)
         {
             string? audienceId = null;
             try
