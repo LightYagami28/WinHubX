@@ -161,7 +161,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                                     }
                                     else
                                     {
-                                        string foundPath = SearchFileInDirectory(basePath, exeName);
+                                        string? foundPath = SearchFileInDirectory(basePath, exeName);
                                         if (!string.IsNullOrEmpty(foundPath))
                                         {
                                             apps[appName.ToLower()] = appName;
@@ -183,7 +183,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                             {
                                 using (var subKey = key.OpenSubKey($@"{version}\Word\InstallRoot"))
                                 {
-                                    string path = subKey?.GetValue("Path")?.ToString();
+                                    string? path = subKey?.GetValue("Path")?.ToString();
                                     if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
                                     {
                                         foreach (var app in possibleApps)
@@ -217,7 +217,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                                 {
                                     if (appKeyPath != null)
                                     {
-                                        string exePath = appKeyPath.GetValue("")?.ToString();
+                                            string? exePath = appKeyPath.GetValue("")?.ToString();
                                         if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
                                         {
                                             string appName = GetFriendlyAppName(app);
@@ -543,7 +543,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 return;
             }
             string lang = NormalizeLanguageCode(culture);
-            string updch = GetUpdateChannel(targetEdition);
+            string updch = GetUpdateChannel(targetEdition) ?? string.Empty;
             string allLangs = GetInstalledOfficeLangs(lang);
             var installedApps = DetectInstalledOfficeApps().Keys.ToList();
             var keepOrInstall = new HashSet<string>(
@@ -661,17 +661,17 @@ namespace WinHubX.Forms.Personalizzazione_office
 
             using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
             {
-                using (RegistryKey configKey = baseKey.OpenSubKey(officeRegBase))
+                using (RegistryKey? configKey = baseKey.OpenSubKey(officeRegBase))
                 {
                     if (configKey != null)
                     {
-                        using (RegistryKey productKey = baseKey.OpenSubKey(productReleasePath))
+                        using (RegistryKey? productKey = baseKey.OpenSubKey(productReleasePath))
                         {
                             if (productKey != null)
                             {
                                 foreach (string subKeyName in productKey.GetSubKeyNames())
                                 {
-                                    using (RegistryKey subKey = productKey.OpenSubKey(subKeyName))
+                                    using (RegistryKey? subKey = productKey.OpenSubKey(subKeyName))
                                     {
                                         if (subKey != null)
                                         {
@@ -699,7 +699,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         private void DisplayInstallationInfo()
         {
             Version requiredVersion = new Version("16.0.9029.2167");
-            Version installedVersion;
+            Version? installedVersion;
 
             try
             {
@@ -708,13 +708,13 @@ namespace WinHubX.Forms.Personalizzazione_office
                 {
                     if (key != null)
                     {
-                        culture = key.GetValue("ClientCulture")?.ToString().ToLower() ?? "it-it";
+                        culture = key.GetValue("ClientCulture")?.ToString()?.ToLowerInvariant() ?? "it-it";
                         var productValue = key.GetValue("ProductReleaseIds");
                         if (productValue != null)
                         {
                             if (productValue is string)
                             {
-                                product = productValue.ToString();
+                                product = productValue as string ?? string.Empty;
                             }
                             else if (productValue is Array)
                             {
