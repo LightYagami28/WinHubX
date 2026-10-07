@@ -8,12 +8,12 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormRipristinoSO : Form
     {
-        private Form1 form1;
-        private FormSettaggi formSettaggi;
+        private readonly Form1 form1;
+        private readonly FormSettaggi formSettaggi;
         private CancellationTokenSource cts = new();
-        private System.Windows.Forms.Timer countdownTimer;
+        private System.Windows.Forms.Timer? countdownTimer;
         private int remainingTime;
-        private CancellationTokenSource cancellationTokenSource;
+        private CancellationTokenSource? cancellationTokenSource;
 
         public FormRipristinoSO(FormSettaggi formSettaggi, Form1 form1)
         {
@@ -30,7 +30,7 @@ namespace WinHubX.Forms.Settaggi
             };
         }
 
-        private async void buttonStart_Click(object sender, EventArgs e)
+        private async void buttonStart_Click(object? sender, EventArgs e)
         {
             progressBar1.Value = 0;
             cancellationTokenSource = new CancellationTokenSource();
@@ -59,7 +59,7 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task StartScanAsyncSW(CancellationToken token)
         {
-            var steps = new (string Label, string Command)[]
+            var steps = new (string Label, string? Command)[]
             {
         ("backupRegistro", null),
         ("controlloFileSistema", "DISM /Online /Cleanup-Image /CheckHealth"),
@@ -203,7 +203,7 @@ namespace WinHubX.Forms.Settaggi
             await Task.WhenAll(cpuTestTask, ramTestTask);
         }
 
-        private void UpdateCountdown(object sender, EventArgs e)
+        private void UpdateCountdown(object? sender, EventArgs e)
         {
             if (remainingTime > 0)
             {

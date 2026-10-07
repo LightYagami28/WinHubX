@@ -299,7 +299,7 @@ namespace WinHubX.Impostazioni
 
         private static string GetSpecialParentPanelName(Control control)
         {
-            Control current = control;
+            Control? current = control;
             while (current != null)
             {
                 if (current.Name == "panel1" || current.Name == "panel2" || current.Name == "panel3" || current.Name == "PnlFormLoader" || current.Name == "tableLayoutPanel1")
