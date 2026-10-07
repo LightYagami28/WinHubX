@@ -1480,7 +1480,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", writable: true))
                     {
                         if (key64 != null)
                         {
@@ -1493,7 +1493,7 @@ namespace WinHubX.Forms.Settaggi
 
                         }
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Policies\Microsoft\Windows\System", writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Policies\Microsoft\Windows\System", writable: true))
                     {
                         if (key32 != null)
                         {
@@ -1527,7 +1527,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                              .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
                     {
                         if (key64 != null)
@@ -1536,7 +1536,7 @@ namespace WinHubX.Forms.Settaggi
                             key64.SetValue("AllowAutoConnectToWiFiSenseHotspots", 1, RegistryValueKind.DWord);
                         }
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                              .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
                     {
                         if (key32 != null)
@@ -1545,21 +1545,21 @@ namespace WinHubX.Forms.Settaggi
                             key32.SetValue("AllowAutoConnectToWiFiSenseHotspots", 1, RegistryValueKind.DWord);
                         }
                     }
-                    using (RegistryKey key32WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
+                    using (RegistryKey? key32WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
                     {
                         key32WiFiHotSpot?.SetValue("Value", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key64WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
+                    using (RegistryKey? key64WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
                     {
                         key64WiFiHotSpot?.SetValue("Value", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
+                    using (RegistryKey? key32AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
                     {
                         key32AutoConnect?.SetValue("Value", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key64AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
+                    using (RegistryKey? key64AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
                     {
                         key64AutoConnect?.SetValue("Value", 1, RegistryValueKind.DWord);
                     }
