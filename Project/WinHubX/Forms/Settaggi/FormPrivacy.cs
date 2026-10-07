@@ -637,12 +637,12 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ExecutePowerShellScript(@"Stop-Service -Name 'dmwappushservice' -WarningAction SilentlyContinue;
                 Set-Service -Name 'dmwappushservice' -StartupType Disabled");
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key64?.SetValue("DisableWAPPushService", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key32?.SetValue("DisableWAPPushService", 1, RegistryValueKind.DWord);
@@ -706,12 +706,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                           .OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", writable: true))
                     {
                         key64?.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                           .OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", writable: true))
                     {
                         key32?.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
