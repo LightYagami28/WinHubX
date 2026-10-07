@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Globalization;
 using System.Reflection;
+using System.Diagnostics;
 public static class LanguageManager
 {
     private static Dictionary<string, Dictionary<string, string>>? translations;
@@ -29,6 +30,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
         }
     }
 
@@ -59,7 +61,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
-
+            Debug.WriteLine(ex);
         }
     }
 
@@ -80,6 +82,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
         }
     }
 
@@ -93,6 +96,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
         }
     }
 
@@ -121,6 +125,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
             LoadFromEmbeddedResource();
         }
     }
@@ -142,6 +147,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
         }
     }
 
@@ -165,6 +171,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
             throw;
         }
     }
@@ -198,6 +205,7 @@ public static class LanguageManager
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex);
         }
     }
 
