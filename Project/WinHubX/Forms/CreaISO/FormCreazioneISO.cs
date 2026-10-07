@@ -15,9 +15,9 @@ namespace WinHubX.Forms.CreaISO
     {
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Dictionary<string, string> ParametriISO { get; set; } = new();
-        private Form1 form1;
-        private CancellationTokenSource _cancellationTokenSource;
-        private FormCreaISO formcreaiso;
+        private readonly Form1 form1;
+        private CancellationTokenSource? _cancellationTokenSource;
+        private readonly FormCreaISO formcreaiso;
 
         public FormCreazioneISO(Form1 form1, FormCreaISO formcreaiso)
         {
@@ -27,7 +27,7 @@ namespace WinHubX.Forms.CreaISO
             this.formcreaiso = formcreaiso;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
-        private async void FormCreazioneISO_Shown(object sender, EventArgs e)
+        private async void FormCreazioneISO_Shown(object? sender, EventArgs e)
         {
             await Task.Delay(2000);
             Start();
@@ -496,10 +496,12 @@ namespace WinHubX.Forms.CreaISO
                 string sourceUnattend10 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattend10.xml");
                 string sourceUnattendx32 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattendx32.xml");
 
-                _ = Directory.CreateDirectory(Path.GetDirectoryName(destUnattend));
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(destUnattend)
+                    ?? throw new InvalidOperationException("Percorso unattend non valido."));
                 _ = Directory.CreateDirectory(mountDir);
                 _ = Directory.CreateDirectory(bootMountDir);
-                _ = Directory.CreateDirectory(Path.GetDirectoryName(appraiserPath));
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(appraiserPath)
+                    ?? throw new InvalidOperationException("Percorso appraiser non valido."));
 
                 if (windowsVersion == "11" && ParametriISO.TryGetValue("Unattend", out var unattendType))
                 {
@@ -824,7 +826,8 @@ namespace WinHubX.Forms.CreaISO
                         RedirectStandardError = true
                     };
 
-                    using (var process = Process.Start(psi))
+                    using (var process = Process.Start(psi)
+                        ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
                     {
                         string output = await process.StandardOutput.ReadToEndAsync();
                         string error = await process.StandardError.ReadToEndAsync();
@@ -1119,7 +1122,8 @@ namespace WinHubX.Forms.CreaISO
 
                     if (File.Exists(exportPath))
                     {
-                        string finalDir = Path.GetDirectoryName(targetExportPath);
+                        string finalDir = Path.GetDirectoryName(targetExportPath)
+                            ?? throw new InvalidOperationException("Percorso di esportazione non valido.");
                         if (!Directory.Exists(finalDir))
                             _ = Directory.CreateDirectory(finalDir);
 
@@ -1308,7 +1312,8 @@ namespace WinHubX.Forms.CreaISO
                             CreateNoWindow = true
                         };
 
-                        using (Process oscdimgProc = Process.Start(oscdimgProcess))
+                        using (Process oscdimgProc = Process.Start(oscdimgProcess)
+                            ?? throw new InvalidOperationException("Impossibile avviare oscdimg."))
                         {
                             while (!oscdimgProc.HasExited)
                             {
