@@ -14,7 +14,7 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormDebloat : Form
     {
-        private Form1 form1;
+        private readonly Form1 form1;
         private List<string> appxNames = new List<string>();
         public static Dictionary<string, string> appNameMappings = new Dictionary<string, string>();
         private Dictionary<string, string> imageUrls = new Dictionary<string, string>();
@@ -121,7 +121,8 @@ namespace WinHubX.Forms.Base
                 using (HttpClient client = new HttpClient())
                 {
                     string json = await client.GetStringAsync("https://raw.githubusercontent.com/MrNico98/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
-                    appNameMappings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                    appNameMappings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+                        ?? new Dictionary<string, string>();
                 }
             }
             catch (Exception ex)
@@ -357,7 +358,7 @@ namespace WinHubX.Forms.Base
 
             if (result == DialogResult.Yes)
             {
-                string powerShellCommand = GetPowerShellCommand();
+                string? powerShellCommand = GetPowerShellCommand();
                 if (powerShellCommand != null)
                 {
                     ExecutePowerShellCommand(powerShellCommand);
@@ -478,7 +479,7 @@ namespace WinHubX.Forms.Base
                 HardwareInfo hardwareInfo = await OttieniHardwareInfoAsync();
                 await DisattivaWindowsDefender(hardwareInfo);
             }
-            flowLayoutPanel1.Invoke(new Action(() => CaricaAppxPackagesAsync()));
+            flowLayoutPanel1.BeginInvoke(new Action(() => _ = CaricaAppxPackagesAsync()));
         }
 
         private async Task<HardwareInfo> OttieniHardwareInfoAsync()
@@ -490,7 +491,8 @@ namespace WinHubX.Forms.Base
                 throw new FileNotFoundException("Il file osehardware.json non esiste.", path);
 
             string json = await File.ReadAllTextAsync(path);
-            return JsonConvert.DeserializeObject<HardwareInfo>(json);
+            return JsonConvert.DeserializeObject<HardwareInfo>(json)
+                ?? throw new InvalidDataException("HardwareInfo non valido.");
         }
         static bool IsWindowsServer()
         {
