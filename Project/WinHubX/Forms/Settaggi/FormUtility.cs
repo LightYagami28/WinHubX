@@ -82,7 +82,7 @@ namespace WinHubX.Forms.Settaggi
 
         private bool GetCheckboxState(string itemName)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
             {
                 if (key != null)
                 {
@@ -305,7 +305,8 @@ namespace WinHubX.Forms.Settaggi
                 Verb = "runas"
             };
 
-            using (var process = System.Diagnostics.Process.Start(startInfo))
+            using (var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il comando elevato."))
             {
                 process.WaitForExit();
 
@@ -334,7 +335,8 @@ namespace WinHubX.Forms.Settaggi
                     Verb = "runas"
                 };
 
-                using (var process = System.Diagnostics.Process.Start(startInfo))
+                using (var process = System.Diagnostics.Process.Start(startInfo)
+                    ?? throw new InvalidOperationException("Impossibile avviare schtasks."))
                 {
                     process.WaitForExit();
                 }
