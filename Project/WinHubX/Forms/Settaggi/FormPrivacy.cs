@@ -77,15 +77,15 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetCheckboxState(string itemName, bool isChecked)
         {
-            using (RegistryKey key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
             {
-                key.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
+                key?.SetValue(itemName, isChecked ? 1 : 0, RegistryValueKind.DWord);
             }
         }
 
         private bool GetCheckboxState(string itemName)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
             {
                 return key?.GetValue(itemName) is int value && value == 1;
             }
