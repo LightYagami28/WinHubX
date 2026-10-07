@@ -77,13 +77,13 @@ namespace WinHubX.Forms.Personalizzazione_office
         {
             officeVersion = GetRegistryValue(
                 @"SOFTWARE\Microsoft\Office\ClickToRun\Configuration",
-                "VersionToReport");
+                "VersionToReport") ?? string.Empty;
 
             if (string.IsNullOrEmpty(officeVersion))
             {
                 officeVersion = GetRegistryValue(
                     @"SOFTWARE\Microsoft\Office\16.0\Common\InstallRoot",
-                    "Version");
+                    "Version") ?? string.Empty;
             }
 
             if (!string.IsNullOrEmpty(officeVersion) && officeVersion.StartsWith("16.") && IsOfficeWithPublisher())
@@ -124,7 +124,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                             {
                                 if (appKeyPath != null)
                                 {
-                                    string exePath = appKeyPath.GetValue("")?.ToString();
+                                    string? exePath = appKeyPath.GetValue("")?.ToString();
                                     if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
                                     {
                                         string appName = GetFriendlyAppName(app);
@@ -583,7 +583,8 @@ namespace WinHubX.Forms.Personalizzazione_office
                 progressBar1.Value = 0;
                 progressBar1.Value = 35;
 
-                using (var process = Process.Start(psi))
+                using (var process = Process.Start(psi)
+                    ?? throw new InvalidOperationException("Impossibile avviare l'installer Office."))
                 {
                     await Task.Run(() => process.WaitForExit());
                 }
