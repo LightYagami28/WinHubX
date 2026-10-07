@@ -273,6 +273,9 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetRegistryValue(string path, string name, object? value, RegistryView view = RegistryView.Default)
         {
+            if (value is null)
+                return;
+
             RegistryKey baseKey = view == RegistryView.Registry64 ? RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view) : Registry.LocalMachine;
 
             using (var key = baseKey.OpenSubKey(path, true))
@@ -653,7 +656,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runus"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare il processo di gestione Explorer."))
                     {
                         process.WaitForExit();
 
