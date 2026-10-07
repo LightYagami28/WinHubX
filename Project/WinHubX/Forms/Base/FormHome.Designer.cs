@@ -255,7 +255,6 @@
         private CuoreUI.Controls.cuiSpinner cuiSpinner1;
         private CuoreUI.Controls.cuiSeparator cuiSeparator1;
         private Label labelverifica;
-        private Button button1;
         private Label label1;
         private Label labelcpu;
         private PictureBox pictureBox1;

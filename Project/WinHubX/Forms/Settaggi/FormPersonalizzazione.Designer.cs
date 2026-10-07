@@ -492,10 +492,7 @@
         }
 
         #endregion
-        private Panel panel32;
-        private Panel panel4;
         private Panel panel7;
-        private Label label2;
         private ToolTip toolTip1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private Panel panello;

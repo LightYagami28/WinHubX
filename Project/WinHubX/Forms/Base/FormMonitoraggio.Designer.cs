@@ -745,7 +745,6 @@
         private Label label8;
         private Label label9;
         private Label label10;
-        private CuoreUI.Controls.cuiButton cuiButton1;
         private Label BarRAMtext;
         private CuoreUI.Controls.cuiCircleProgressBar BarRAM;
         private Label label14;

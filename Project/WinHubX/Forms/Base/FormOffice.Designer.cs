@@ -461,7 +461,6 @@ namespace WinHubX
         }
 
         #endregion
-        private RichTextBox richTextBoxInfo;
         private Panel panel50;
         private TableLayoutPanel tableLayoutPanel50;
         private Panel panel70;

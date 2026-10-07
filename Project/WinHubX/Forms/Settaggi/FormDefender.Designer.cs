@@ -345,7 +345,6 @@
         private CheckedListBox AbilitaDefender;
         private Label label1;
         private Label label2;
-        private Label label4;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private ToolTip toolTip1;
         private CuoreUI.Controls.cuiButton btnAvviaSelezionatiVerdi;

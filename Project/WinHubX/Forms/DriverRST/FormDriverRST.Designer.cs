@@ -102,7 +102,6 @@
 
         private Label label3;
         private CuoreUI.Controls.cuiButton btnInstallaVerdi;
-        private CheckBox checkBox_powerpoint;
         private RichTextBox richTextBox1;
     }
 }

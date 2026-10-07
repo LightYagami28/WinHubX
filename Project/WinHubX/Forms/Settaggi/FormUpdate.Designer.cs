@@ -345,7 +345,6 @@
         private CheckedListBox AbilitaUpdate;
         private Label label2;
         private Label label1;
-        private ProgressBar progressBar1;
         private ToolTip toolTip1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private CuoreUI.Controls.cuiButton btnRipristinaWinUpdateVerdi;

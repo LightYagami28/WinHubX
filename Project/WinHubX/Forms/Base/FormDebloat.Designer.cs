@@ -316,15 +316,12 @@
         }
 
         #endregion
-        private Label lblInfoWin12;
         private FlowLayoutPanel flowLayoutPanel1;
         private TextBox textBox1;
         private CuoreUI.Controls.cuiButton btnModificaServiziDisattivo;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private CuoreUI.Controls.cuiProgressBarHorizontal progressBar1;
         private CuoreUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
-        private CuoreUI.Controls.cuiButton btnRiprisitinoDefenderVerdi;
-        private CuoreUI.Controls.cuiButton btnProtezioneMinimaVerdi;
         private CuoreUI.Controls.cuiPanel cuiPanel2;
         private PictureBox pictureBoxPowerPoint;
         private CuoreUI.Controls.cuiButton btnDebloatAutomaticoVerdi;

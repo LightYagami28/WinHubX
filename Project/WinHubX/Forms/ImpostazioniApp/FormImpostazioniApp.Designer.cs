@@ -372,7 +372,6 @@
         #endregion
 
         private Label label3;
-        private CheckBox checkBox_powerpoint;
         private CuoreUI.Controls.cuiButton btnInstallaVerdi;
         private RadioButton radioButton_temachiaro;
         private RadioButton radioButton_temadisistema;

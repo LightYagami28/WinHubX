@@ -171,7 +171,6 @@
         private PictureBox pictureBoxPowerPoint;
         private PictureBox pictureBoxExcel;
         private PictureBox pictureBoxWord;
-        private CheckBox checkBox_powerpoint;
         private CheckBox checkBox_winget;
         private CheckBox checkBox_microsoftdefender;
         private CheckBox checkBox_MicrosoftStore;
