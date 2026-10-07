@@ -273,7 +273,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 try
                 {
-                    var cpuUsage = GetCPUUsage();
+                    var cpuUsage = await GetCPUUsageAsync(token);
                     var cpuTemp = GetCPUTemperature();
                     if (cpuTemp > thermalThreshold)
                     {
@@ -292,11 +292,11 @@ namespace WinHubX.Forms.Settaggi
                 await Task.Delay(6000, token);
             }
         }
-        private static float GetCPUUsage()
+        private static async Task<float> GetCPUUsageAsync(CancellationToken token)
         {
             using PerformanceCounter cpuCounter = new("Processor", "% Processor Time", "_Total");
             _ = cpuCounter.NextValue();
-            Task.Delay(500).Wait();
+            await Task.Delay(500, token);
             return cpuCounter.NextValue();
         }
 
