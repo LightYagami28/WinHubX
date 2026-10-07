@@ -98,10 +98,10 @@ namespace WinHubX.Forms.Personalizzazione_office
                 "Office 2021" => CreateVisioXml(),
                 "Office 2024" => CreateVisioXml24(),
                 "Office 365" => CreateVisioXml365(),
-                _ => null
+                _ => string.Empty
             };
 
-            if (xmlToAdd != null)
+            if (!string.IsNullOrEmpty(xmlToAdd))
                 AddElementByVersion(version, xmlFilePath, xmlToAdd);
         }
 
@@ -113,7 +113,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 "Office 2021" => CreateProjectXml(),
                 "Office 2024" => CreateProjectXml24(),
                 "Office 365" => CreateProjectXml365(),
-                _ => null
+                _ => string.Empty
             };
 
             if (xmlToAdd != null)
@@ -143,10 +143,10 @@ namespace WinHubX.Forms.Personalizzazione_office
                 "Office 2021" => "ProPlus2021Volume",
                 "Office 2024" => "ProPlus2024Volume",
                 "Office 365" => "O365BusinessRetail",
-                _ => null
+                _ => string.Empty
             };
 
-            if (productId == null)
+            if (string.IsNullOrEmpty(productId))
             {
                 MessageBox.Show($"Versione '{version}' non riconosciuta.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -167,7 +167,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 var fragment = xmlDoc.CreateDocumentFragment();
                 fragment.InnerXml = xmlToAdd;
 
-                targetNode.ParentNode.InsertAfter(fragment, targetNode);
+                targetNode.ParentNode?.InsertAfter(fragment, targetNode);
                 xmlDoc.Save(xmlFilePath);
             }
             catch (Exception ex)
@@ -191,7 +191,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 }
 
                 foreach (XmlNode node in nodes)
-                    node.ParentNode.RemoveChild(node);
+                    node.ParentNode?.RemoveChild(node);
 
                 xmlDoc.Save(xmlFilePath);
             }
@@ -410,7 +410,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         {
             panel7.Visible = true;
 
-            string selected = comboBoxVerOffice.SelectedItem?.ToString();
+            string? selected = comboBoxVerOffice.SelectedItem?.ToString();
 
             if (selected == null) return;
 

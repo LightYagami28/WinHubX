@@ -23,7 +23,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey explorerKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"))
+                using (RegistryKey? explorerKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"))
                 {
                     if (explorerKey != null)
                     {
@@ -47,7 +47,7 @@ namespace WinHubX.Forms.Settaggi
 
         private int GetRegistryValue(RegistryKey key, string valueName, int defaultValue)
         {
-            object value = key.GetValue(valueName, defaultValue);
+            object? value = key.GetValue(valueName, defaultValue);
             return value != null ? Convert.ToInt32(value) : defaultValue;
         }
 
@@ -55,7 +55,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey explorerKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", true))
+                using (RegistryKey? explorerKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", true))
                 {
                     if (explorerKey != null)
                     {
