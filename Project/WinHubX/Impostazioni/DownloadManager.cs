@@ -4,14 +4,14 @@
     {
         public static int ProgressPercentage { get; private set; }
         public static bool IsDownloading { get; private set; }
-        public static event Action<int> ProgressChanged;
-        public static event Action<bool> DownloadStateChanged;
+        public static event Action<int>? ProgressChanged;
+        public static event Action<bool>? DownloadStateChanged;
 
         private static readonly HttpClient _httpClient = new HttpClient();
         private static long _totalDownloadedBytes = 0;
 
         // 🔥 AGGIUNGI: CancellationTokenSource statico per gestire la cancellazione globale
-        private static CancellationTokenSource _globalCts;
+        private static CancellationTokenSource? _globalCts;
 
         // 🔥 AGGIUNGI: Metodo per forzare l'interruzione
         public static void ForceStopDownload()
@@ -23,6 +23,12 @@
 
         public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4)
         {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+                throw new ArgumentException("È consentito solo scaricare da URL HTTP/HTTPS.", nameof(url));
+            if (string.IsNullOrWhiteSpace(savePath))
+                throw new ArgumentException("Il percorso di destinazione è obbligatorio.", nameof(savePath));
+            maxChunks = Math.Clamp(maxChunks, 2, 8);
             // 🔥 CREA UN LINKED TOKEN SOURCE per combinare token esterno e globale
             _globalCts = new CancellationTokenSource();
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _globalCts.Token);
