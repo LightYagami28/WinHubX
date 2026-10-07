@@ -1,10 +1,8 @@
 ﻿using Microsoft.Win32;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
-using System.Security.Policy;
 using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.DriverRST
@@ -28,8 +26,9 @@ namespace WinHubX.Forms.DriverRST
 
                     if (folderDialog.ShowDialog() == DialogResult.OK)
                     {
-                        string destinationFolder = folderDialog.SelectedPath;
-                        string downloadUrl = await GetDriverRSTDownloadUrl();
+                        string destinationFolder = folderDialog.SelectedPath
+                            ?? throw new InvalidOperationException("Cartella di destinazione non valida.");
+                        string? downloadUrl = await GetDriverRSTDownloadUrl();
 
                         if (!string.IsNullOrEmpty(downloadUrl))
                         {
@@ -52,7 +51,7 @@ namespace WinHubX.Forms.DriverRST
             }
         }
 
-        private async Task<string> GetDriverRSTDownloadUrl()
+        private async Task<string?> GetDriverRSTDownloadUrl()
         {
             try
             {
