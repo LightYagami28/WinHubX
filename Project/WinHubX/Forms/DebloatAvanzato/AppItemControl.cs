@@ -5,7 +5,7 @@ namespace WinHubX.Forms.DebloatAvanzato
 {
     public partial class AppItemControl : UserControl
     {
-        public string NomeTecnico { get; private set; }
+        public string NomeTecnico { get; private set; } = string.Empty;
         public string? ImgUrl { get; private set; }
 
         // ✅ Aggiungi questa proprietà pubblica
