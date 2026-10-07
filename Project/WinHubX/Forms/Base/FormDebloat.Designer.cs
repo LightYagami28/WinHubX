@@ -316,7 +316,6 @@
         }
 
         #endregion
-        private Button btnDebloatAuto;
         private Label lblInfoWin12;
         private FlowLayoutPanel flowLayoutPanel1;
         private TextBox textBox1;

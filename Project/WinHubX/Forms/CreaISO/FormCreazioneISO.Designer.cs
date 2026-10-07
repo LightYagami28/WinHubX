@@ -141,7 +141,6 @@ namespace WinHubX.Forms.CreaISO
         private Label label1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private cuiProgressBarHorizontal progressBar1;
-        private CuoreUI.Controls.cuiProgressBarHorizontal cuiProgressBarHorizontal1;
         private CuoreUI.Controls.cuiProgressBarHorizontal progressBar2;
         private cuiButton btnStopVerdi;
     }
