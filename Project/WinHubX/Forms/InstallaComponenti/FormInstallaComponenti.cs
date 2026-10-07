@@ -147,17 +147,17 @@ namespace WinHubX.Forms.InstallaComponenti
             using (Process process = new Process { StartInfo = startInfo })
             {
                 _ = process.Start();
-                process.WaitForExit();
+                await process.WaitForExitAsync();
             }
-            Thread.Sleep(20000);
+            await Task.Delay(TimeSpan.FromSeconds(20));
             using (Process process = new Process { StartInfo = startInfo })
             {
                 _ = process.Start();
-                process.WaitForExit();
+                await process.WaitForExitAsync();
             }
 
             _ = MessageBox.Show(LanguageManager.GetTranslation("FormReinstallAPP", "storeinstalling"));
-            Thread.Sleep(4000);
+            await Task.Delay(TimeSpan.FromSeconds(4));
         }
 
         private async Task<HardwareInfo> OttieniHardwareInfoAsync()
