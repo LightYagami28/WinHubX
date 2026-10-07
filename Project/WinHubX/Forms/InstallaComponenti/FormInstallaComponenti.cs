@@ -36,10 +36,10 @@ namespace WinHubX.Forms.InstallaComponenti
                 return;
             }
 
-            HardwareInfo hardwareInfo = null;
+            HardwareInfo? hardwareInfo = null;
             if (doDefender)
                 hardwareInfo = await OttieniHardwareInfoAsync();
-            if (doDefender)
+            if (doDefender && hardwareInfo is not null)
                 await DefenderOn(hardwareInfo);
 
             if (doWinget)
@@ -160,7 +160,7 @@ namespace WinHubX.Forms.InstallaComponenti
             await Task.Delay(TimeSpan.FromSeconds(4));
         }
 
-        private async Task<HardwareInfo> OttieniHardwareInfoAsync()
+        private async Task<HardwareInfo?> OttieniHardwareInfoAsync()
         {
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX", "Computer", "osehardware.json");
