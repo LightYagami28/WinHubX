@@ -10,11 +10,10 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormPersonalizzazione : Form
     {
-        private Form1 form1;
+        private readonly Form1 form1;
         private FormSettaggi formSettaggi;
-        private string tempFolder = Path.Combine(Path.GetTempPath(), "WinHubX");
+        private readonly string tempFolder = Path.Combine(Path.GetTempPath(), "WinHubX");
         private int totalSteps = 0;
-        private bool isSSD;
         public FormPersonalizzazione(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
@@ -63,7 +62,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 using (RegistryKey currentUserKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
                 {
-                    using (RegistryKey taskbarSettings = currentUserKey.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"))
+                    using (RegistryKey? taskbarSettings = currentUserKey.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"))
                     {
                         taskbarSettings?.SetValue("TaskbarEndTask", 0, RegistryValueKind.DWord);
                     }
@@ -82,7 +81,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 using (RegistryKey currentUserKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
                 {
-                    using (RegistryKey taskbarSettings = currentUserKey.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"))
+                    using (RegistryKey? taskbarSettings = currentUserKey.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"))
                     {
                         taskbarSettings?.SetValue("TaskbarEndTask", 1, RegistryValueKind.DWord);
                     }
@@ -317,7 +316,7 @@ namespace WinHubX.Forms.Settaggi
                 await ScaricaFile(zipFileUrl, zipFilePath);
                 await Task.Delay(1000);
 
-                string regFilePath = EstraiFileReg(zipFilePath, regFileName);
+                string? regFilePath = EstraiFileReg(zipFilePath, regFileName);
 
                 if (regFilePath != null)
                 {
@@ -361,7 +360,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 var response = await client.GetStringAsync(jsonUrl);
                 var json = JObject.Parse(response);
-                return json["PersonaTastoDestro"]["PersoTastoDestro"].ToString();
+                return json["PersonaTastoDestro"]?["PersoTastoDestro"]?.Value<string>()
+                    ?? throw new InvalidOperationException("URL risorsa non presente nella configurazione.");
             }
         }
 
@@ -429,7 +429,7 @@ namespace WinHubX.Forms.Settaggi
             string registryPath = @"SOFTWARE\CLASSES\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
             try
             {
-                using (RegistryKey key32 = Registry.CurrentUser.OpenSubKey(registryPath, true))
+                using (RegistryKey? key32 = Registry.CurrentUser.OpenSubKey(registryPath, true))
                 {
                     if (key32 != null)
                     {
@@ -453,7 +453,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
                 {
-                    using (RegistryKey subKey64 = key64.OpenSubKey(registryPath, true))
+                    using (RegistryKey? subKey64 = key64.OpenSubKey(registryPath, true))
                     {
                         if (subKey64 != null)
                         {
@@ -595,7 +595,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(registryPath, writable: true))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(registryPath, writable: true))
                 {
                     if (key != null)
                     {
@@ -666,7 +666,7 @@ namespace WinHubX.Forms.Settaggi
             radio_disabilitaendtask.Checked = false;
             try
             {
-                RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\WinHubX\Personalizzazione", true);
+                using RegistryKey? key = Registry.CurrentUser.OpenSubKey(@"Software\WinHubX\Personalizzazione", true);
             }
             catch (Exception)
             {
@@ -676,11 +676,11 @@ namespace WinHubX.Forms.Settaggi
 
         private bool GetCheckboxState(string itemName)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX\\Personalizzazione"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX\\Personalizzazione"))
             {
                 if (key != null)
                 {
-                    object value = key.GetValue(itemName);
+                    object? value = key.GetValue(itemName);
                     if (value != null)
                     {
                         return (int)value == 1;
@@ -723,7 +723,7 @@ namespace WinHubX.Forms.Settaggi
         {
             using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view))
             {
-                using (RegistryKey key = baseKey.OpenSubKey(path, writable: true))
+                using (RegistryKey? key = baseKey.OpenSubKey(path, writable: true))
                 {
                     if (key != null)
                     {
@@ -741,7 +741,7 @@ namespace WinHubX.Forms.Settaggi
         {
             using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view))
             {
-                using (RegistryKey key = baseKey.OpenSubKey(path, writable: true))
+                using (RegistryKey? key = baseKey.OpenSubKey(path, writable: true))
                 {
                     if (key != null)
                     {
