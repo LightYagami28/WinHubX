@@ -561,11 +561,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry32).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry32).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
                     {
                         key32?.SetValue("InitialKeyboardIndicators", 2147483648, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
                     {
                         key64?.SetValue("InitialKeyboardIndicators", 2147483648, RegistryValueKind.DWord);
                     }
@@ -801,7 +801,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     else
                     {
-                        using (RegistryKey backgroundAccessKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                        using (RegistryKey? backgroundAccessKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                         {
                             if (backgroundAccessKey != null)
                             {
@@ -1046,7 +1046,7 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     string storagePolicyKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy";
-                    using (RegistryKey key32 = Registry.CurrentUser.OpenSubKey(storagePolicyKey, true))
+                    using (RegistryKey? key32 = Registry.CurrentUser.OpenSubKey(storagePolicyKey, true))
                     {
                         if (key32 != null)
                         {
@@ -1061,7 +1061,7 @@ namespace WinHubX.Forms.Settaggi
 
                         }
                     }
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(storagePolicyKey, true))
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(storagePolicyKey, true))
                     {
                         if (key64 != null)
                         {
