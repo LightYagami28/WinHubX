@@ -21,9 +21,6 @@ namespace WinHubX
         [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
-        private NotifyIcon notifyIcon;
-        private ContextMenuStrip trayIconContextMenu;
-        private static readonly HttpClient client = new HttpClient();
         private readonly List<Button> bottoni = new();
 
         private const int HTLEFT = 10;
@@ -35,7 +32,7 @@ namespace WinHubX
         private const int HTBOTTOMLEFT = 16;
         private const int HTBOTTOMRIGHT = 17;
         private const int WM_NCHITTEST = 0x84;
-        private Form previousForm = null;
+        private Form? previousForm;
 
         protected override void WndProc(ref Message m)
         {
@@ -221,11 +218,11 @@ namespace WinHubX
 
         private void btnSettaggi_Click(object sender, EventArgs e)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
             {
                 if (key != null)
                 {
-                    object value = key.GetValue("SettaggiRiavviati");
+                    object? value = key.GetValue("SettaggiRiavviati");
                     if (value != null && value.ToString() == "1")
                     {
                         puntodiripristino();
@@ -255,19 +252,19 @@ namespace WinHubX
                     RedirectStandardError = true
                 });
 
-                using (RegistryKey regKey = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
+                using (RegistryKey? regKey = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
                 {
-                    regKey.SetValue("SettaggiRiavviati", 1);
+                    regKey?.SetValue("SettaggiRiavviati", 1);
                 }
                 Application.Exit();
             }
             else
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
                 {
                     if (key != null)
                     {
-                        object value = key.GetValue("SettaggiRiavviati");
+                        object? value = key.GetValue("SettaggiRiavviati");
                         if (value != null && value.ToString() == "0")
                         {
                             _ = MessageBox.Show("I need registry access to access this menu");
