@@ -679,12 +679,12 @@ namespace WinHubX.Forms.Settaggi
                 Set-Service -Name 'HomeGroupListener' -StartupType Disabled;
                 Stop-Service -Name 'HomeGroupProvider' -WarningAction SilentlyContinue;
                 Set-Service -Name 'HomeGroupProvider' -StartupType Disabled;");
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key64?.SetValue("DisableHomeGroup", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                           .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
                     {
                         key32?.SetValue("DisableHomeGroup", 1, RegistryValueKind.DWord);
