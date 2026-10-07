@@ -483,7 +483,6 @@ namespace WinHubX.Forms.Settaggi
         }
 
         #endregion
-        private Panel panel7;
         private ToolTip toolTip1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private Panel panello;

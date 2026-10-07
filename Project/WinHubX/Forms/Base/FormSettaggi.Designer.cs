@@ -443,7 +443,6 @@ namespace WinHubX.Forms.Base
         private CuoreUI.Controls.cuiButton btnPrivacyTweaksPrinci;
         private Panel panel68;
         private CuoreUI.Controls.cuiButton btnWSLTweaksPrinci;
-        private CuoreUI.Controls.cuiButton btnRipristinoeTestTweaks;
         private CuoreUI.Controls.cuiButton btnUpdateTweaksPrinci;
         private CuoreUI.Controls.cuiButton btnUtilityTweaksPrinci;
         private CuoreUI.Controls.cuiFileDropper cuiFileDropper1White;

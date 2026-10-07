@@ -364,7 +364,6 @@ namespace WinHubX.Forms.ImpostazioniApp
         #endregion
 
         private Label label3;
-        private CuoreUI.Controls.cuiButton btnInstallaVerdi;
         private RadioButton radioButton_temachiaro;
         private RadioButton radioButton_temadisistema;
         private RadioButton radioButton_temascuro;
