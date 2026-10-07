@@ -752,12 +752,12 @@ namespace WinHubX.Forms.Settaggi
                 Get-AppxPackage ""Microsoft.Xbox.TCUI"" | Remove-AppxPackage -ErrorAction SilentlyContinue;
             ");
 
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
                                                              .OpenSubKey(@"System\GameConfigStore", writable: true))
                     {
                         key32?.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                              .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", writable: true))
                     {
                         key64?.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
@@ -779,12 +779,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
                     {
                         key64?.SetValue("MaintenanceDisabled", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
                     {
                         key32?.SetValue("MaintenanceDisabled", 1, RegistryValueKind.DWord);
@@ -807,12 +807,12 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     ExecutePowerShellScript(@"Set-WindowsReservedStorageState -State Disabled");
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", writable: true))
                     {
                         key64?.SetValue("ReservedStorageState", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", writable: true))
                     {
                         key32?.SetValue("ReservedStorageState", 0, RegistryValueKind.DWord);
