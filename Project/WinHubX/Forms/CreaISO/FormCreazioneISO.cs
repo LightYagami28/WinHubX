@@ -193,7 +193,7 @@ namespace WinHubX.Forms.CreaISO
             Directory.CreateDirectory(extractPath);
             progressBar2.Value = 0;
 
-            var progress = new Progress<int>(value =>
+            IProgress<int> progress = new Progress<int>(value =>
             {
                 if (value >= 0 && value <= 100)
                 {
@@ -264,7 +264,8 @@ namespace WinHubX.Forms.CreaISO
             foreach (var subDir in directory.GetDirectories())
             {
                 token.ThrowIfCancellationRequested();
-                ExtractDirectory(subDir, Path.Combine(targetPath, subDir.Name), ref extractedFiles, totalFiles, progress, token);
+                ExtractDirectory(subDir, Path.Combine(targetPath, subDir.Name), ref extractedFiles, totalFiles,
+                    progress ?? throw new InvalidOperationException("Progress reporter non inizializzato."), token);
             }
         }
 
@@ -924,7 +925,7 @@ namespace WinHubX.Forms.CreaISO
                         {
                             "LavorWork" => "workstation.pref",
                             "IsoGaming" => "gaming.pref",
-                            _ => null
+                            _ => string.Empty
                         };
 
                         if (fileName != null)
@@ -954,7 +955,7 @@ namespace WinHubX.Forms.CreaISO
                         {
                             if (driverPref == "DriverCartella")
                             {
-                                string driverFolder = null;
+                                string? driverFolder = null;
 
                                 Invoke(new Action(() =>
                                 {
@@ -968,7 +969,7 @@ namespace WinHubX.Forms.CreaISO
 
                                 if (!string.IsNullOrEmpty(driverFolder))
                                 {
-                                    var process = Process.Start(new ProcessStartInfo
+                                    using var process = Process.Start(new ProcessStartInfo
                                     {
                                         FileName = "dism.exe",
                                         Arguments = $"/Image:\"C:\\Mount\\mount\" /Add-Driver /Driver:\"{driverFolder}\" /Recurse",
@@ -976,7 +977,7 @@ namespace WinHubX.Forms.CreaISO
                                         RedirectStandardOutput = true,
                                         RedirectStandardError = true,
                                         CreateNoWindow = true
-                                    });
+                                    }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'integrazione driver.");
 
                                     string output = await process.StandardOutput.ReadToEndAsync();
                                     string error = await process.StandardError.ReadToEndAsync();
@@ -995,7 +996,7 @@ namespace WinHubX.Forms.CreaISO
                                 string tempDriverDir = Path.Combine(Path.GetTempPath(), "DriverBackup_" + Guid.NewGuid().ToString("N"));
                                 Directory.CreateDirectory(tempDriverDir);
 
-                                var export = Process.Start(new ProcessStartInfo
+                                using var export = Process.Start(new ProcessStartInfo
                                 {
                                     FileName = "dism.exe",
                                     Arguments = $"/Online /Export-Driver /Destination:\"{tempDriverDir}\"",
@@ -1003,7 +1004,7 @@ namespace WinHubX.Forms.CreaISO
                                     RedirectStandardOutput = true,
                                     RedirectStandardError = true,
                                     CreateNoWindow = true
-                                });
+                                }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'esportazione driver.");
 
                                 string expOut = await export.StandardOutput.ReadToEndAsync();
                                 string expErr = await export.StandardError.ReadToEndAsync();
@@ -1016,7 +1017,7 @@ namespace WinHubX.Forms.CreaISO
 
                                 if (export.ExitCode == 0)
                                 {
-                                    var add = Process.Start(new ProcessStartInfo
+                                    using var add = Process.Start(new ProcessStartInfo
                                     {
                                         FileName = "dism.exe",
                                         Arguments = $"/Image:\"C:\\Mount\\mount\" /Add-Driver /Driver:\"{tempDriverDir}\" /Recurse",
@@ -1024,7 +1025,7 @@ namespace WinHubX.Forms.CreaISO
                                         RedirectStandardOutput = true,
                                         RedirectStandardError = true,
                                         CreateNoWindow = true
-                                    });
+                                    }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'integrazione driver.");
 
                                     string addOut = await add.StandardOutput.ReadToEndAsync();
                                     string addErr = await add.StandardError.ReadToEndAsync();
@@ -1069,7 +1070,8 @@ namespace WinHubX.Forms.CreaISO
         {
             List<string> filesToCopy = new List<string>();
 
-            if (ParametriISO.TryGetValue("windowsVersion", out string windowsVersion))
+            if (ParametriISO.TryGetValue("windowsVersion", out string? windowsVersion)
+                && !string.IsNullOrWhiteSpace(windowsVersion))
             {
                 if (windowsVersion == "10")
                 {
