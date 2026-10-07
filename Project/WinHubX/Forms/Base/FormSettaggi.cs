@@ -9,11 +9,10 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormSettaggi : Form
     {
-        private Form1 form1;
+        private readonly Form1 form1;
         private string? wsa11x64;
         private string? wsa11arm64;
         private string? wsa10x64;
-        private FormPersonalizzazione? formPersonalizzazione;
 
         public FormSettaggi(Form1 form1)
         {
@@ -145,7 +144,7 @@ namespace WinHubX.Forms.Base
         {
             panel70.Controls.Clear();
 
-            Form1 mainForm = Application.OpenForms["Form1"] as Form1;
+            Form1? mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
 
             mainForm.pictureBox3.Visible = true;
@@ -155,7 +154,8 @@ namespace WinHubX.Forms.Base
 
             mainForm.lblPanelTitle.Text = titoloTraduzione;
             mainForm.pictureBoxlblalto.Image = button.Image;
-            Form form = (Form)Activator.CreateInstance(typeof(T), this, mainForm);
+            Form form = Activator.CreateInstance(typeof(T), this, mainForm) as Form
+                ?? throw new InvalidOperationException($"Impossibile creare {typeof(T).Name}.");
             form.TopLevel = false;
             form.FormBorderStyle = FormBorderStyle.None;
             form.Dock = DockStyle.Fill;
@@ -163,9 +163,9 @@ namespace WinHubX.Forms.Base
             panel70.Controls.Add(form);
             form.Show();
         }
-        private void PictureBox3_Click_BackToTweaks(object sender, EventArgs e)
+        private void PictureBox3_Click_BackToTweaks(object? sender, EventArgs e)
         {
-            Form1 mainForm = Application.OpenForms["Form1"] as Form1;
+            Form1? mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
 
             mainForm.pictureBox3.Visible = false;
@@ -195,7 +195,8 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                string assemblyName1 = Assembly.GetExecutingAssembly().GetName().Name;
+                string assemblyName1 = Assembly.GetExecutingAssembly().GetName().Name
+                    ?? throw new InvalidOperationException("Nome assembly non disponibile.");
                 string resourcePath1 = $"{assemblyName1}.Resources.WinHubXWSL.ps1";
                 byte[] exeBytes1 = LoadEmbeddedResource1(resourcePath1);
                 string ps1FilePath1 = Path.Combine(Path.GetTempPath(), "WinHubXWSL.ps1");
@@ -208,7 +209,7 @@ namespace WinHubX.Forms.Base
 
         private byte[] LoadEmbeddedResource1(string resourcePath)
         {
-            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath))
+            using (Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourcePath))
             {
                 if (stream == null)
                 {
