@@ -204,7 +204,7 @@ namespace WinHubX.Forms.Settaggi
             if (File.Exists(path))
             {
                 string json = File.ReadAllText(path);
-                HardwareInfo info = JsonSerializer.Deserialize<HardwareInfo>(json);
+                HardwareInfo? info = JsonSerializer.Deserialize<HardwareInfo>(json);
                 tipoDisk = info?.Hardware?.Disk ?? "";
             }
 
