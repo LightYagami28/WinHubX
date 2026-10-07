@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net;
 using WinHubX.Forms.Base;
 using WinHubX.Forms.DriverRST;
 using WinHubX.Forms.ImpostazioniApp;
@@ -12,10 +11,6 @@ namespace WinHubX
     public partial class FormWin : Form
     {
         private Form1 form1;
-        private string selectedOS;
-        private string? selectedArch;
-        private string selectedVersion;
-        private string selectedLanguage;
         public FormWin(Form1 form1)
         {
             LanguageManager.LoadLanguageFromSettings();
@@ -45,7 +40,6 @@ namespace WinHubX
         private async void btnAttivaWin_Click(object sender, EventArgs e)
         {
             string primaryURL = string.Empty;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
             try
             {
@@ -260,7 +254,6 @@ namespace WinHubX
 
             try
             {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 using (HttpClient client = new HttpClient())
                 {
                     var jsonResponse = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
@@ -296,7 +289,7 @@ namespace WinHubX
         private void btnCreaIso_Click(object sender, EventArgs e)
         {
             panel50.Controls.Clear();
-            Form1 mainForm = Application.OpenForms["Form1"] as Form1;
+            Form1? mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
             mainForm.pictureBox3.Visible = true;
             mainForm.pictureBox3.Click += (s, ev) =>
