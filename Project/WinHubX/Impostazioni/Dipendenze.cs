@@ -95,7 +95,7 @@ namespace WinHubX.Impostazioni
 
                 string json = File.ReadAllText(SettingsFile);
                 Newtonsoft.Json.Linq.JObject? data = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
-                CheckUpdatesOnStartup = data?["CheckUpdatesOnStartup"]?.Value<bool>() ?? true;
+                CheckUpdatesOnStartup = data?["CheckUpdatesOnStartup"]?.ToObject<bool>() ?? true;
             }
             catch (Exception ex)
             {
