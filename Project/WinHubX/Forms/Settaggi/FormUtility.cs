@@ -358,7 +358,7 @@ namespace WinHubX.Forms.Settaggi
                     continue;
                 }
 
-                using (RegistryKey subKey = backgroundAppsKey.OpenSubKey(subKeyName, true))
+                using (RegistryKey? subKey = backgroundAppsKey.OpenSubKey(subKeyName, true))
                 {
                     if (subKey != null)
                     {
@@ -386,15 +386,15 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? key64 = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
                         key64?.SetValue("GlobalUserDisabled", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = Registry.CurrentUser.OpenSubKey(@"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? key32 = Registry.CurrentUser.OpenSubKey(@"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
                         key32?.SetValue("GlobalUserDisabled", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey baseKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? baseKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
                         if (baseKey != null)
                         {
@@ -402,7 +402,7 @@ namespace WinHubX.Forms.Settaggi
                             {
                                 if (!subKeyName.StartsWith("Microsoft.Windows.Cortana"))
                                 {
-                                    using (RegistryKey subKey = baseKey.OpenSubKey(subKeyName, true))
+                                    using (RegistryKey? subKey = baseKey.OpenSubKey(subKeyName, true))
                                     {
                                         subKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
                                         subKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
@@ -428,11 +428,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\Siuf\Rules", true))
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\Siuf\Rules", true))
                     {
                         key32?.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Siuf\Rules", true))
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Siuf\Rules", true))
                     {
                         key64?.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
                     }
