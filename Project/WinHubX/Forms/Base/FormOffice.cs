@@ -97,7 +97,7 @@ namespace WinHubX
 
             try
             {
-                if (IsInternetAvailable())
+                if (await IsInternetAvailableAsync())
                 {
                     try
                     {
@@ -194,15 +194,13 @@ rem )")
             }
         }
 
-        private bool IsInternetAvailable()
+        private static async Task<bool> IsInternetAvailableAsync()
         {
             try
             {
-                using (var client = new HttpClient())
-                {
-                    var result = client.GetAsync("https://www.google.com").Result;
-                    return result.IsSuccessStatusCode;
-                }
+                using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(5) };
+                using HttpResponseMessage result = await client.GetAsync("https://www.google.com", HttpCompletionOption.ResponseHeadersRead);
+                return result.IsSuccessStatusCode;
             }
             catch
             {
@@ -250,7 +248,7 @@ rem )")
             {
                 string zipFileUrl = string.Empty;
 
-                if (IsInternetAvailable())
+                if (await IsInternetAvailableAsync())
                 {
                     zipFileUrl = await OttieniURL(Dipendenze.GitHubConfigUrl);
 
