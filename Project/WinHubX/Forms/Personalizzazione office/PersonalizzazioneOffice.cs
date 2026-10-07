@@ -7,8 +7,8 @@ namespace WinHubX.Forms.Personalizzazione_office
 {
     public partial class PersonalizzazioneOffice : Form
     {
-        private Form1 form1;
-        private FormOffice formoffice;
+        private readonly Form1 form1;
+        private readonly FormOffice formoffice;
 
         public PersonalizzazioneOffice(Form1 form1, FormOffice formoffice)
         {
@@ -25,10 +25,10 @@ namespace WinHubX.Forms.Personalizzazione_office
             };
         }
 
-        private void btn_avviainstallazione_Click(object sender, EventArgs e)
+        private void btn_avviainstallazione_Click(object? sender, EventArgs e)
         {
             progressBar_office.Visible = true;
-            string version = comboBoxVerOffice.SelectedItem?.ToString();
+            string version = comboBoxVerOffice.SelectedItem?.ToString() ?? string.Empty;
             string language = comboBox_Lingua.SelectedItem?.ToString()?.ToUpperInvariant() ?? "IT";
             string arch = GetArchitecture();
 
@@ -78,8 +78,8 @@ namespace WinHubX.Forms.Personalizzazione_office
 
                 if (File.Exists(path))
                 {
-                    dynamic json = Newtonsoft.Json.JsonConvert.DeserializeObject(File.ReadAllText(path));
-                    string arch = json?.Architettura?.ToString()?.ToUpperInvariant();
+                    var json = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(File.ReadAllText(path));
+                    string? arch = json?["Architettura"]?.ToObject<string>()?.ToUpperInvariant();
                     if (arch == "ARM64" || arch == "64")
                         return "64";
                     if (arch == "32" || arch == "X86")
@@ -364,7 +364,8 @@ namespace WinHubX.Forms.Personalizzazione_office
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
-                using (Process process = Process.Start(startInfo))
+                using (Process process = Process.Start(startInfo)
+                    ?? throw new InvalidOperationException("Impossibile avviare l'installazione di Office."))
                 {
                     progressBar_office.Value = 50;
                     await Task.Delay(6000);
@@ -389,9 +390,9 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
         }
 
-        private void PersonalizzazioneOffice_FormClosing(object sender, FormClosingEventArgs e)
+        private void PersonalizzazioneOffice_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            string tempPath = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), "OfficePersonalizzato");
+            string tempPath = Path.Combine(Path.GetTempPath(), "OfficePersonalizzato");
             if (Directory.Exists(tempPath))
             {
                 try
@@ -405,7 +406,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
         }
 
-        private void comboBoxVerOffice_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBoxVerOffice_SelectedIndexChanged(object? sender, EventArgs e)
         {
             panel7.Visible = true;
 
@@ -443,7 +444,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
         }
 
-        private void PersonalizzazioneOffice_Load(object sender, EventArgs e)
+        private void PersonalizzazioneOffice_Load(object? sender, EventArgs e)
         {
             pictureBoxWord.Tag = checkBox_word;
             pictureBoxExcel.Tag = checkBox_excel;
@@ -467,7 +468,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             pictureBoxPublisher.Click += PictureBox_Click;
 
         }
-        private void PictureBox_Click(object sender, EventArgs e)
+        private void PictureBox_Click(object? sender, EventArgs e)
         {
             if (sender is PictureBox pb && pb.Tag is CheckBox cb)
             {
