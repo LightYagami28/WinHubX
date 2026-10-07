@@ -8,7 +8,7 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormUpdate : Form
     {
-        private Form1 form1;
+        private readonly Form1 form1;
         private FormSettaggi formSettaggi;
         private int totalSteps = 0;
         private int tIndex = -1;
@@ -48,7 +48,7 @@ namespace WinHubX.Forms.Settaggi
             };
         }
 
-        private void checkedListBox1_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox1_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = DisabilitaUpdate.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -62,7 +62,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void checkedListBox2_MouseMove(object sender, MouseEventArgs e)
+        private void checkedListBox2_MouseMove(object? sender, MouseEventArgs e)
         {
             int index = AbilitaUpdate.IndexFromPoint(e.Location);
             if (tIndex != index)
@@ -110,11 +110,11 @@ namespace WinHubX.Forms.Settaggi
 
         private bool GetCheckboxState(string itemName)
         {
-            using (RegistryKey key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
+            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
             {
                 if (key != null)
                 {
-                    object value = key.GetValue(itemName);
+                    object? value = key.GetValue(itemName);
                     if (value != null)
                     {
                         return (int)value == 1;
@@ -698,11 +698,11 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void DisabilitaUpdate_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void DisabilitaUpdate_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = DisabilitaUpdate.Items[e.Index].ToString();
+                string itemName = DisabilitaUpdate.Items[e.Index]?.ToString() ?? string.Empty;
                 string abilitaName = itemName.Replace("Disabilita", "Abilita");
 
                 int index = AbilitaUpdate.Items.IndexOf(abilitaName);
@@ -715,11 +715,11 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void AbilitaUpdate_ItemCheck(object sender, ItemCheckEventArgs e)
+        private void AbilitaUpdate_ItemCheck(object? sender, ItemCheckEventArgs e)
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = AbilitaUpdate.Items[e.Index].ToString();
+                string itemName = AbilitaUpdate.Items[e.Index]?.ToString() ?? string.Empty;
                 string disabilitaName = itemName.Replace("Abilita", "Disabilita");
 
                 int index = DisabilitaUpdate.Items.IndexOf(disabilitaName);
