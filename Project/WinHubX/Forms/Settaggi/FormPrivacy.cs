@@ -413,28 +413,28 @@ namespace WinHubX.Forms.Settaggi
                     {
                         key32_2?.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"))
+                    using (RegistryKey? key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"))
                     {
-                        key.SetValue("ContentDeliveryAllowed", 0, RegistryValueKind.DWord);
-                        key.SetValue("OemPreInstalledAppsEnabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("PreInstalledAppsEnabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("PreInstalledAppsEverEnabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SilentInstalledAppsEnabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SubscribedContent-338387Enabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SubscribedContent-338388Enabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SubscribedContent-338389Enabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SubscribedContent-353698Enabled", 0, RegistryValueKind.DWord);
-                        key.SetValue("SystemPaneSuggestionsEnabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("ContentDeliveryAllowed", 0, RegistryValueKind.DWord);
+                        key?.SetValue("OemPreInstalledAppsEnabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("PreInstalledAppsEnabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("PreInstalledAppsEverEnabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SilentInstalledAppsEnabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SubscribedContent-338387Enabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SubscribedContent-338388Enabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SubscribedContent-338389Enabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SubscribedContent-353698Enabled", 0, RegistryValueKind.DWord);
+                        key?.SetValue("SystemPaneSuggestionsEnabled", 0, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Siuf\Rules"))
+                    using (RegistryKey? key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Siuf\Rules"))
                     {
-                        key.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
+                        key?.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection"))
+                    using (RegistryKey? key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection"))
                     {
-                        key.SetValue("DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord);
+                        key?.SetValue("DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord);
                     }
 
                     using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent"))
