@@ -373,7 +373,7 @@ namespace WinHubX.Forms.Base
                 {
                     try
                     {
-                        double discoUsage = GetDiscoUsagePercentage();
+                        double discoUsage = await GetDiscoUsagePercentageAsync();
                         UpdateDiscoUI(discoUsage);
                         await Task.Delay(3000);
                     }
@@ -385,14 +385,14 @@ namespace WinHubX.Forms.Base
                 }
             });
         }
-        private double GetDiscoUsagePercentage()
+        private async Task<double> GetDiscoUsagePercentageAsync()
         {
             try
             {
                 using (var diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total"))
                 {
                     diskCounter.NextValue();
-                    System.Threading.Thread.Sleep(1000);
+                    await Task.Delay(1000);
                     float diskUsage = diskCounter.NextValue();
 
                     return Math.Min(diskUsage, 100);
@@ -405,7 +405,7 @@ namespace WinHubX.Forms.Base
                     using (var diskCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total"))
                     {
                         diskCounter.NextValue();
-                        System.Threading.Thread.Sleep(1000);
+                        await Task.Delay(1000);
                         float diskUsage = diskCounter.NextValue();
                         return Math.Min(diskUsage, 100);
                     }
@@ -611,12 +611,9 @@ namespace WinHubX.Forms.Base
 
         private async Task<double> GetCpuUsagePercentageAsync()
         {
-            return await Task.Run(() =>
-            {
-                _ = _cpuCounter.NextValue();
-                Thread.Sleep(1000);
-                return _cpuCounter.NextValue();
-            });
+            _ = _cpuCounter.NextValue();
+            await Task.Delay(1000);
+            return _cpuCounter.NextValue();
         }
 
         private void CpuReduce()
