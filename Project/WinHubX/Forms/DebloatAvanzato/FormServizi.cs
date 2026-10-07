@@ -14,7 +14,7 @@ namespace WinHubX.Forms.DebloatAvanzato
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
 
-        private async void FormServizi_Load(object sender, EventArgs e)
+        private async void FormServizi_Load(object? sender, EventArgs e)
         {
             string url = "https://raw.githubusercontent.com/AMStore-na/WinHubX-Resource/refs/heads/main/Servizi.json";
 
@@ -23,7 +23,8 @@ namespace WinHubX.Forms.DebloatAvanzato
                 using (HttpClient client = new HttpClient())
                 {
                     string json = await client.GetStringAsync(url);
-                    ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json);
+                    ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
+                        ?? throw new InvalidOperationException("Configurazione servizi non valida.");
 
                     for (int i = 0; i < serviziRoot.service.Count; i++)
                     {
@@ -40,7 +41,7 @@ namespace WinHubX.Forms.DebloatAvanzato
         }
 
 
-        private async void ModificaServiziButton_Click(object sender, EventArgs e)
+        private async void ModificaServiziButton_Click(object? sender, EventArgs e)
         {
             int totalSteps = DisabilitaServizi.CheckedItems.Count;
             if (totalSteps == 0) totalSteps = 1;
@@ -61,13 +62,14 @@ namespace WinHubX.Forms.DebloatAvanzato
                 using (HttpClient client = new HttpClient())
                 {
                     string json = await client.GetStringAsync(url);
-                    ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json);
+                    ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
+                        ?? throw new InvalidOperationException("Configurazione servizi non valida.");
 
                     int currentStep = 0;
 
                     foreach (var checkedItem in DisabilitaServizi.CheckedItems)
                     {
-                        string serviceName = checkedItem.ToString();
+                        string serviceName = checkedItem?.ToString() ?? string.Empty;
                         var servizio = serviziRoot.service.FirstOrDefault(s => s.Name == serviceName);
 
                         if (servizio != null)
@@ -91,7 +93,8 @@ namespace WinHubX.Forms.DebloatAvanzato
                                         RedirectStandardError = true
                                     };
 
-                                    using (var proc = Process.Start(psi))
+                                    using (var proc = Process.Start(psi)
+                                        ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
                                     {
                                         string output = proc.StandardOutput.ReadToEnd();
                                         string error = proc.StandardError.ReadToEnd();
