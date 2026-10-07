@@ -10,9 +10,9 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormCreaISO : Form
     {
-        private Form1 form1;
+        private readonly Form1 form1;
         private string selectedFile = string.Empty;
-        private string percorsoCompletoISO;
+        private string percorsoCompletoISO = string.Empty;
         public FormCreaISO(Form1 form1)
         {
             InitializeComponent();
@@ -47,7 +47,7 @@ namespace WinHubX.Forms.Base
         }
 
         string IsoMountLetter = string.Empty;
-        string installwimpath = string.Empty;
+        string? installwimpath;
 
         public void ExecuteCommand(string command, bool ShowMessage)
         {
@@ -63,8 +63,9 @@ namespace WinHubX.Forms.Base
                     RedirectStandardError = true
                 };
 
-                using (var process = Process.Start(startInfo))
+                using (Process? process = Process.Start(startInfo))
                 {
+                    if (process is null) return;
                     process.WaitForExit();
 
                     var output = process.StandardOutput.ReadToEnd();
@@ -133,7 +134,7 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private async void btn_CreaISO_Click(object sender, EventArgs e)
+        private async void btn_CreaISO_Click(object? sender, EventArgs e)
         {
             string comboxstr = comboBox1.Text.Trim();
             bool selezioniValide =
@@ -188,7 +189,7 @@ namespace WinHubX.Forms.Base
                         {
                             continue;
                         }
-                        string directoryPath = Path.GetDirectoryName(destinazioneFile);
+                        string? directoryPath = Path.GetDirectoryName(destinazioneFile);
                         if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
                         {
                             _ = Directory.CreateDirectory(directoryPath);
@@ -268,7 +269,7 @@ namespace WinHubX.Forms.Base
             Close();
         }
 
-        private async void btn_browser_Click(object sender, EventArgs e)
+        private async void btn_browser_Click(object? sender, EventArgs e)
         {
             using var openFileDialog = new OpenFileDialog
             {
@@ -338,7 +339,7 @@ namespace WinHubX.Forms.Base
             return result.Trim();
         }
 
-        private static string GetInstallImagePath(string driveLetter)
+        private static string? GetInstallImagePath(string driveLetter)
         {
             string basePath = $"{driveLetter}:\\sources";
             string wimPath = Path.Combine(basePath, "install.wim");
@@ -450,7 +451,7 @@ namespace WinHubX.Forms.Base
             labelpercorso.Text = path + "...";
         }
 
-        private void btn_cambia_Click(object sender, EventArgs e)
+        private void btn_cambia_Click(object? sender, EventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
