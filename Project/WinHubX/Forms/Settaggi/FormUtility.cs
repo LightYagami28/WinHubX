@@ -593,16 +593,19 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
 
-                    Process.Start(new ProcessStartInfo
+                    using (Process process = Process.Start(new ProcessStartInfo
                     {
                         FileName = "taskkill",
                         Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                    }).WaitForExit();
+                    }) ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
+                    {
+                        process.WaitForExit();
+                    }
 
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
                     {
                         key32?.SetValue("ShellFeedsTaskbarViewMode", 2, RegistryValueKind.DWord);
                         key32?.SetValue("IsFeedsAvailable", 0, RegistryValueKind.DWord);
@@ -1238,7 +1241,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey rulesKey32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
+                    using (RegistryKey? rulesKey32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
                         .OpenSubKey(@"SOFTWARE\Microsoft\Siuf\Rules", true))
                     {
                         if (rulesKey32 != null && rulesKey32.GetValue("NumberOfSIUFInPeriod") != null)
@@ -1246,7 +1249,7 @@ namespace WinHubX.Forms.Settaggi
                             rulesKey32.DeleteValue("NumberOfSIUFInPeriod", false);
                         }
                     }
-                    using (RegistryKey dataCollectionKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? dataCollectionKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                         .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true))
                     {
                         if (dataCollectionKey64 != null && dataCollectionKey64.GetValue("DoNotShowFeedbackNotifications") != null)
@@ -1273,7 +1276,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey advertisingKey32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
+                    using (RegistryKey? advertisingKey32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
                         .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
                     {
                         if (advertisingKey32 != null)
@@ -1284,7 +1287,7 @@ namespace WinHubX.Forms.Settaggi
                             }
                         }
                     }
-                    using (RegistryKey advertisingKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? advertisingKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                         .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
                     {
                         if (advertisingKey64 != null)
@@ -1401,15 +1404,18 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    Process.Start(new ProcessStartInfo
+                    using (Process process = Process.Start(new ProcessStartInfo
                     {
                         FileName = "taskkill",
                         Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                    }).WaitForExit();
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
+                    }) ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
+                    {
+                        process.WaitForExit();
+                    }
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
                     {
                         key32?.SetValue("ShellFeedsTaskbarViewMode", 1, RegistryValueKind.DWord);
                         key32?.SetValue("IsFeedsAvailable", 1, RegistryValueKind.DWord);
@@ -1464,7 +1470,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runas"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare il processo di indicizzazione."))
                     {
                         process.WaitForExit();
 
@@ -1499,7 +1506,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runas"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare il processo di risparmio energetico."))
                     {
                         process.WaitForExit();
                         var output = process.StandardOutput.ReadToEnd();
@@ -1669,7 +1677,7 @@ namespace WinHubX.Forms.Settaggi
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = AbilitaUtility.Items[e.Index].ToString();
+                string itemName = AbilitaUtility.Items[e.Index]?.ToString() ?? string.Empty;
                 string disabilitaName = itemName.Replace("Abilita", "Disabilita");
 
                 int index = DisabilitaUtility.Items.IndexOf(disabilitaName);
@@ -1686,7 +1694,7 @@ namespace WinHubX.Forms.Settaggi
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = DisabilitaUtility.Items[e.Index].ToString();
+                string itemName = DisabilitaUtility.Items[e.Index]?.ToString() ?? string.Empty;
                 string abilitaName = itemName.Replace("Disabilita", "Abilita");
 
                 int index = AbilitaUtility.Items.IndexOf(abilitaName);
