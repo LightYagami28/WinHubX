@@ -18,7 +18,7 @@ namespace WinHubX.Forms.Base
         public FormSettaggi(Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
+            this.form1 = form1;
             LoadJsonLinks();
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             btnWSLTweaksPrinci.Content = LanguageManager.CurrentLanguage switch

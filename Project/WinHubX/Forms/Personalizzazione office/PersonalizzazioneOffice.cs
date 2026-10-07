@@ -13,8 +13,8 @@ namespace WinHubX.Forms.Personalizzazione_office
         public PersonalizzazioneOffice(Form1 form1, FormOffice formoffice)
         {
             InitializeComponent();
-            form1 = form1;
-            formoffice = formoffice;
+            this.form1 = form1;
+            this.formoffice = formoffice;
             ActiveControl = progressBar_office;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             btn_CreaISOVerdi.Content = LanguageManager.CurrentLanguage switch

@@ -23,7 +23,7 @@ namespace WinHubX.Forms.Base
         public FormDebloat(Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
+            this.form1 = form1;
 
             this.Shown += FormDebloat_Shown;
         }

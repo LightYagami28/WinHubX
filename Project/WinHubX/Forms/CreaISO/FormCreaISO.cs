@@ -16,7 +16,7 @@ namespace WinHubX.Forms.Base
         public FormCreaISO(Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
+            this.form1 = form1;
             groupBox7.Hide();
             groupBox6.Hide();
             pictureBox7.Hide();

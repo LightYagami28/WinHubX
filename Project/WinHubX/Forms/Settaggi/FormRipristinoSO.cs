@@ -19,8 +19,8 @@ namespace WinHubX.Forms.Settaggi
         {
             LanguageManager.LoadTranslations();
             InitializeComponent();
-            form1 = form1;
-            formSettaggi = formSettaggi;
+            this.form1 = form1;
+            this.formSettaggi = formSettaggi;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             btn_CreaISOVerdi.Content = LanguageManager.CurrentLanguage switch
             {

@@ -18,8 +18,8 @@ namespace WinHubX.Forms.Settaggi
         public FormPersonalizzazione(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
-            formSettaggi = formSettaggi;
+            this.form1 = form1;
+            this.formSettaggi = formSettaggi;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             cuiButton1Verdi.Content = LanguageManager.CurrentLanguage switch
             {

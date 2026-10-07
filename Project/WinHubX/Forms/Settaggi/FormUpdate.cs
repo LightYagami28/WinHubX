@@ -16,8 +16,8 @@ namespace WinHubX.Forms.Settaggi
         {
             LanguageManager.LoadTranslations();
             InitializeComponent();
-            form1 = form1;
-            formSettaggi = formSettaggi;
+            this.form1 = form1;
+            this.formSettaggi = formSettaggi;
             LoadCheckboxStates();
             DisabilitaUpdate.MouseMove += new MouseEventHandler(checkedListBox1_MouseMove);
             AbilitaUpdate.MouseMove += new MouseEventHandler(checkedListBox2_MouseMove);

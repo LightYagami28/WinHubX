@@ -17,8 +17,8 @@ namespace WinHubX.Forms.Settaggi
         public FormPrivacy(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
-            formSettaggi = formSettaggi;
+            this.form1 = form1;
+            this.formSettaggi = formSettaggi;
             LoadCheckboxStates();
             DisabilitaPrivacy.MouseMove += new MouseEventHandler(checkedListBox1_MouseMove);
             AbilitaPrivacy.MouseMove += new MouseEventHandler(checkedListBox2_MouseMove);

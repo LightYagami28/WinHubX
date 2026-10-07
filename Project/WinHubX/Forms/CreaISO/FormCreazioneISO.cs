@@ -1,6 +1,7 @@
 ﻿using DiscUtils;
 using DiscUtils.Udf;
 using System.Data;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -12,7 +13,8 @@ namespace WinHubX.Forms.CreaISO
 {
     public partial class FormCreazioneISO : Form
     {
-        public Dictionary<string, string> ParametriISO { get; set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public Dictionary<string, string> ParametriISO { get; set; } = new();
         private Form1 form1;
         private CancellationTokenSource _cancellationTokenSource;
         private FormCreaISO formcreaiso;
@@ -21,8 +23,8 @@ namespace WinHubX.Forms.CreaISO
         {
             LanguageManager.LoadTranslations();
             InitializeComponent();
-            form1 = form1;
-            formcreaiso = formcreaiso;
+            this.form1 = form1;
+            this.formcreaiso = formcreaiso;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
         private async void FormCreazioneISO_Shown(object sender, EventArgs e)

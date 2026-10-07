@@ -15,8 +15,8 @@ namespace WinHubX.Forms.Settaggi
         public FormUtility(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
-            form1 = form1;
-            formSettaggi = formSettaggi;
+            this.form1 = form1;
+            this.formSettaggi = formSettaggi;
             LoadCheckboxStates();
             DisabilitaUtility.MouseMove += new MouseEventHandler(checkedListBox1_MouseMove);
             AbilitaUtility.MouseMove += new MouseEventHandler(checkedListBox2_MouseMove);
