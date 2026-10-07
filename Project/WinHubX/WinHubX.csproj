@@ -19,7 +19,6 @@
 		<DebugSymbols>false</DebugSymbols>
 		<Optimize>true</Optimize>
 		<Deterministic>true</Deterministic>
-		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 		<SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
 		<SatelliteResourceLanguages>it;en</SatelliteResourceLanguages>
 		<PublishSingleFile>true</PublishSingleFile>
