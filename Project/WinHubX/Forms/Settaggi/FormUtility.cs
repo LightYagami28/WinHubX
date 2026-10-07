@@ -1205,8 +1205,8 @@ namespace WinHubX.Forms.Settaggi
                 {
                     RegistryView view32 = RegistryView.Registry32;
                     RegistryView view64 = RegistryView.Registry64;
-                    using (RegistryKey backgroundAppsKey32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view32).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
-                    using (RegistryKey backgroundAppsKey64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view64).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? backgroundAppsKey32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view32).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? backgroundAppsKey64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view64).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
                         if (backgroundAppsKey32 != null)
                         {
@@ -1312,22 +1312,22 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey systemKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
+                    using (RegistryKey? systemKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
                     {
                         systemKey32?.DeleteValue("EnableSmartScreen", false);
                     }
 
-                    using (RegistryKey edgeKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
+                    using (RegistryKey? edgeKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
                     {
                         edgeKey32?.DeleteValue("EnabledV9", false);
                     }
-                    using (RegistryKey systemKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? systemKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                         .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
                     {
                         systemKey64?.DeleteValue("EnableSmartScreen", false);
                     }
 
-                    using (RegistryKey edgeKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
+                    using (RegistryKey? edgeKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
                         .OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
                     {
                         edgeKey64?.DeleteValue("EnabledV9", false);
@@ -1598,7 +1598,7 @@ namespace WinHubX.Forms.Settaggi
                         SetRegistryValue(appPrivacyPath, property, null, RegistryView.Registry64);
                         SetRegistryValue(appPrivacyPath, property, null, RegistryView.Registry32);
                     }
-                    using (RegistryKey backgroundAccessKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
+                    using (RegistryKey? backgroundAccessKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
                         if (backgroundAccessKey != null)
                         {
