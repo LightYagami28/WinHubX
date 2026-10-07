@@ -1161,12 +1161,12 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     string errorReportingPath64 = @"SOFTWARE\Microsoft\Windows\Windows Error Reporting";
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(errorReportingPath64, writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(errorReportingPath64, writable: true))
                     {
                         key64?.DeleteValue("Disabled", false);
                     }
                     string errorReportingPath32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\Windows Error Reporting";
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(errorReportingPath32, writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(errorReportingPath32, writable: true))
                     {
                         key32?.DeleteValue("Disabled", false);
                     }
@@ -1199,11 +1199,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
                     {
                         key64?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
                     {
                         key32?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
                     }
@@ -1231,11 +1231,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\dmwappushservice", writable: true))
+                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\dmwappushservice", writable: true))
                     {
                         key64?.SetValue("DelayedAutoStart", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", writable: true))
+                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", writable: true))
                     {
                         key32?.SetValue("DelayedAutoStart", 1, RegistryValueKind.DWord);
                     }
