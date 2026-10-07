@@ -6,14 +6,12 @@ namespace WinHubX
 {
     static class Program
     {
-        private static ThemeConfig Config;
+        private static ThemeConfig Config = ThemeConfig.Load();
 
         [STAThread]
         static void Main(string[] args)
         {
             // Carica configurazione
-            Config = ThemeConfig.Load();
-
             // Imposta lingua in base a Windows se non impostata manualmente
             if (!Config.LanguageManuallySet)
             {
@@ -84,7 +82,7 @@ namespace WinHubX
                 using (var key = Registry.CurrentUser.OpenSubKey(
                     @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
                 {
-                    object value = key?.GetValue("AppsUseLightTheme");
+                    object? value = key?.GetValue("AppsUseLightTheme");
                     if (value is int v)
                         return v == 0; // 0 = dark, 1 = light
                 }
