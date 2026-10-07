@@ -1563,21 +1563,21 @@ namespace WinHubX.Forms.Settaggi
                     {
                         key64AutoConnect?.SetValue("Value", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
+                    using (RegistryKey? key32OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
                     {
                         key32OEM?.SetValue("AutoConnectAllowedOEM", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key64OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
+                    using (RegistryKey? key64OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
                     {
                         key64OEM?.SetValue("AutoConnectAllowedOEM", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
+                    using (RegistryKey? key32SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
                     {
                         key32SenseAllowed?.SetValue("WiFISenseAllowed", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key64SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
+                    using (RegistryKey? key64SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
                     {
                         key64SenseAllowed?.SetValue("WiFISenseAllowed", 1, RegistryValueKind.DWord);
                     }
@@ -1602,24 +1602,24 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)
                                                              .CreateSubKey(@"Software\Policies\Microsoft\Windows\Explorer"))
                     {
                         key64?.SetValue("DisableNotificationCenter", 0, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)
+                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64)
                                                              .CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\PushNotifications"))
                     {
                         key64?.SetValue("ToastEnabled", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
                                                              .CreateSubKey(@"Software\Policies\Microsoft\Windows\Explorer"))
                     {
                         key32?.SetValue("DisableNotificationCenter", 0, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
+                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32)
                                                              .CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\PushNotifications"))
                     {
                         key32?.SetValue("ToastEnabled", 1, RegistryValueKind.DWord);
@@ -1665,7 +1665,7 @@ namespace WinHubX.Forms.Settaggi
                         serviceController.Start();
                         serviceController.WaitForStatus(ServiceControllerStatus.Running);
                     }
-                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}", true))
+                    using (RegistryKey? key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}", true))
                     {
                         key?.SetValue("Start", 2, RegistryValueKind.DWord);
                     }
@@ -1681,7 +1681,7 @@ namespace WinHubX.Forms.Settaggi
             try
             {
                 string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag";
-                RegistryKey registryKey;
+                RegistryKey? registryKey;
 
                 if (is32Bit)
                 {
@@ -1712,7 +1712,7 @@ namespace WinHubX.Forms.Settaggi
         {
             if (e.NewValue == CheckState.Checked)
             {
-                string itemName = AbilitaPrivacy.Items[e.Index].ToString();
+                string itemName = AbilitaPrivacy.Items[e.Index]?.ToString() ?? string.Empty;
                 string disabilitaName = itemName.Replace("Abilita", "Disabilita");
 
                 int index = DisabilitaPrivacy.Items.IndexOf(disabilitaName);
