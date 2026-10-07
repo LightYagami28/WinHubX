@@ -337,7 +337,7 @@ namespace WinHubX
             try
             {
 
-                string systemDrive = Path.GetPathRoot(Environment.SystemDirectory)?.TrimEnd('\\');
+                string? systemDrive = Path.GetPathRoot(Environment.SystemDirectory)?.TrimEnd('\\');
                 if (string.IsNullOrEmpty(systemDrive))
                     return "Sconosciuto";
 
@@ -393,7 +393,8 @@ namespace WinHubX
                     CreateNoWindow = true
                 };
 
-                using var process = Process.Start(psi);
+                using var process = Process.Start(psi)
+                    ?? throw new InvalidOperationException("Impossibile avviare cscript.");
                 string output = process.StandardOutput.ReadToEnd().ToLowerInvariant();
                 process.WaitForExit();
 
@@ -539,7 +540,7 @@ namespace WinHubX
         {
             try
             {
-                string[] programPaths =
+                string?[] programPaths =
                 {
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             Environment.GetEnvironmentVariable("ProgramW6432"),
@@ -547,7 +548,8 @@ namespace WinHubX
         };
 
 
-                programPaths = programPaths.Where(p => !string.IsNullOrWhiteSpace(p))
+                string[] validProgramPaths = programPaths.Where(p => !string.IsNullOrWhiteSpace(p))
+                                           .Select(p => p!)
                                            .Distinct()
                                            .ToArray();
 
@@ -557,7 +559,7 @@ namespace WinHubX
                 string[] officeRoots = { "Office 15", "Office" };
 
 
-                foreach (var path in programPaths)
+                foreach (var path in validProgramPaths)
                 {
                     foreach (var version in officeVersions)
                     {
@@ -640,7 +642,7 @@ namespace WinHubX
             labeloffice.Visible = false;
             label7.Visible = false;
             await Task.Delay(2000);
-            VerificaSistemaAsync();
+            _ = VerificaSistemaAsync();
         }
     }
 }
