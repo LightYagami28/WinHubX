@@ -13,29 +13,26 @@ namespace WinHubX.Forms.Base
         private const string RegistryKey = @"Software\WinHubX-Monitor";
         private const string RegistryValueMonitoraggio = "IsMonitoringOn";
         private const string RegistryValueTemperature = "isTemperatureOn";
-        private string monitoraggioPath =
+        private readonly string monitoraggioPath =
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Impostazioni", "Monitoraggio.json");
 
         private const uint PROCESS_SET_QUOTA = 0x0100;
         private const uint PROCESS_QUERY_INFORMATION = 0x0400;
 
-        private NetworkInterface[] networkInterfaces;
+        private NetworkInterface[] networkInterfaces = Array.Empty<NetworkInterface>();
         private DateTime lastUpdateTime;
         private long lastBytesSent;
         private long lastBytesReceived;
 
 
         private readonly Form1 _mainForm;
-        private Computer _computer;
-        private System.Windows.Forms.Timer _monitoringTimer;
-        private System.Windows.Forms.Timer _tempMonitorTimer;
-        private PerformanceCounter _cpuCounter;
+        private Computer _computer = new();
+        private System.Windows.Forms.Timer _monitoringTimer = new();
+        private System.Windows.Forms.Timer _tempMonitorTimer = new();
+        private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
 
-        private bool _isMonitoringOn = false;
-        private bool _isTemperatureOn = false;
-        private bool _notificationAlreadyShown = false;
-        private NotifyIcon _notifyIcon;
+        private NotifyIcon _notifyIcon = new();
         #endregion
 
         #region Constructor
@@ -126,12 +123,14 @@ namespace WinHubX.Forms.Base
             {
                 if (!File.Exists(monitoraggioPath))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(monitoraggioPath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(monitoraggioPath)
+                        ?? throw new InvalidOperationException("Percorso monitoraggio non valido."));
                     File.WriteAllText(monitoraggioPath, "{ \"LimiteGB\": 2, \"ShowFahrenheitcpu\": false, \"ShowFahrenheitgpu\": false }");
                 }
 
                 string json = File.ReadAllText(monitoraggioPath);
-                var obj = System.Text.Json.JsonSerializer.Deserialize<MonitoraggioConfig>(json);
+                var obj = System.Text.Json.JsonSerializer.Deserialize<MonitoraggioConfig>(json)
+                    ?? new MonitoraggioConfig();
                 domainUpDown1.Text = $"{obj.LimiteGB} GB";
                 MonitorSettings.ShowFahrenheitcpu = obj.ShowFahrenheitcpu;
                 cuiSwitch_gradicpu.Checked = obj.ShowFahrenheitcpu;
@@ -150,7 +149,7 @@ namespace WinHubX.Forms.Base
         #endregion
 
         #region Temperature Monitoring
-        private void MonitoringTimer_Tick(object sender, EventArgs e)
+        private void MonitoringTimer_Tick(object? sender, EventArgs e)
         {
             UpdateTemperatureDisplays();
         }
@@ -579,7 +578,7 @@ namespace WinHubX.Forms.Base
         {
             if (InvokeRequired)
             {
-                Invoke(new Action(() => UpdateUI(sentKB, receivedKB, totalSpeedKB, networkUsage)));
+                BeginInvoke(new Action(() => _ = UpdateUI(sentKB, receivedKB, totalSpeedKB, networkUsage)));
                 return;
             }
 
@@ -672,7 +671,7 @@ namespace WinHubX.Forms.Base
         #endregion
 
         #region TEMP Folder Management
-        private void TempMonitorTimer_Tick(object sender, EventArgs e)
+        private void TempMonitorTimer_Tick(object? sender, EventArgs e)
         {
             UpdateTempFolderStatus();
         }
