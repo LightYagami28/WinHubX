@@ -1,4 +1,4 @@
-﻿namespace WinHubX.DialogBlock
+namespace WinHubX.DialogBlock
 {
     partial class Form_DialogBlock
     {
@@ -55,9 +55,7 @@
             btnVerificaVerdi.HoverImageTint = Color.White;
             btnVerificaVerdi.HoverOutline = Color.FromArgb(46, 125, 50);
             btnVerificaVerdi.Image = Properties.Resources.pngclick;
-            btnVerificaVerdi.ImageAutoCenter = true;
             btnVerificaVerdi.ImageExpand = new Point(0, 0);
-            btnVerificaVerdi.ImageOffset = new Point(0, 0);
             btnVerificaVerdi.Name = "btnVerificaVerdi";
             btnVerificaVerdi.NormalBackground = Color.FromArgb(50, 50, 50);
             btnVerificaVerdi.NormalForeColor = Color.White;
@@ -70,7 +68,6 @@
             btnVerificaVerdi.PressedOutline = Color.FromArgb(46, 125, 50);
             btnVerificaVerdi.Rounding = new Padding(8);
             btnVerificaVerdi.TextAlignment = StringAlignment.Center;
-            btnVerificaVerdi.TextOffset = new Point(0, 0);
             btnVerificaVerdi.Click += btnVerificaVerdi_Click;
             // 
             // btnClose
