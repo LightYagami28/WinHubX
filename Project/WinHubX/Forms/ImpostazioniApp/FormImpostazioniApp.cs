@@ -17,9 +17,9 @@ namespace WinHubX.Forms.ImpostazioniApp
         private string selectedTheme = "";
         private string lingua = "";
         private static readonly HttpClient client = new HttpClient();
-        private string latestVersion = null;
-        private string latestUpdateUrl = null;
-        private string latestReleaseNotes = null;
+        private string? latestVersion;
+        private string? latestUpdateUrl;
+        private string? latestReleaseNotes;
         public bool UpdateDetectedAtStartup { get; private set; } = false;
         public FormImpostazioniApp()
         {
@@ -239,7 +239,7 @@ namespace WinHubX.Forms.ImpostazioniApp
         private async void btnAggiornamento_Click(object sender, EventArgs e)
         {
 
-            if (btnAggiornamento.Content == "  Aggiorna" && latestUpdateUrl != null)
+            if (btnAggiornamento.Content == "  Aggiorna" && latestUpdateUrl != null && latestVersion != null)
             {
                 btnAggiornamento.Content = LanguageManager.CurrentLanguage switch
                 {
@@ -360,19 +360,22 @@ namespace WinHubX.Forms.ImpostazioniApp
             try
             {
                 var configResponse = await client.GetStringAsync(configUrl);
-                dynamic configData = JsonConvert.DeserializeObject(configResponse);
-                string updateInfoUrl = configData.Form1.updateInfoUrl;
+                JObject configData = JObject.Parse(configResponse);
+                string updateInfoUrl = configData["Form1"]?["updateInfoUrl"]?.Value<string>()
+                    ?? throw new InvalidOperationException("URL aggiornamenti non presente nella configurazione.");
 
                 var response = await client.GetStringAsync(updateInfoUrl);
-                dynamic updateInfo = JsonConvert.DeserializeObject(response);
+                JObject updateInfo = JObject.Parse(response);
 
-                string latestVersion = (string)updateInfo.version;
-                string updateUrl = (string)updateInfo.updateUrl;
+                string latestVersion = updateInfo["version"]?.Value<string>()
+                    ?? throw new InvalidOperationException("Versione aggiornata non presente.");
+                string updateUrl = updateInfo["updateUrl"]?.Value<string>()
+                    ?? throw new InvalidOperationException("URL aggiornamento non presente.");
 
                 string userLang = Thread.CurrentThread.CurrentUICulture
                     .TwoLetterISOLanguageName.ToUpper();
 
-                string releaseNotes = GetReleaseNotesByLanguage(updateInfo.releaseNotes, userLang);
+                string releaseNotes = GetReleaseNotesByLanguage(updateInfo["releaseNotes"], userLang);
 
                 return new UpdateInfoResult
                 {
@@ -389,11 +392,11 @@ namespace WinHubX.Forms.ImpostazioniApp
             }
         }
 
-        private string GetReleaseNotesByLanguage(dynamic releaseNotesObject, string language)
+        private string GetReleaseNotesByLanguage(JToken? releaseNotesObject, string language)
         {
             try
             {
-                var notes = releaseNotesObject[language];
+                var notes = releaseNotesObject?[language];
                 if (notes == null)
                     return "Nessuna nota disponibile.";
 
@@ -472,9 +475,9 @@ namespace WinHubX.Forms.ImpostazioniApp
         private class UpdateInfoResult
         {
             public bool UpdateAvailable { get; set; }
-            public string LatestVersion { get; set; }
-            public string UpdateUrl { get; set; }
-            public string ReleaseNotes { get; set; }
+            public string LatestVersion { get; set; } = string.Empty;
+            public string UpdateUrl { get; set; } = string.Empty;
+            public string ReleaseNotes { get; set; } = string.Empty;
         }
 
         private async void FormImpostazioniApp_Load(object sender, EventArgs e)
