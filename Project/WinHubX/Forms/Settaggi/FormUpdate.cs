@@ -218,7 +218,8 @@ namespace WinHubX.Forms.Settaggi
                 RedirectStandardError = true
             };
 
-            using (var process = System.Diagnostics.Process.Start(startInfo))
+            using (var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il processo di aggiornamento."))
             {
                 process.WaitForExit();
 
@@ -300,7 +301,8 @@ namespace WinHubX.Forms.Settaggi
                 RedirectStandardError = true
             };
 
-            using (var process = System.Diagnostics.Process.Start(startInfo))
+            using (var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il processo di registro."))
             {
                 process.WaitForExit();
 
@@ -324,7 +326,8 @@ namespace WinHubX.Forms.Settaggi
                 RedirectStandardError = true
             };
 
-            using (var process = System.Diagnostics.Process.Start(startInfo))
+            using (var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException($"Impossibile avviare il servizio {serviceName}."))
             {
                 process.WaitForExit();
 
@@ -415,7 +418,8 @@ namespace WinHubX.Forms.Settaggi
                 Verb = "runas"
             };
 
-            using (var process = Process.Start(startInfo))
+            using (var process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il processo di sistema."))
             {
                 process.WaitForExit();
                 var output = process.StandardOutput.ReadToEnd();
@@ -477,7 +481,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runus"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
                     {
                         process.WaitForExit();
 
@@ -592,7 +597,8 @@ namespace WinHubX.Forms.Settaggi
                         Verb = "runus"
                     };
 
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
+                    using (var process = System.Diagnostics.Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
                     {
                         process.WaitForExit();
 
