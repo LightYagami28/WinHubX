@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Net;
 using System.Text.RegularExpressions;
 using WinHubX.Forms.Personalizzazione_office;
 using WinHubX.Impostazioni;
@@ -12,14 +11,14 @@ namespace WinHubX
 {
     public partial class FormOffice : Form
     {
-        private Form1 form1;
-        private NotifyIcon notifyIcon;
-        private List<OfficeVersion> officeVersions;
-        private string selectedOfficeVersion;
-        private string selectedLanguage;
-        private string selectedInstallationType;
-        private string percorsoCompleto;
-        private CancellationTokenSource _cts;
+        private readonly Form1 form1;
+        private readonly NotifyIcon notifyIcon;
+        private List<OfficeVersion> officeVersions = new();
+        private string selectedOfficeVersion = string.Empty;
+        private string selectedLanguage = string.Empty;
+        private string selectedInstallationType = string.Empty;
+        private string percorsoCompleto = string.Empty;
+        private CancellationTokenSource? _cts;
 
         public FormOffice(Form1 form1)
         {
@@ -92,10 +91,9 @@ namespace WinHubX
             label2.Text = $"{progress}%";
         }
         #region AttivaOffice
-        private async void btnAttivaOffice_Click(object sender, EventArgs e)
+        private async void btnAttivaOffice_Click(object? sender, EventArgs e)
         {
-            string primaryURL = string.Empty;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string? primaryURL = null;
 
             try
             {
@@ -107,16 +105,18 @@ namespace WinHubX
                         {
                             var jsonResponse = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
                             var jsonObject = JObject.Parse(jsonResponse);
-                            primaryURL = jsonObject["AttivatoreOffice"]["primaryURL"]?.ToString();
+                            primaryURL = jsonObject["AttivatoreOffice"]?["primaryURL"]?.Value<string>();
 
                             if (string.IsNullOrEmpty(primaryURL))
                                 throw new Exception(LanguageManager.GetTranslation("FormOffice", "url_non_trovato_github"));
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-
+                        Debug.WriteLine(ex);
                     }
+                    if (string.IsNullOrWhiteSpace(primaryURL))
+                        throw new InvalidOperationException(LanguageManager.GetTranslation("FormOffice", "url_non_trovato_github"));
                     await ExecuteScriptFromUrl(primaryURL);
                 }
                 else
@@ -145,9 +145,11 @@ namespace WinHubX
         {
             try
             {
+                if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? scriptUri) || scriptUri.Scheme != Uri.UriSchemeHttps)
+                    throw new ArgumentException("L'URL dello script deve usare HTTPS.", nameof(url));
                 using (HttpClient client = new HttpClient())
                 {
-                    var scriptContent = await client.GetStringAsync(url);
+                    var scriptContent = await client.GetStringAsync(scriptUri);
                     string patchedContent = scriptContent
                         .Replace(
                             @"echo ""!_batf!"" | find /i ""!_ttemp!"" %nul1% && (
@@ -237,11 +239,12 @@ rem )")
             {
                 var response = await client.GetStringAsync(jsonUrl);
                 var json = JObject.Parse(response);
-                return json["FormOffice"]["scrubber"].ToString();
+                return json["FormOffice"]?["scrubber"]?.Value<string>()
+                    ?? throw new InvalidOperationException("URL scrubber non presente nella configurazione.");
             }
         }
 
-        private async void btnScrubber_Click(object sender, EventArgs e)
+        private async void btnScrubber_Click(object? sender, EventArgs e)
         {
             try
             {
@@ -338,7 +341,7 @@ rem )")
             scrubberProc?.WaitForExit();
         }
 
-        private void PictureBox3_Click_BackToOffice(object sender, EventArgs e)
+        private void PictureBox3_Click_BackToOffice(object? sender, EventArgs e)
         {
             Form1 mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
@@ -398,7 +401,7 @@ rem )")
         }
 
 
-        private void comboBoxVerOffice_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBoxVerOffice_SelectedIndexChanged(object? sender, EventArgs e)
         {
             selectedOfficeVersion = comboBoxVerOffice.SelectedItem?.ToString();
 
@@ -414,7 +417,7 @@ rem )")
         }
 
 
-        private void comboBox_Lingua_SelectedIndexChanged(object sender, EventArgs e)
+        private void comboBox_Lingua_SelectedIndexChanged(object? sender, EventArgs e)
         {
             selectedLanguage = comboBox_Lingua.SelectedItem?.ToString();
 
@@ -454,7 +457,7 @@ rem )")
                     var json = File.ReadAllText(hwPath);
                     var hwInfo = JsonConvert.DeserializeObject<WinHubX.Impostazioni.HardwareInfo>(json);
 
-                    string arch = hwInfo?.Architettura?.Trim()?.ToLowerInvariant();
+                    string? arch = hwInfo?.Architettura?.Trim()?.ToLowerInvariant();
                     if (arch != null)
                     {
                         if (arch.Contains("arm64")) return "x64";
@@ -468,7 +471,7 @@ rem )")
             return Environment.Is64BitOperatingSystem ? "x64" : "x32";
         }
 
-        private async void btnDownload_Click(object sender, EventArgs e)
+        private async void btnDownload_Click(object? sender, EventArgs e)
         {
             string hardwarePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -505,8 +508,8 @@ rem )")
                 return;
             }
 
-            string tempFile = null;
-            string savePath = null;
+            string? tempFile = null;
+            string? savePath = null;
             SetDownloadButtonStyle(true);
             _cts = new CancellationTokenSource();
 
@@ -522,7 +525,7 @@ rem )")
                     throw new Exception(LanguageManager.GetTranslation("FormOffice", "lingua_non_trovata"));
 
                 string arch = GetHardwareArchitecture();
-                string url = null;
+                string? url = null;
 
                 if (selectedInstallationType.Equals("Offline", StringComparison.OrdinalIgnoreCase))
                 {
@@ -640,7 +643,7 @@ rem )")
                     return;
                 }
 
-                string driveLetter = null;
+                string? driveLetter = null;
                 for (int i = 0; i < 10; i++)
                 {
                     driveLetter = await GetIsoDriveLetterAsync(savePath);
@@ -767,12 +770,12 @@ rem )")
             }
         }
 
-        private void Checkbox_Salva_CheckedChanged(object sender, EventArgs e)
+        private void Checkbox_Salva_CheckedChanged(object? sender, EventArgs e)
         {
             WinHubX.Impostazioni.OfficeSettings.SalvaFile = Checkbox_Salva.Checked;
         }
 
-        private void Checkbox_Installa_CheckedChanged(object sender, EventArgs e)
+        private void Checkbox_Installa_CheckedChanged(object? sender, EventArgs e)
         {
             WinHubX.Impostazioni.OfficeSettings.Installa = Checkbox_Installa.Checked;
         }
@@ -869,7 +872,7 @@ rem )")
             return output;
         }
 
-        private async void FormOffice_Load(object sender, EventArgs e)
+        private async void FormOffice_Load(object? sender, EventArgs e)
         {
             try
             {
@@ -912,7 +915,7 @@ rem )")
 
             labelpercorso.Text = path + "...";
         }
-        private void btn_cambia_Click(object sender, EventArgs e)
+        private void btn_cambia_Click(object? sender, EventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
             {
@@ -923,17 +926,17 @@ rem )")
             }
         }
 
-        private void panel50_Resize(object sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
-        private void panel70_Resize(object sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
-        private void tableLayoutPanel50_Resize(object sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
-        private void FormOffice_Resize(object sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
+        private void panel50_Resize(object? sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
+        private void panel70_Resize(object? sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
+        private void tableLayoutPanel50_Resize(object? sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
+        private void FormOffice_Resize(object? sender, EventArgs e) => AggiornaPercorsoLabel(percorsoCompleto);
 
-        private void btnAggRimAppOffice_Click(object sender, EventArgs e)
+        private void btnAggRimAppOffice_Click(object? sender, EventArgs e)
         {
             MostraFormInPanel<FormAggiungiRimuoviAppOffice>("AggiungiRimuoviApp", btnAggRimAppOfficePrinci);
         }
 
-        private void btnPersonalizzaOffice_Click(object sender, EventArgs e)
+        private void btnPersonalizzaOffice_Click(object? sender, EventArgs e)
         {
             string hardwarePath = Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -969,7 +972,8 @@ rem )")
 
             mainForm.lblPanelTitle.Text = LanguageManager.GetTranslation("FormPersonallizatoOffice", titoloTraduzione);
             mainForm.pictureBoxlblalto.Image = button.Image;
-            Form form = (Form)Activator.CreateInstance(typeof(T), mainForm, this);
+            Form form = Activator.CreateInstance(typeof(T), mainForm, this) as Form
+                ?? throw new InvalidOperationException($"Impossibile creare il form {typeof(T).Name}.");
             form.TopLevel = false;
             form.FormBorderStyle = FormBorderStyle.None;
             form.Dock = DockStyle.Fill;
