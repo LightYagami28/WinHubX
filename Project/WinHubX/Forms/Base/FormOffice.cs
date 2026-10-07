@@ -343,7 +343,7 @@ rem )")
 
         private void PictureBox3_Click_BackToOffice(object? sender, EventArgs e)
         {
-            Form1 mainForm = Application.OpenForms["Form1"] as Form1;
+            Form1? mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
 
             mainForm.pictureBox3.Visible = false;
@@ -378,7 +378,9 @@ rem )")
                         foreach (var kvp in (JObject)lang.Value)
                         {
                             string chiave = kvp.Key;
-                            string url = kvp.Value.ToString();
+                            string? url = kvp.Value?.ToString();
+                            if (string.IsNullOrWhiteSpace(url))
+                                continue;
                             if (chiave.Equals("Officex64", StringComparison.OrdinalIgnoreCase) ||
                                 chiave.Equals("Officex32", StringComparison.OrdinalIgnoreCase))
                                 chiave = "Online";
@@ -403,7 +405,7 @@ rem )")
 
         private void comboBoxVerOffice_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            selectedOfficeVersion = comboBoxVerOffice.SelectedItem?.ToString();
+            selectedOfficeVersion = comboBoxVerOffice.SelectedItem?.ToString() ?? string.Empty;
 
             comboBox_Lingua.Items.Clear();
             if (!string.IsNullOrEmpty(selectedOfficeVersion))
@@ -419,7 +421,7 @@ rem )")
 
         private void comboBox_Lingua_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            selectedLanguage = comboBox_Lingua.SelectedItem?.ToString();
+            selectedLanguage = comboBox_Lingua.SelectedItem?.ToString() ?? string.Empty;
 
             comboBoxInstallazione.Items.Clear();
             if (!string.IsNullOrEmpty(selectedOfficeVersion) && !string.IsNullOrEmpty(selectedLanguage))
@@ -435,7 +437,7 @@ rem )")
         {
             string selezione = comboBoxInstallazione.SelectedItem?.ToString() ?? "";
             selectedInstallationType = selezione;
-            selectedOfficeVersion = comboBoxVerOffice.SelectedItem?.ToString();
+            selectedOfficeVersion = comboBoxVerOffice.SelectedItem?.ToString() ?? string.Empty;
             labelavviso.Visible = selezione.Equals("Online", StringComparison.OrdinalIgnoreCase);
             Checkbox_Salva.Visible = selezione.Equals("Offline", StringComparison.OrdinalIgnoreCase);
             Checkbox_Installa.Visible = selezione.Equals("Offline", StringComparison.OrdinalIgnoreCase);
@@ -718,8 +720,9 @@ rem )")
         {
             try
             {
-                var setup = Process.Start(new ProcessStartInfo(tempFile) { UseShellExecute = true });
-                await Task.Run(() => setup.WaitForExit(), _cts.Token);
+                using Process setup = Process.Start(new ProcessStartInfo(tempFile) { UseShellExecute = true })
+                    ?? throw new InvalidOperationException("Impossibile avviare il programma di installazione di Office.");
+                await Task.Run(setup.WaitForExit, _cts?.Token ?? CancellationToken.None);
 
                 try { File.Delete(tempFile); } catch { }
                 WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
@@ -962,7 +965,7 @@ rem )")
         {
             panel50.Controls.Clear();
 
-            Form1 mainForm = Application.OpenForms["Form1"] as Form1;
+            Form1? mainForm = Application.OpenForms["Form1"] as Form1;
             if (mainForm == null) return;
 
             mainForm.pictureBox3.Visible = true;
