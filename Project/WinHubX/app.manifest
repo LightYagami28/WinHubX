@@ -62,7 +62,7 @@
 
 
 	<!-- Abilita i temi per finestre di dialogo e controlli comuni di Windows (Windows XP e versioni successive) -->
-	
+
   <dependency>
     <dependentAssembly>
       <assemblyIdentity
