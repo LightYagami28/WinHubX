@@ -197,7 +197,7 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private void btnAttivaWSL_Click(object sender, EventArgs e)
+        private async void btnAttivaWSL_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
                     "WinHubX eseguirà lo script WSL incorporato con privilegi amministrativi. Continuare?",
@@ -222,14 +222,21 @@ namespace WinHubX.Forms.Base
                     scriptFile.Flush(flushToDisk: true);
                 }
 
-                StartPowerShell1(scriptPath);
+                await StartPowerShell1Async(scriptPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Attivazione WSL non riuscita: {ex}");
+                MessageBox.Show($"Impossibile completare l'attivazione WSL.\n{ex.Message}", "WinHubX",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 if (scriptPath is not null)
                 {
-                    try { File.Delete(scriptPath); } catch (IOException) { }
-                    catch (UnauthorizedAccessException) { }
+                    try { File.Delete(scriptPath); }
+                    catch (IOException ex) { Debug.WriteLine($"Impossibile eliminare lo script WSL temporaneo: {ex}"); }
+                    catch (UnauthorizedAccessException ex) { Debug.WriteLine($"Accesso negato durante la rimozione dello script WSL: {ex}"); }
                 }
             }
         }
@@ -248,11 +255,11 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private void StartPowerShell1(string scriptFilePath)
+        private static async Task StartPowerShell1Async(string scriptFilePath)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 Verb = "runas",
                 UseShellExecute = true,
                 CreateNoWindow = true,
@@ -270,7 +277,7 @@ namespace WinHubX.Forms.Base
                     throw new InvalidOperationException("Impossibile avviare lo script WSL.");
                 }
 
-                process.WaitForExit();
+                await process.WaitForExitAsync();
                 if (process.ExitCode != 0)
                 {
                     throw new InvalidOperationException($"Lo script WSL è terminato con codice {process.ExitCode}.");
