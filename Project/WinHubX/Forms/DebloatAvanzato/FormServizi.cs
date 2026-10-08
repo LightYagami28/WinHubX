@@ -5,8 +5,28 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.DebloatAvanzato
 {
-    public partial class FormServizi : Form
-    {
+public partial class FormServizi : Form
+{
+        private static readonly HttpClient HttpClient = CreateHttpClient();
+        private static readonly HashSet<string> AllowedStartupTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Automatic", "Manual", "Disabled"
+        };
+
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                AutomaticDecompression = System.Net.DecompressionMethods.All
+            };
+
+            return new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        }
+
+        private const string ServicesUrl =
+            "https://raw.githubusercontent.com/AMStore-na/WinHubX-Resource/refs/heads/main/Servizi.json";
+
         public FormServizi()
         {
             LanguageManager.LoadTranslations();
@@ -16,23 +36,19 @@ namespace WinHubX.Forms.DebloatAvanzato
 
         private async void FormServizi_Load(object? sender, EventArgs e)
         {
-            string url = "https://raw.githubusercontent.com/AMStore-na/WinHubX-Resource/refs/heads/main/Servizi.json";
-
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    string json = await client.GetStringAsync(url);
+                    string json = await HttpClient.GetStringAsync(ServicesUrl);
                     ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
                         ?? throw new InvalidOperationException("Configurazione servizi non valida.");
 
                     for (int i = 0; i < serviziRoot.service.Count; i++)
                     {
                         var servizio = serviziRoot.service[i];
+                        ValidateService(servizio);
                         _ = DisabilitaServizi.Items.Add(servizio.Name);
                         DisabilitaServizi.SetItemChecked(i, true);
                     }
-                }
             }
             catch (Exception ex)
             {
@@ -55,13 +71,9 @@ namespace WinHubX.Forms.DebloatAvanzato
 
         private async Task EseguiModificaServiziAsync()
         {
-            string url = "https://raw.githubusercontent.com/AMStore-na/WinHubX-Resource/refs/heads/main/Servizi.json";
-
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    string json = await client.GetStringAsync(url);
+                    string json = await HttpClient.GetStringAsync(ServicesUrl);
                     ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
                         ?? throw new InvalidOperationException("Configurazione servizi non valida.");
 
@@ -74,24 +86,30 @@ namespace WinHubX.Forms.DebloatAvanzato
 
                         if (servizio != null)
                         {
-                            string stopComando = $"Get-Service -Name \"{servizio.Name}\" -ErrorAction Stop | Stop-Service";
-
-                            string comando = $"Set-Service -Name \"{servizio.Name}\" -StartupType {servizio.StartupType}";
+                            ValidateService(servizio);
 
                             string stato = await Task.Run(() =>
                             {
                                 try
                                 {
-                                    ProcessStartInfo psi = new ProcessStartInfo
+                                    var script = "$ErrorActionPreference = 'Stop'; " +
+                                        $"Get-Service -Name '{EscapePowerShellLiteral(servizio.Name)}' | Stop-Service; " +
+                                        $"Set-Service -Name '{EscapePowerShellLiteral(servizio.Name)}' -StartupType '{servizio.StartupType}'";
+                                    var psi = new ProcessStartInfo
                                     {
                                         FileName = "powershell.exe",
-                                        Arguments = $"-Command \"{stopComando}; {comando}\"",
                                         Verb = "runas",
                                         UseShellExecute = false,
                                         CreateNoWindow = true,
                                         RedirectStandardOutput = true,
                                         RedirectStandardError = true
                                     };
+                                    psi.ArgumentList.Add("-NoProfile");
+                                    psi.ArgumentList.Add("-NonInteractive");
+                                    psi.ArgumentList.Add("-ExecutionPolicy");
+                                    psi.ArgumentList.Add("RemoteSigned");
+                                    psi.ArgumentList.Add("-Command");
+                                    psi.ArgumentList.Add(script);
 
                                     using (var proc = Process.Start(psi)
                                         ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
@@ -125,7 +143,6 @@ namespace WinHubX.Forms.DebloatAvanzato
                             }));
                         }
                     }
-                }
             }
             catch (Exception)
             {
@@ -135,6 +152,23 @@ namespace WinHubX.Forms.DebloatAvanzato
                 }));
             }
         }
+
+        private static void ValidateService(Servizio servizio)
+        {
+            if (string.IsNullOrWhiteSpace(servizio.Name) ||
+                servizio.Name.Any(char.IsControl) ||
+                servizio.Name.Contains('\'', StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Nome servizio non valido nella configurazione remota.");
+            }
+
+            if (!AllowedStartupTypes.Contains(servizio.StartupType))
+            {
+                throw new InvalidOperationException($"StartupType non consentito per {servizio.Name}.");
+            }
+        }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
     }
 
