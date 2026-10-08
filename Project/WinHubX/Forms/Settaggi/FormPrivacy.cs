@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
 using Microsoft.Win32.TaskScheduler;
 using System.ComponentModel;
-using System.ServiceProcess;
+using System.Text;
 using System.Text.Json;
 using WinHubX.Forms.Base;
 using WinHubX.Impostazioni;
@@ -434,27 +434,61 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64_1 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64_1?.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection",
+                            "AllowTelemetry", 0, RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                            "AllowTelemetry", 0, RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key64_2 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", writable: true))
-                    {
-                        key64_2?.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32_1 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
-                    {
-                        key32_1?.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
-                    }
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                        "DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
+                        "DisabledByGroupPolicy", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting",
+                        "Disabled", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config",
+                        "DODownloadMode", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\CurrentControlSet\Control\Remote Assistance",
+                        "fAllowToGetHelp", 0, RegistryValueKind.DWord, RegistryView.Registry64);
 
-                    using (RegistryKey? key32_2 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", writable: true))
-                    {
-                        key32_2?.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
-                    }
+                    string scheduledTaskScript = @"
+            $taskNames = @(
+                'Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser',
+                'Microsoft\Windows\Application Experience\ProgramDataUpdater',
+                'Microsoft\Windows\Autochk\Proxy',
+                'Microsoft\Windows\Customer Experience Improvement Program\Consolidator',
+                'Microsoft\Windows\Customer Experience Improvement Program\UsbCeip',
+                'Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector',
+                'Microsoft\Windows\Feedback\Siuf\DmClient',
+                'Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload',
+                'Microsoft\Windows\Windows Error Reporting\QueueReporting',
+                'Microsoft\Windows\Application Experience\MareBackup',
+                'Microsoft\Windows\Application Experience\StartupAppTask',
+                'Microsoft\Windows\Application Experience\PcaPatchDbTask',
+                'Microsoft\Windows\Maps\MapsUpdateTask'
+            )
+            foreach ($taskName in $taskNames) {
+                $separatorIndex = $taskName.LastIndexOf('\')
+                $taskPath = '\' + $taskName.Substring(0, $separatorIndex + 1)
+                $taskLeafName = $taskName.Substring($separatorIndex + 1)
+                $task = Get-ScheduledTask -TaskName $taskLeafName -TaskPath $taskPath -ErrorAction SilentlyContinue
+                if ($null -ne $task -and $task.State -ne 'Disabled') {
+                    Disable-ScheduledTask -TaskName $taskLeafName -TaskPath $taskPath -ErrorAction Stop | Out-Null
+                }
+            }
+            ";
+                    string elevatedScript = registryChanges.BuildCommand() + Environment.NewLine + scheduledTaskScript;
+                    RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(elevatedScript)));
+
                     using (RegistryKey? key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"))
                     {
                         key?.SetValue("ContentDeliveryAllowed", 0, RegistryValueKind.DWord);
@@ -474,35 +508,11 @@ namespace WinHubX.Forms.Settaggi
                         key?.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey? key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection"))
-                    {
-                        key?.SetValue("DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord);
-                    }
-
                     using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent"))
                     {
                         key.SetValue("DisableTailoredExperiencesWithDiagnosticData", 1, RegistryValueKind.DWord);
                     }
 
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"))
-                    {
-                        key.SetValue("DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\Windows Error Reporting"))
-                    {
-                        key.SetValue("Disabled", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config"))
-                    {
-                        key.SetValue("DODownloadMode", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\Remote Assistance"))
-                    {
-                        key.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
-                    }
                     using (RegistryKey key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"))
                     {
                         key.SetValue("EnableFeeds", 0, RegistryValueKind.DWord);
@@ -522,21 +532,6 @@ namespace WinHubX.Forms.Settaggi
                     {
                         key.SetValue("ScoobeSystemSettingEnabled", 0, RegistryValueKind.DWord);
                     }
-                    ExecutePowerShellScript(@"
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser"";
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\Application Experience\ProgramDataUpdater"";
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\Autochk\Proxy"";
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\Customer Experience Improvement Program\Consolidator"";
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\Customer Experience Improvement Program\UsbCeip"";
-            Disable-ScheduledTask -TaskName ""Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Feedback\Siuf\DmClient"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Windows Error Reporting\QueueReporting"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Application Experience\MareBackup"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Application Experience\StartupAppTask"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Application Experience\PcaPatchDbTask"";
-    Disable-ScheduledTask -TaskName ""Microsoft\Windows\Maps\MapsUpdateTask"";
-        ");
                 }
                 catch (Exception ex)
                 {
@@ -638,23 +633,15 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (ServiceController service = new ServiceController("DiagTrack"))
-                    {
-                        service.Stop();
-                        service.WaitForStatus(ServiceControllerStatus.Stopped);
-                    }
-                    ExecutePowerShellScript(@"Set-Service -Name 'DiagTrack' -StartupType Disabled -ErrorAction SilentlyContinue");
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key64?.SetValue("DisableDiagnostics", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key32?.SetValue("DisableDiagnostics", 1, RegistryValueKind.DWord);
-                    }
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableDiagnostics", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableDiagnostics", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry32);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("DiagTrack", "Disabled", StartAfterConfiguration: false));
                 }
                 catch (Exception ex)
                 {
@@ -672,23 +659,15 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (ServiceController service = new ServiceController("dmwappushservice"))
-                    {
-                        service.Stop();
-                        service.WaitForStatus(ServiceControllerStatus.Stopped);
-                    }
-                    ExecutePowerShellScript(@"Stop-Service -Name 'dmwappushservice' -WarningAction SilentlyContinue;
-                Set-Service -Name 'dmwappushservice' -StartupType Disabled");
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key64?.SetValue("DisableWAPPushService", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key32?.SetValue("DisableWAPPushService", 1, RegistryValueKind.DWord);
-                    }
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableWAPPushService", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableWAPPushService", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry32);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("dmwappushservice", "Disabled", StartAfterConfiguration: false));
                 }
                 catch (Exception ex)
                 {
@@ -706,31 +685,16 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (ServiceController listenerService = new ServiceController("HomeGroupListener"))
-                    {
-                        listenerService.Stop();
-                        listenerService.WaitForStatus(ServiceControllerStatus.Stopped);
-                    }
-
-                    using (ServiceController providerService = new ServiceController("HomeGroupProvider"))
-                    {
-                        providerService.Stop();
-                        providerService.WaitForStatus(ServiceControllerStatus.Stopped);
-                    }
-                    ExecutePowerShellScript(@"Stop-Service -Name 'HomeGroupListener' -WarningAction SilentlyContinue;
-                Set-Service -Name 'HomeGroupListener' -StartupType Disabled;
-                Stop-Service -Name 'HomeGroupProvider' -WarningAction SilentlyContinue;
-                Set-Service -Name 'HomeGroupProvider' -StartupType Disabled;");
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key64?.SetValue("DisableHomeGroup", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                          .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", writable: true))
-                    {
-                        key32?.SetValue("DisableHomeGroup", 1, RegistryValueKind.DWord);
-                    }
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableHomeGroup", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableHomeGroup", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry32);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("HomeGroupListener", "Disabled", StartAfterConfiguration: false),
+                        new PrivacyServiceChange("HomeGroupProvider", "Disabled", StartAfterConfiguration: false));
                 }
                 catch (Exception ex)
                 {
@@ -1137,22 +1101,16 @@ namespace WinHubX.Forms.Settaggi
                     string dataCollectionPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection";
                     string wow6432NodePath = @"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection";
                     string policiesPath = @"SOFTWARE\Policies\Microsoft\Windows\DataCollection";
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(dataCollectionPath))
-                    {
-                        key?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(wow6432NodePath))
-                    {
-                        key?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(policiesPath))
-                    {
-                        key?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
-                    }
-                    StartService("DiagTrack");
-                    StartService("dmwappushservice");
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine, dataCollectionPath, "AllowTelemetry", 3,
+                        RegistryValueKind.DWord, RegistryView.Default);
+                    registryChanges.SetValue(RegistryHive.LocalMachine, wow6432NodePath, "AllowTelemetry", 3,
+                        RegistryValueKind.DWord, RegistryView.Default);
+                    registryChanges.SetValue(RegistryHive.LocalMachine, policiesPath, "AllowTelemetry", 3,
+                        RegistryValueKind.DWord, RegistryView.Default);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("DiagTrack", "Automatic", StartAfterConfiguration: true),
+                        new PrivacyServiceChange("dmwappushservice", "Automatic", StartAfterConfiguration: true));
                 }
                 catch (Exception ex)
                 {
@@ -1241,21 +1199,15 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
-                    {
-                        key64?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", writable: true))
-                    {
-                        key32?.SetValue("AllowTelemetry", 3, RegistryValueKind.DWord);
-                    }
-                    var service = new System.ServiceProcess.ServiceController("DiagTrack");
-                    if (service.Status != System.ServiceProcess.ServiceControllerStatus.Running)
-                    {
-                        service.Start();
-                        service.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
-                    }
-                    ExecutePowerShellScript(@"Set-Service -Name 'DiagTrack' -StartupType 'Automatic'");
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
+                        RegistryValueKind.DWord, RegistryView.Default);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("DiagTrack", "Automatic", StartAfterConfiguration: true));
                 }
                 catch (Exception ex)
                 {
@@ -1273,21 +1225,15 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\dmwappushservice", writable: true))
-                    {
-                        key64?.SetValue("DelayedAutoStart", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", writable: true))
-                    {
-                        key32?.SetValue("DelayedAutoStart", 1, RegistryValueKind.DWord);
-                    }
-                    var service = new System.ServiceProcess.ServiceController("dmwappushservice");
-                    if (service.Status != System.ServiceProcess.ServiceControllerStatus.Running)
-                    {
-                        service.Start();
-                        service.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running);
-                    }
-                    ExecutePowerShellScript(@"Set-Service -Name 'dmwappushservice' -StartupType 'Automatic'");
+                    var registryChanges = new ElevatedRegistryMutationBatch();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
+                        RegistryValueKind.DWord, RegistryView.Default);
+                    ConfigureServices(registryChanges,
+                        new PrivacyServiceChange("dmwappushservice", "Automatic", StartAfterConfiguration: true));
                 }
                 catch (Exception ex)
                 {
@@ -1305,17 +1251,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    StopService("HomeGroupListener");
-                    SetServiceStartupType("HomeGroupListener", "Manual");
-
-                    StopService("HomeGroupProvider");
-                    SetServiceStartupType("HomeGroupProvider", "Manual");
-                    ExecutePowerShellScript(@"
-                Stop-Service -Name 'HomeGroupListener' -WarningAction SilentlyContinue;
-                Set-Service -Name 'HomeGroupListener' -StartupType 'Manual';
-                Stop-Service -Name 'HomeGroupProvider' -WarningAction SilentlyContinue;
-                Set-Service -Name 'HomeGroupProvider' -StartupType 'Manual';
-            ");
+                    ConfigureServices(new ElevatedRegistryMutationBatch(),
+                        new PrivacyServiceChange("HomeGroupListener", "Manual", StartAfterConfiguration: false),
+                        new PrivacyServiceChange("HomeGroupProvider", "Manual", StartAfterConfiguration: false));
                 }
                 catch (Exception ex)
                 {
@@ -1684,34 +1622,32 @@ namespace WinHubX.Forms.Settaggi
             e.Result = failures;
         }
 
-        private void StopService(string serviceName)
+        private static void ConfigureServices(ElevatedRegistryMutationBatch registryChanges, params PrivacyServiceChange[] changes)
         {
-            var service = new System.ServiceProcess.ServiceController(serviceName);
-            if (service.Status == System.ServiceProcess.ServiceControllerStatus.Running)
-            {
-                service.Stop();
-                service.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Stopped);
-            }
-        }
-        private void SetServiceStartupType(string serviceName, string startupType)
-        {
-            ExecutePowerShellScript($"Set-Service -Name '{serviceName}' -StartupType '{startupType}'");
+            string encodedScript = PrivacyServiceScriptBuilder.BuildEncodedCommand(changes, registryChanges);
+            RunElevatedPowerShellScript(encodedScript);
         }
 
-        private void StartService(string serviceName)
+        private static void RunElevatedPowerShellScript(string encodedScript)
         {
-            using (var serviceController = new ServiceController(serviceName))
+            var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                if (serviceController.Status != ServiceControllerStatus.Running)
-                {
-                    serviceController.Start();
-                    serviceController.WaitForStatus(ServiceControllerStatus.Running);
-                }
-                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}", true))
-                {
-                    key?.SetValue("Start", 2, RegistryValueKind.DWord);
-                }
-            }
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+            startInfo.ArgumentList.Add("-NoLogo");
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-EncodedCommand");
+            startInfo.ArgumentList.Add(encodedScript);
+
+            using System.Diagnostics.Process process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare la configurazione elevata dei servizi.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"La configurazione del servizio è terminata con codice {process.ExitCode}.");
         }
 
         private void ModifyRegistryForDefrag(bool is32Bit)
