@@ -31,6 +31,7 @@ namespace WinHubX.Forms.Base
         private DateTime lastUpdateTime;
         private long lastBytesSent;
         private long lastBytesReceived;
+        private double networkCapacityKB;
 
 
         private readonly Form1 _mainForm;
@@ -720,6 +721,10 @@ namespace WinHubX.Forms.Base
                     .Where(n => n.OperationalStatus == OperationalStatus.Up &&
                                n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                     .ToArray();
+                // NetworkInterface.Speed è espresso in bit/s; convertiamo la capacità aggregata in KB/s.
+                networkCapacityKB = networkInterfaces
+                    .Where(n => n.Speed > 0)
+                    .Sum(n => (double)n.Speed) / 8d / 1024d;
 
                 if (networkInterfaces.Length == 0)
                 {
@@ -783,10 +788,12 @@ namespace WinHubX.Forms.Base
 
         private double CalculateNetworkUsage(double currentSpeedKB)
         {
-            double maxCapacityKB = 10000;
+            if (networkCapacityKB <= 0)
+            {
+                return 0;
+            }
 
-            double usage = (currentSpeedKB / maxCapacityKB) * 100;
-            return Math.Min(usage, 100);
+            return Math.Clamp(currentSpeedKB / networkCapacityKB * 100, 0, 100);
         }
 
         private async Task UpdateUI(double sentKB, double receivedKB, double totalSpeedKB, double networkUsage)
@@ -814,7 +821,7 @@ namespace WinHubX.Forms.Base
                     totalSpeedKB.ToString("0.00")
                 );
 
-                labelReteUtilizzo.Text = $"{networkUsage:0.0}%";
+                labelReteUtilizzo.Text = networkCapacityKB > 0 ? $"{networkUsage:0.0}%" : "—";
                 progressbarRete.ProgressValue = (int)Math.Round(networkUsage);
             }
             catch (Exception ex)
