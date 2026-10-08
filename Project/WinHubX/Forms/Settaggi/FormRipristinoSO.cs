@@ -226,7 +226,7 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task RunStressTestsContinuously(int testDurationMinutes, CancellationToken token)
         {
-            VerifyDiskStatus();
+            await Task.Run(VerifyDiskStatus, token);
 
             Task cpuTestTask = StressTestCPUAsync(token);
             Task ramTestTask = TestRAMAsync(token);
@@ -441,12 +441,12 @@ namespace WinHubX.Forms.Settaggi
                             AppendToRichTextBox2(Environment.NewLine);
                         }
                     }
-                    string speedResults = DiskSpeedTest(deviceId);
-                    AppendToRichTextBox2(speedResults + Environment.NewLine);
-
                     LogMessage("-------------------------------------------------");
                     AppendToRichTextBox2("-------------------------------------------------" + Environment.NewLine);
                 }
+
+                string speedResults = DiskSpeedTest();
+                AppendToRichTextBox2(speedResults + Environment.NewLine);
 
                 UpdateLabel("Verifica disco completata.");
                 LogMessage("Verifica disco completata con successo.");
@@ -471,31 +471,34 @@ namespace WinHubX.Forms.Settaggi
                 richTextBox2.ScrollToCaret();
             }
         }
-        private string DiskSpeedTest(string deviceId)
+        private string DiskSpeedTest()
         {
             string tempFile = Path.Combine(Path.GetTempPath(), $"WinHubX-disk-test-{Guid.NewGuid():N}.tmp");
             try
             {
                 const int testSizeMb = 50;
-                byte[] data = GC.AllocateUninitializedArray<byte>(testSizeMb * 1024 * 1024);
-                Random.Shared.NextBytes(data);
+                const int bufferSize = 1024 * 1024;
+                byte[] buffer = GC.AllocateUninitializedArray<byte>(bufferSize);
+                Random.Shared.NextBytes(buffer);
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                using (FileStream output = new(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+                using (FileStream output = new(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan))
                 {
-                    output.Write(data, 0, data.Length);
+                    for (int writtenMb = 0; writtenMb < testSizeMb; writtenMb++)
+                        output.Write(buffer, 0, buffer.Length);
                     output.Flush(flushToDisk: true);
                 }
                 stopwatch.Stop();
                 double writeSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
                 stopwatch.Restart();
-                using (FileStream input = new(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.SequentialScan))
+                using (FileStream input = new(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
                 {
                     input.CopyTo(Stream.Null);
                 }
                 stopwatch.Stop();
                 double readSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
 
-                string speedResult = $"Velocità scrittura: {writeSpeed:F2} MB/s | Velocità lettura: {readSpeed:F2} MB/s";
+                string volumeRoot = Path.GetPathRoot(Path.GetTempPath()) ?? "volume temporaneo";
+                string speedResult = $"Velocità volume temporaneo ({volumeRoot}): scrittura {writeSpeed:F2} MB/s | lettura {readSpeed:F2} MB/s";
                 LogMessage(speedResult);
                 return speedResult;
             }
@@ -511,8 +514,8 @@ namespace WinHubX.Forms.Settaggi
                     if (File.Exists(tempFile))
                         File.Delete(tempFile);
                 }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
+                catch (IOException ex) { Debug.WriteLine($"Impossibile eliminare il file temporaneo del benchmark disco: {ex}"); }
+                catch (UnauthorizedAccessException ex) { Debug.WriteLine($"Accesso negato durante la rimozione del benchmark disco: {ex}"); }
             }
         }
 
