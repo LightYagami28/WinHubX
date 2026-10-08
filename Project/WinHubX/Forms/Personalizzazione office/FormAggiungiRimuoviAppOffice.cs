@@ -557,28 +557,28 @@ namespace WinHubX.Forms.Personalizzazione_office
                 if (!keepOrInstall.Contains(app))
                     excludeList.Append($",{app}");
             }
-            string c2rCommand = $"\"{c2rExe}\" " +
-                                $"platform={arch} culture={lang} " +
-                                $"productstoadd={targetEdition}.16_{allLangs} " +
-                                $"cdnbaseurl.16=https://officecdn.microsoft.com/pr/{updch} " +
-                                $"baseurl.16=https://officecdn.microsoft.com/pr/{updch} " +
-                                $"version.16={version} mediatype.16=CDN sourcetype.16=CDN " +
-                                $"deliverymechanism={updch} " +
-                                $"{targetEdition}.excludedapps.16=groove{excludeList} " +
-                                "flt.useteamsaddon=disabled flt.usebingaddononinstall=disabled flt.usebingaddononupdate=disabled";
-
             try
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = c2rExe,
-                    Arguments = c2rCommand.Substring(c2rCommand.IndexOf("platform=")),
-                    UseShellExecute = false,
+                    UseShellExecute = true,
                     Verb = "runas",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
+                psi.ArgumentList.Add($"platform={arch}");
+                psi.ArgumentList.Add($"culture={lang}");
+                psi.ArgumentList.Add($"productstoadd={targetEdition}.16_{allLangs}");
+                psi.ArgumentList.Add($"cdnbaseurl.16=https://officecdn.microsoft.com/pr/{updch}");
+                psi.ArgumentList.Add($"baseurl.16=https://officecdn.microsoft.com/pr/{updch}");
+                psi.ArgumentList.Add($"version.16={version}");
+                psi.ArgumentList.Add("mediatype.16=CDN");
+                psi.ArgumentList.Add("sourcetype.16=CDN");
+                psi.ArgumentList.Add($"deliverymechanism={updch}");
+                psi.ArgumentList.Add($"{targetEdition}.excludedapps.16=groove{excludeList}");
+                psi.ArgumentList.Add("flt.useteamsaddon=disabled");
+                psi.ArgumentList.Add("flt.usebingaddononinstall=disabled");
+                psi.ArgumentList.Add("flt.usebingaddononupdate=disabled");
                 progressBar1.Visible = true;
                 progressBar1.Value = 0;
                 progressBar1.Value = 35;
@@ -586,7 +586,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 using (var process = Process.Start(psi)
                     ?? throw new InvalidOperationException("Impossibile avviare l'installer Office."))
                 {
-                    await Task.Run(() => process.WaitForExit());
+                    await process.WaitForExitAsync();
                 }
                 progressBar1.Value = 100;
                 MessageBox.Show("Operazione completata.\nLe app di Office sono state aggiornate con successo.",
