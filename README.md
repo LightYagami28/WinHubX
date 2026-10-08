@@ -49,6 +49,7 @@ WinHubX non include una firma Authenticode: le release possono essere firmate da
 
 - [FAQ](Faq.md)
 - [Contribuire](CONTRIBUTING.md)
+- [Build e pubblicazione](docs/RELEASE.md)
 - [Roadmap di modernizzazione](docs/ROADMAP-MODERNIZZAZIONE.md)
 
 ## Licenza
