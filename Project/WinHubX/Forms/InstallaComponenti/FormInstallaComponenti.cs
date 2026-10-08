@@ -12,6 +12,15 @@ namespace WinHubX.Forms.InstallaComponenti
 {
     public partial class FormInstallaComponenti : Form
     {
+        private static readonly HttpClient ResourceClient = new(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        })
+        {
+            Timeout = TimeSpan.FromMinutes(2)
+        };
+
         public FormInstallaComponenti()
         {
             InitializeComponent();
@@ -169,13 +178,14 @@ namespace WinHubX.Forms.InstallaComponenti
 
             string url = Dipendenze.GitHubConfigUrl;
 
-            string tempPath = Path.Combine(Path.GetTempPath(), "DefNot.zip");
-            string extractPath = Path.Combine(Path.GetTempPath(), "DefNotExtracted");
+            string workDirectory = Path.Combine(Path.GetTempPath(), $"WinHubX-DefNot-{Guid.NewGuid():N}");
+            string tempPath = Path.Combine(workDirectory, "DefNot.zip");
+            string extractPath = Path.Combine(workDirectory, "extracted");
 
             try
             {
-                using HttpClient client = new HttpClient();
-                string json = await client.GetStringAsync(url);
+                Directory.CreateDirectory(workDirectory);
+                string json = await ResourceClient.GetStringAsync(url);
                 JObject data = JObject.Parse(json);
 
                 string? downloadUrl = arch switch
@@ -212,9 +222,7 @@ namespace WinHubX.Forms.InstallaComponenti
                             Convert.FromHexString(actualHash), Convert.FromHexString(expectedHash)))
                         throw new InvalidDataException("Hash SHA-256 dell'archivio DefendNot non valido.");
                 }
-                if (Directory.Exists(extractPath))
-                    Directory.Delete(extractPath, true);
-                ZipFile.ExtractToDirectory(tempPath, extractPath);
+                ExtractZipSafely(tempPath, extractPath);
                 string exePath = Path.Combine(extractPath, "defendnot-loader.exe");
 
                 if (!File.Exists(exePath))
@@ -232,8 +240,9 @@ namespace WinHubX.Forms.InstallaComponenti
                     await process.WaitForExitAsync();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"DefendNot non avviato: {ex.Message}");
             }
             finally
             {
@@ -243,13 +252,36 @@ namespace WinHubX.Forms.InstallaComponenti
                     if (File.Exists(tempPath))
                         File.Delete(tempPath);
 
-                    if (Directory.Exists(extractPath))
-                        Directory.Delete(extractPath, true);
+                    if (Directory.Exists(workDirectory))
+                        Directory.Delete(workDirectory, true);
                     SetDefenderRegedit(false);
                 }
                 catch (Exception)
                 {
                 }
+            }
+        }
+
+        private static void ExtractZipSafely(string archivePath, string destination)
+        {
+            Directory.CreateDirectory(destination);
+            string root = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+            using ZipArchive archive = ZipFile.OpenRead(archivePath);
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                string target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
+                if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Archivio DefendNot non valido: percorso ZIP non sicuro.");
+
+                if (string.IsNullOrEmpty(entry.Name))
+                {
+                    Directory.CreateDirectory(target);
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                entry.ExtractToFile(target, overwrite: true);
             }
         }
         private void SetDefenderRegedit(bool isDisabled)
