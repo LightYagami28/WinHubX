@@ -756,13 +756,13 @@ namespace WinHubX
         }
         private static async Task<bool> MountIsoAsync(string isoPath)
         {
-            return await RunPowerShellAsync($"Mount-DiskImage -ImagePath '{isoPath}'") == 0;
+            return await RunPowerShellAsync($"Mount-DiskImage -ImagePath '{EscapePowerShellLiteral(isoPath)}'") == 0;
         }
 
         private static async Task<string> GetIsoDriveLetterAsync(string isoPath)
         {
             string result = await RunPowerShellOutputAsync(
-                $"(Get-DiskImage -ImagePath '{isoPath}' | Get-Volume).DriveLetter"
+                $"(Get-DiskImage -ImagePath '{EscapePowerShellLiteral(isoPath)}' | Get-Volume).DriveLetter"
             );
             return result.Trim();
         }
@@ -770,15 +770,7 @@ namespace WinHubX
         {
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-Command \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
+                StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
             await process.WaitForExitAsync();
@@ -789,21 +781,32 @@ namespace WinHubX
         {
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-Command \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
+                StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
             string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
             return output;
         }
+
+        private static ProcessStartInfo CreatePowerShellStartInfo(string command)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(command);
+            return startInfo;
+        }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
         private async void FormOffice_Load(object? sender, EventArgs e)
         {
