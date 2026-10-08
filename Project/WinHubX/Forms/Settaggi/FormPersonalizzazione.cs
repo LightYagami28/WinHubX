@@ -21,6 +21,7 @@ namespace WinHubX.Forms.Settaggi
         {
             var handler = new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 MaxConnectionsPerServer = 4,
                 AutomaticDecompression = DecompressionMethods.None,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
@@ -30,14 +31,7 @@ namespace WinHubX.Forms.Settaggi
 
         private static Uri RequireTrustedHttpsUri(string value)
         {
-            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
-                || uri.Scheme != Uri.UriSchemeHttps
-                || !uri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
-                   && !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("La risorsa deve provenire da GitHub tramite HTTPS.");
-            }
-            return uri;
+            return TrustedHttpsClient.ValidateUri(value, "personalizzazione");
         }
         public FormPersonalizzazione(FormSettaggi formSettaggi, Form1 form1)
         {
@@ -364,7 +358,7 @@ namespace WinHubX.Forms.Settaggi
         private async Task<string> OttieniUrlRegFile(string jsonUrl)
         {
             Uri configUri = RequireTrustedHttpsUri(jsonUrl);
-            var response = await ResourceClient.GetStringAsync(configUri);
+            var response = await TrustedHttpsClient.GetStringAsync(ResourceClient, configUri.AbsoluteUri);
             var json = JObject.Parse(response);
             string? resourceUrl = json["PersonaTastoDestro"]?["PersoTastoDestro"]?.Value<string>();
             return RequireTrustedHttpsUri(resourceUrl

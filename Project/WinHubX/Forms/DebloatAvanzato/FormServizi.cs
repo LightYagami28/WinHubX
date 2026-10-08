@@ -25,6 +25,7 @@ public partial class FormServizi : Form
     {
         var handler = new SocketsHttpHandler
         {
+            AllowAutoRedirect = false,
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             AutomaticDecompression = System.Net.DecompressionMethods.All
         };
@@ -36,7 +37,7 @@ public partial class FormServizi : Form
     {
         try
         {
-            string json = await HttpClient.GetStringAsync(ServicesUrl);
+            string json = await TrustedHttpsClient.GetStringAsync(HttpClient, ServicesUrl);
             ServiziRoot catalog = JsonConvert.DeserializeObject<ServiziRoot>(json)
                 ?? throw new InvalidDataException("Configurazione servizi non valida.");
             ServiceConfigurationValidator.ValidateCatalog(catalog);

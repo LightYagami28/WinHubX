@@ -18,6 +18,7 @@
         {
             var handler = new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 MaxConnectionsPerServer = 8,
                 AutomaticDecompression = System.Net.DecompressionMethods.None,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
@@ -39,8 +40,7 @@
 
         public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4)
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-                throw new ArgumentException("È consentito scaricare solo da URL HTTPS.", nameof(url));
+            _ = TrustedHttpsClient.ValidateUri(url, "download");
             if (string.IsNullOrWhiteSpace(savePath))
                 throw new ArgumentException("Il percorso di destinazione è obbligatorio.", nameof(savePath));
             maxChunks = Math.Clamp(maxChunks, 2, 8);
@@ -64,7 +64,8 @@
                     _totalDownloadedBytes = 0;
                 }
 
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
+                using var operationTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token, operationTimeout.Token);
                 CancellationToken linkedToken = linkedCts.Token;
                 stateAnnounced = true;
                 PublishDownloadState(true);
@@ -170,8 +171,7 @@
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Head, url);
-                using (var headResponse = await _httpClient.SendAsync(request,
-                    HttpCompletionOption.ResponseHeadersRead, token))
+                using (var headResponse = await TrustedHttpsClient.SendAsync(_httpClient, request, token))
                 {
                     headResponse.EnsureSuccessStatusCode();
                     // Verifica: 1) Supporta ranges, 2) Ha content length, 3) È abbastanza grande
@@ -197,8 +197,7 @@
             // Prima otteniamo le info complete sul file
             long totalBytes;
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
-            using (var headResponse = await _httpClient.SendAsync(request,
-                HttpCompletionOption.ResponseHeadersRead, token))
+            using (var headResponse = await TrustedHttpsClient.SendAsync(_httpClient, request, token))
             {
                 headResponse.EnsureSuccessStatusCode();
                 totalBytes = headResponse.Content.Headers.ContentLength ?? -1;
@@ -220,7 +219,8 @@
 
         private static async Task DownloadSequentialAsync(string url, string savePath, CancellationToken token)
         {
-            using (var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token))
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using (var response = await TrustedHttpsClient.SendAsync(_httpClient, request, token))
             {
                 response.EnsureSuccessStatusCode();
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
@@ -293,7 +293,7 @@
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(start, end);
 
-            using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
+            using (var response = await TrustedHttpsClient.SendAsync(_httpClient, request, token))
             {
                 response.EnsureSuccessStatusCode();
                 if (response.StatusCode != System.Net.HttpStatusCode.PartialContent)

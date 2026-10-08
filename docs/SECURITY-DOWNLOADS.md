@@ -4,6 +4,8 @@
 
 - WinHubX non scarica né esegue script di attivazione da URL remoti.
 - I download applicativi devono usare HTTPS, file temporanei univoci e pubblicazione atomica al termine.
+- Le richieste HTTP applicative passano da `TrustedHttpsClient`: allowlist per GitHub/GitHub Assets e i CDN Microsoft effettivamente usati, porta TLS predefinita, niente userinfo, redirect automatici disattivati e ogni destinazione di redirect rivalutata prima della richiesta. Sono coperti manifest/configurazioni, cataloghi e download; il test impedisce downgrade a HTTP e host non ammessi.
+- Ogni client ha timeout finito; le letture dei manifest/catologhi rispettano il timeout del client anche sul corpo, i download hanno un limite totale di 10 minuti e accettano cancellazione.
 - L'updater legge il manifest `update.json` dal repository `LightYagami28/WinHubX`, rifiuta destinazioni non attendibili e richiede uno SHA-256 di 64 caratteri esadecimali; il digest del file scaricato deve coincidere prima della sostituzione dell'eseguibile. Lo SHA-256 verifica l'integrità rispetto al manifest, ma non sostituisce una firma Authenticode.
 - I driver vengono aperti dalla pagina ufficiale del produttore; non vengono estratti o avviati automaticamente.
 - Le funzioni di attivazione aprono esclusivamente le impostazioni/account ufficiali Microsoft.

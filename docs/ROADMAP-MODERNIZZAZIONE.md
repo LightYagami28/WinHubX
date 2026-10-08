@@ -4,7 +4,7 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 
 ## Criteri finiti di completamento
 
-Lo scope WinHubX è tracciato nei 30 task numerati qui sotto: al checkpoint 2026-10-08 ne risultano chiusi 12 e restano 18. Non si aggiungono refactoring cosmetici fuori da bug riproducibili, rischio di sicurezza, regressioni o requisiti espliciti. Dopo WinHubX, i repository pubblici di MrNico98 richiesti dall'utente avranno una roadmap e una verifica distinte.
+Lo scope WinHubX è tracciato nei 30 task numerati qui sotto: al checkpoint 2026-10-08 ne risultano chiusi 13 e restano 17. Non si aggiungono refactoring cosmetici fuori da bug riproducibili, rischio di sicurezza, regressioni o requisiti espliciti. Dopo WinHubX, i repository pubblici di MrNico98 richiesti dall'utente avranno una roadmap e una verifica distinte.
 
 Il lavoro si considera consegnabile quando ogni task è verificato con evidenze oppure ha un'eccezione motivata e un'alternativa sicura; `main` compila su .NET 10 stabile e il branch separato compila sul target .NET 11 disponibile, con tutti i warning trattati senza soppressioni; test, CI, CodeQL e audit dipendenze sono verdi; avvio e flussi UI pertinenti sono verificati su Windows; ogni dipendenza diretta è alla più recente versione stabile e le transitive sono aggiornate al massimo compatibile, con major incompatibili migrate insieme o sostituite. Restano esplicitamente fuori una certificazione legale NIS2 e la firma Authenticode finché non è disponibile un certificato. Raggiunti questi criteri, si ferma la modernizzazione e si consegna lo stato, non si riapre il ciclo per perfezionismi.
 
@@ -34,7 +34,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 
 ## Sicurezza e aggiornamenti
 
-- [ ] 19. Rendere tutti i download HTTPS-only con allowlist e timeout.
+- [x] 19. Download e risorse HTTP passano da `TrustedHttpsClient`: allowlist host, solo HTTPS/porta 443, redirect manuali verificati, timeout finiti e cancellazione sui flussi di file; copertura di URL/redirect e timeout nei test.
 - [x] 20. Rendere obbligatori hash SHA-256 per i nuovi artefatti pubblicati dalla CI: `New-ArtifactSha256Manifest.ps1` calcola SHA-256 e dimensione per ogni file, incluso l'eseguibile; il manifest generato è verificato localmente e allegato all'artefatto.
 - [x] 21. Verificare Authenticode per i binari pubblicati: ogni firma deve risultare valida; i file non firmati sono esplicitamente indicati come `NotSigned` nel manifest, senza bloccare lo stato attuale privo di certificato.
 - [x] 22. Updater con sostituzione atomica staged, backup, verifica SHA-256, attesa finestra avviata e rollback se startup fallisce; coperto da test di regressione.

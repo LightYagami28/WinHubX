@@ -12,6 +12,7 @@ namespace WinHubX.Forms.Base
     {
         private static readonly HttpClient ResourceClient = new(new SocketsHttpHandler
         {
+            AllowAutoRedirect = false,
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             AutomaticDecompression = System.Net.DecompressionMethods.All
         })
@@ -60,15 +61,15 @@ namespace WinHubX.Forms.Base
 
         private async Task ScaricaFileAsync(string url, string destinazione)
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
-                throw new InvalidOperationException("Il download ISO richiede un URL HTTPS valido.");
+            Uri uri = TrustedHttpsClient.ValidateUri(url, "ISO");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
 
-            using (HttpResponseMessage response = await ResourceClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpResponseMessage response = await TrustedHttpsClient.GetAsync(ResourceClient, uri.AbsoluteUri, timeout.Token))
             {
                 _ = response.EnsureSuccessStatusCode();
-                await using (FileStream fs = new(destinazione, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+                await using (FileStream fs = new(destinazione, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
                 {
-                    await response.Content.CopyToAsync(fs);
+                    await response.Content.CopyToAsync(fs, timeout.Token);
                 }
             }
         }
@@ -77,10 +78,9 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                if (!Uri.TryCreate(jsonUrl, UriKind.Absolute, out Uri? configUri) || configUri.Scheme != Uri.UriSchemeHttps)
-                    throw new InvalidOperationException("URL configurazione non valido: è richiesto HTTPS.");
+                Uri configUri = TrustedHttpsClient.ValidateUri(jsonUrl, "configurazione ISO");
 
-                string jsonResponse = await ResourceClient.GetStringAsync(configUri);
+                string jsonResponse = await TrustedHttpsClient.GetStringAsync(ResourceClient, configUri.AbsoluteUri);
                 using JsonDocument doc = JsonDocument.Parse(jsonResponse);
                 JsonElement root = doc.RootElement;
                 string? zipUrl = root.GetProperty("CreaISOWIN").GetProperty("creaiso").GetString();
@@ -96,7 +96,7 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                    var json = await ResourceClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
+                    var json = await TrustedHttpsClient.GetStringAsync(ResourceClient, Dipendenze.GitHubConfigUrl);
                     var obj = JObject.Parse(json);
                     string? url = obj["FormWin"]?["creaISOzip"]?.ToString();
 

@@ -14,6 +14,7 @@ namespace WinHubX.Forms.InstallaComponenti
     {
         private static readonly HttpClient ResourceClient = new(new SocketsHttpHandler
         {
+            AllowAutoRedirect = false,
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             AutomaticDecompression = System.Net.DecompressionMethods.All
         })
@@ -191,7 +192,7 @@ namespace WinHubX.Forms.InstallaComponenti
             try
             {
                 Directory.CreateDirectory(workDirectory);
-                string json = await ResourceClient.GetStringAsync(url);
+                string json = await TrustedHttpsClient.GetStringAsync(ResourceClient, url);
                 JObject data = JObject.Parse(json);
 
                 string? downloadUrl = arch switch
