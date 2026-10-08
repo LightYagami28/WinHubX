@@ -171,8 +171,9 @@ namespace WinHubX
                     "https://www.google.com", HttpCompletionOption.ResponseHeadersRead, timeout.Token);
                 return result.IsSuccessStatusCode;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Verifica connettività Office non riuscita: {ex}");
                 return false;
             }
         }
@@ -250,7 +251,7 @@ namespace WinHubX
 
                 process.Start();
                 await process.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
-                await Task.Run(() => AttendiScrubberConTitolo("Office Scrubber v12"));
+                await AttendiScrubberConTitolo("Office Scrubber v12");
             }
             catch (Exception ex)
             {
@@ -270,8 +271,10 @@ namespace WinHubX
                         if (Directory.Exists(tempFolder))
                             Directory.Delete(tempFolder, recursive: true);
                     }
-                    catch (IOException) { }
-                    catch (UnauthorizedAccessException) { }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Debug.WriteLine($"Directory temporanea Scrubber non rimossa: {ex}");
+                    }
                 }
             }
         }
@@ -301,22 +304,55 @@ namespace WinHubX
 
         private async Task AttendiScrubberConTitolo(string titolo, int timeoutMs = 10 * 60 * 1000)
         {
-            int waited = 0;
-            Process? scrubberProc = null;
-
-            while (waited < timeoutMs)
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < timeoutMs)
             {
-                scrubberProc = Process.GetProcessesByName("powershell")
-                    .FirstOrDefault(p => p.MainWindowTitle.Contains(titolo));
-
-                if (scrubberProc != null)
-                    break;
+                int? processId = await Task.Run(() => FindScrubberProcessId(titolo));
+                if (processId is int id)
+                {
+                    try
+                    {
+                        using Process scrubberProcess = Process.GetProcessById(id);
+                        await scrubberProcess.WaitForExitAsync();
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Il processo può terminare fra la ricerca e il recupero del PID.
+                    }
+                    return;
+                }
 
                 await Task.Delay(1000);
-                waited += 1000;
             }
 
-            scrubberProc?.WaitForExit();
+            throw new TimeoutException($"Il processo {titolo} non è comparso entro il tempo previsto.");
+        }
+
+        private static int? FindScrubberProcessId(string title)
+        {
+            foreach (Process process in Process.GetProcessesByName("powershell"))
+            {
+                using (process)
+                {
+                    try
+                    {
+                        if (process.MainWindowTitle.Contains(title, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return process.Id;
+                        }
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        Debug.WriteLine($"Processo PowerShell terminato durante l'ispezione: {ex.Message}");
+                    }
+                    catch (System.ComponentModel.Win32Exception ex)
+                    {
+                        Debug.WriteLine($"Titolo finestra PowerShell non accessibile: {ex.Message}");
+                    }
+                }
+            }
+
+            return null;
         }
 
         private void PictureBox3_Click_BackToOffice(object? sender, EventArgs e)
@@ -445,7 +481,10 @@ namespace WinHubX
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Rilevamento architettura Office non riuscito; uso l'architettura del sistema: {ex}");
+            }
 
             return Environment.Is64BitOperatingSystem ? "x64" : "x32";
         }
@@ -609,11 +648,16 @@ namespace WinHubX
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"Pulizia file temporaneo/destinazione Office non riuscita: {ex}");
+                }
             }
         }
         private async Task StartInstallation(string savePath, bool salva)
         {
+            bool mounted = false;
+            bool installationSucceeded = false;
             try
             {
                 if (!await MountIsoAsync(savePath))
@@ -621,13 +665,15 @@ namespace WinHubX
                     MessageBox.Show("Errore durante il montaggio dell'immagine ISO.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
+                mounted = true;
 
                 string? driveLetter = null;
                 for (int i = 0; i < 10; i++)
                 {
+                    _cts?.Token.ThrowIfCancellationRequested();
                     driveLetter = await GetIsoDriveLetterAsync(savePath);
                     if (!string.IsNullOrWhiteSpace(driveLetter)) break;
-                    await Task.Delay(1000);
+                    await Task.Delay(1000, _cts?.Token ?? CancellationToken.None);
                 }
 
                 if (string.IsNullOrWhiteSpace(driveLetter))
@@ -637,60 +683,83 @@ namespace WinHubX
                 }
 
                 string drivePath = driveLetter + @":\";
-
-                try
+                string[] possibleSetups = await Task.Run(() => FindSetupExecutables(drivePath), _cts?.Token ?? CancellationToken.None);
+                if (possibleSetups.Length == 0)
                 {
-                    var possibleSetups = Directory.GetFiles(drivePath, "*.exe", SearchOption.AllDirectories)
-                        .Where(f => f.Contains("setup", StringComparison.OrdinalIgnoreCase)
-                                 || f.Contains("install", StringComparison.OrdinalIgnoreCase)
-                                 || f.Contains("autorun", StringComparison.OrdinalIgnoreCase))
-                        .ToList();
-
-                    if (possibleSetups.Count == 0)
-                    {
-                        MessageBox.Show("Nessun file di installazione trovato.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    await Task.Delay(2000);
-                    string setupExe = possibleSetups.First();
-                    await Task.Delay(2000);
-
-                    var proc = Process.Start(new ProcessStartInfo(setupExe)
-                    {
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(setupExe)
-                    });
-
-                    if (proc != null)
-                    {
-                        await proc.WaitForExitAsync();
-                        await Task.Delay(3000);
-                        while (Process.GetProcesses().Any(p => p.ProcessName.Contains("setup", StringComparison.OrdinalIgnoreCase)))
-                            await Task.Delay(2000);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Errore durante l'esecuzione del setup:\n{ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                finally
-                {
-                    await RunPowerShellAsync($"Dismount-DiskImage -ImagePath '{savePath}'");
+                    MessageBox.Show("Nessun file di installazione trovato.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
 
-                if (!salva)
+                string setupExe = possibleSetups[0];
+                using Process setupProcess = Process.Start(new ProcessStartInfo(setupExe)
                 {
-                    try { File.Delete(savePath); } catch { }
-                }
-                WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
-                WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(setupExe)
+                }) ?? throw new InvalidOperationException("Impossibile avviare il setup trovato nell'immagine.");
+                await setupProcess.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
+                if (setupProcess.ExitCode != 0)
+                    throw new InvalidOperationException($"Il setup è terminato con codice {setupProcess.ExitCode}.");
+
+                installationSucceeded = true;
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"Installazione offline Office non riuscita: {ex}");
                 MessageBox.Show($"Errore durante l'installazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
             }
+            finally
+            {
+                if (mounted)
+                {
+                    bool dismounted = false;
+                    try
+                    {
+                        int exitCode = await RunPowerShellAsync($"Dismount-DiskImage -ImagePath '{EscapePowerShellLiteral(savePath)}'");
+                        if (exitCode != 0)
+                        {
+                            MessageBox.Show($"L'immagine Office è ancora montata (codice DISM {exitCode}).", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        else
+                        {
+                            dismounted = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Smontaggio immagine Office non riuscito: {ex}");
+                        MessageBox.Show($"Impossibile smontare l'immagine Office: {ex.Message}", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+
+                    if (installationSucceeded && dismounted)
+                    {
+                        bool cleaned = salva || TryDeleteOfficeFile(savePath, "immagine Office temporanea");
+                        if (cleaned)
+                        {
+                            WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
+                            WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Installazione completata, ma l'immagine ISO non è stata rimossa.", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static string[] FindSetupExecutables(string drivePath)
+        {
+            return Directory.EnumerateFiles(drivePath, "*.exe", SearchOption.AllDirectories)
+                .Where(path =>
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(path);
+                    return fileName.Contains("setup", StringComparison.OrdinalIgnoreCase)
+                        || fileName.Contains("install", StringComparison.OrdinalIgnoreCase)
+                        || fileName.Contains("autorun", StringComparison.OrdinalIgnoreCase);
+                })
+                .OrderByDescending(path => string.Equals(Path.GetFileName(path), "setup.exe", StringComparison.OrdinalIgnoreCase))
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
 
         private async Task StartOnlineInstallation(string tempFile)
@@ -699,16 +768,23 @@ namespace WinHubX
             {
                 using Process setup = Process.Start(new ProcessStartInfo(tempFile) { UseShellExecute = true })
                     ?? throw new InvalidOperationException("Impossibile avviare il programma di installazione di Office.");
-                await Task.Run(setup.WaitForExit, _cts?.Token ?? CancellationToken.None);
+                await setup.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
+                if (setup.ExitCode != 0)
+                    throw new InvalidOperationException($"Il setup Office è terminato con codice {setup.ExitCode}.");
 
-                try { File.Delete(tempFile); } catch { }
-                WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
-                WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
+                if (TryDeleteOfficeFile(tempFile, "installer Office temporaneo"))
+                {
+                    WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
+                    WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
+                }
+                else
+                {
+                    MessageBox.Show("Installazione completata, ma l'installer temporaneo non è stato rimosso.", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Errore durante l'installazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
             }
         }
 
@@ -820,7 +896,16 @@ namespace WinHubX
                 StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
+            Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+            Task<string> standardError = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
+
+            string[] capturedOutput = await Task.WhenAll(standardOutput, standardError);
+            if (process.ExitCode != 0)
+            {
+                Debug.WriteLine($"PowerShell terminato con codice {process.ExitCode}: {capturedOutput[1]}");
+            }
+
             return process.ExitCode;
         }
 
@@ -831,16 +916,24 @@ namespace WinHubX
                 StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
-            string output = await process.StandardOutput.ReadToEndAsync();
+            Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+            Task<string> standardError = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
-            return output;
+            string[] capturedOutput = await Task.WhenAll(standardOutput, standardError);
+
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"PowerShell terminato con codice {process.ExitCode}: {capturedOutput[1]}");
+            }
+
+            return capturedOutput[0];
         }
 
         private static ProcessStartInfo CreatePowerShellStartInfo(string command)
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -855,6 +948,23 @@ namespace WinHubX
 
         private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
+        private static bool TryDeleteOfficeFile(string path, string description)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Debug.WriteLine($"Rimozione {description} non riuscita: {ex}");
+                return false;
+            }
+        }
+
         private async void FormOffice_Load(object? sender, EventArgs e)
         {
             try
@@ -867,9 +977,14 @@ namespace WinHubX
                     comboBoxVerOffice.Items.Add(office.Nome);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Caricamento catalogo Office non riuscito: {ex}");
+                MessageBox.Show(
+                    $"Impossibile caricare il catalogo Office. Verifica la connessione e riprova.\n{ex.Message}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
             Checkbox_Salva.Checked = WinHubX.Impostazioni.OfficeSettings.SalvaFile;
             Checkbox_Installa.Checked = WinHubX.Impostazioni.OfficeSettings.Installa;
