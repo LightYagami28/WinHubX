@@ -335,10 +335,15 @@ namespace WinHubX.Forms.Settaggi
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c takeown /f \"HKEY_LOCAL_MACHINE\\{keyPath}\" /a",
                 Verb = "runas",
-                UseShellExecute = true
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             };
+            psi.ArgumentList.Add("/c");
+            psi.ArgumentList.Add("takeown");
+            psi.ArgumentList.Add("/f");
+            psi.ArgumentList.Add($"HKEY_LOCAL_MACHINE\\{keyPath}");
+            psi.ArgumentList.Add("/a");
             using var process = System.Diagnostics.Process.Start(psi)
                 ?? throw new InvalidOperationException("Impossibile avviare takeown.");
             process.WaitForExit();
@@ -349,10 +354,14 @@ namespace WinHubX.Forms.Settaggi
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-Command Set-MpPreference -{preference} {(enabled ? "Enabled" : "Disabled")}",
                 Verb = "runas",
-                UseShellExecute = true
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             };
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-NonInteractive");
+            psi.ArgumentList.Add("-Command");
+            psi.ArgumentList.Add($"Set-MpPreference -{preference} {(enabled ? "Enabled" : "Disabled")}");
             using var process = System.Diagnostics.Process.Start(psi)
                 ?? throw new InvalidOperationException("Impossibile avviare Set-MpPreference.");
             process.WaitForExit();
