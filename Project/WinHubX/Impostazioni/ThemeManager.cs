@@ -57,23 +57,23 @@ namespace WinHubX.Impostazioni
                 return;
             if (control is Form formMain && formMain.Name == "Form1")
             {
-                formMain.BackColor = darkTheme ? Color.FromArgb(64, 60, 59) : Color.FromArgb(245, 245, 245);
+                formMain.BackColor = darkTheme ? UiPalette.DarkWindow : UiPalette.LightWindow;
                 foreach (Control child in formMain.Controls)
                     ApplyThemeToControl(child, darkTheme);
 
                 return; 
             }
-            Color backColor = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
-            Color foreColor = darkTheme ? Color.White : Color.Black;
+            Color backColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
+            Color foreColor = darkTheme ? UiPalette.DarkText : UiPalette.LightText;
 
             string parentPanelName = GetSpecialParentPanelName(control);
             if (parentPanelName == "panel1" || parentPanelName == "panel2" || parentPanelName == "panel3" || parentPanelName == "tableLayoutPanel1")
             {
-                backColor = darkTheme ? Color.FromArgb(64, 60, 59) : Color.FromArgb(245, 245, 245);
+                backColor = darkTheme ? UiPalette.DarkWindow : UiPalette.LightWindow;
             }
             else if (parentPanelName == "PnlFormLoader")
             {
-                backColor = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
+                backColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
             }
 
             Color arancione = Color.Coral;
@@ -98,7 +98,7 @@ namespace WinHubX.Impostazioni
                 }
                 else
                 {
-                    form.BackColor = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
+                    form.BackColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
                 }
 
                 if (IsSpecialColor(form.ForeColor))
@@ -265,9 +265,9 @@ namespace WinHubX.Impostazioni
 
                 if (control is cuiPanel panel)
                 {
-                    panel.PanelColor = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
-                    panel.BackColor = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
-                    panel.PanelOutlineColor = darkTheme ? Color.WhiteSmoke : Color.DarkGray;
+                    panel.PanelColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
+                    panel.BackColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
+                    panel.PanelOutlineColor = darkTheme ? UiPalette.DarkBorder : UiPalette.LightBorder;
                 }
                 if (control is cuiPictureBox pic)
                 {
@@ -318,12 +318,12 @@ namespace WinHubX.Impostazioni
 
         public static Color GetBackColor(bool darkTheme)
         {
-            return darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
+            return darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
         }
 
         public static Color GetForeColor(bool darkTheme)
         {
-            return darkTheme ? Color.White : Color.Black;
+            return darkTheme ? UiPalette.DarkText : UiPalette.LightText;
         }
     }
 }
