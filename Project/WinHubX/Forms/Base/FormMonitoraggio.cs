@@ -804,19 +804,13 @@ namespace WinHubX.Forms.Base
                 .OrderBy(id => id, StringComparer.Ordinal)
                 .ToArray();
             // NetworkInterface.Speed è espresso in bit/s; convertiamo la capacità aggregata in KB/s.
-            networkCapacityKB = networkInterfaces
-                .Where(n => n.Speed > 0)
-                .Sum(n => (double)n.Speed) / 8d / 1024d;
+            networkCapacityKB = NetworkUsageCalculator.CalculateCapacityKilobytesPerSecond(
+                networkInterfaces.Select(n => n.Speed));
         }
 
         private double CalculateNetworkUsage(double currentSpeedKB)
         {
-            if (networkCapacityKB <= 0)
-            {
-                return 0;
-            }
-
-            return Math.Clamp(currentSpeedKB / networkCapacityKB * 100, 0, 100);
+            return NetworkUsageCalculator.CalculateUsagePercentage(currentSpeedKB, networkCapacityKB);
         }
 
         private async Task UpdateUI(double sentKB, double receivedKB, double totalSpeedKB, double networkUsage)
