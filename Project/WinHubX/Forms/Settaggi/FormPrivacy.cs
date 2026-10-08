@@ -156,12 +156,15 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-                        Arguments = $"-Command \"{script}\"",
                         UseShellExecute = false,
                         CreateNoWindow = true,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true
                     };
+                    startInfo.ArgumentList.Add("-NoProfile");
+                    startInfo.ArgumentList.Add("-NonInteractive");
+                    startInfo.ArgumentList.Add("-Command");
+                    startInfo.ArgumentList.Add(script);
                     using (var process = System.Diagnostics.Process.Start(startInfo))
                     {
                         if (process != null)
@@ -172,12 +175,12 @@ namespace WinHubX.Forms.Settaggi
                             var error = process.StandardError.ReadToEnd();
                             if (!string.IsNullOrEmpty(output))
                             {
-
+                                System.Diagnostics.Debug.WriteLine(output);
                             }
 
                             if (!string.IsNullOrEmpty(error))
                             {
-
+                                System.Diagnostics.Debug.WriteLine(error);
                             }
                         }
                         else
@@ -186,9 +189,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Script privacy non eseguito: {ex.Message}");
                 }
             });
 
