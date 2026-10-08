@@ -39,6 +39,7 @@ namespace WinHubX.Forms.Base
         private System.Windows.Forms.Timer? _ramMonitorTimer;
         private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
         private readonly CancellationTokenSource _monitoringCancellation = new();
+        private readonly CancellationToken _monitoringToken;
         private bool _monitoringStarted;
         private int _ramCleanupRunning;
         private DateTime _lastAutomaticRamCleanupUtc = DateTime.MinValue;
@@ -51,6 +52,7 @@ namespace WinHubX.Forms.Base
         {
             InitializeComponent();
             _mainForm = mainForm;
+            _monitoringToken = _monitoringCancellation.Token;
 
             // Riduce tearing e ridisegni parziali durante gli aggiornamenti dei monitor.
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
@@ -289,7 +291,7 @@ namespace WinHubX.Forms.Base
                     CleanMemory();
                     CpuReduce();
                     OptimizeMemory();
-                }, _monitoringCancellation.Token);
+                }, _monitoringToken);
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
@@ -372,7 +374,7 @@ namespace WinHubX.Forms.Base
                     try
                     {
                         // La scansione ricorsiva può attraversare migliaia di file: mai eseguirla sul thread UI.
-                        long totalBytes = await Task.Run(() => GetDirectorySize(tempPath), _monitoringCancellation.Token);
+                        long totalBytes = await Task.Run(() => GetDirectorySize(tempPath, _monitoringToken), _monitoringToken);
                         if (_monitoringCancellation.IsCancellationRequested || IsDisposed || !IsHandleCreated)
                         {
                             return;
@@ -396,7 +398,7 @@ namespace WinHubX.Forms.Base
                         Debug.WriteLine($"Lettura cartella temporanea non riuscita: {ex}");
                     }
 
-                    await Task.Delay(10000, _monitoringCancellation.Token);
+                    await Task.Delay(10000, _monitoringToken);
                 }
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
@@ -416,15 +418,53 @@ namespace WinHubX.Forms.Base
             return 2; 
         }
 
-        private long GetDirectorySize(string folderPath)
+        private long GetDirectorySize(string folderPath, CancellationToken cancellationToken)
         {
             long size = 0;
+            var pendingDirectories = new Stack<string>();
+            pendingDirectories.Push(folderPath);
 
-            DirectoryInfo dir = new DirectoryInfo(folderPath);
-
-            foreach (FileInfo file in dir.GetFiles("*", SearchOption.AllDirectories))
+            while (pendingDirectories.TryPop(out string? currentDirectory))
             {
-                size += file.Length;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    foreach (string filePath in Directory.EnumerateFiles(currentDirectory))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        try
+                        {
+                            size += new FileInfo(filePath).Length;
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            Debug.WriteLine($"Dimensione file TEMP non leggibile: {ex.Message}");
+                        }
+                    }
+
+                    foreach (string subdirectory in Directory.EnumerateDirectories(currentDirectory))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        try
+                        {
+                            if ((File.GetAttributes(subdirectory) & FileAttributes.ReparsePoint) == 0)
+                            {
+                                pendingDirectories.Push(subdirectory);
+                            }
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            Debug.WriteLine($"Cartella TEMP non leggibile: {ex.Message}");
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"Scansione cartella TEMP non riuscita: {ex.Message}");
+                }
             }
 
             return size;
@@ -443,7 +483,7 @@ namespace WinHubX.Forms.Base
                         {
                             double discoUsage = await GetDiscoUsagePercentageAsync();
                             UpdateDiscoUI(discoUsage);
-                            await Task.Delay(3000, _monitoringCancellation.Token);
+                            await Task.Delay(3000, _monitoringToken);
                         }
                         catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
                         {
@@ -452,10 +492,10 @@ namespace WinHubX.Forms.Base
                         catch (Exception ex)
                         {
                             Debug.WriteLine($"Lettura utilizzo disco non riuscita: {ex}");
-                            await Task.Delay(3000, _monitoringCancellation.Token);
+                            await Task.Delay(3000, _monitoringToken);
                         }
                     }
-                }, _monitoringCancellation.Token);
+                }, _monitoringToken);
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
@@ -472,7 +512,7 @@ namespace WinHubX.Forms.Base
                 using (var diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total"))
                 {
                     diskCounter.NextValue();
-                    await Task.Delay(1000, _monitoringCancellation.Token);
+                    await Task.Delay(1000, _monitoringToken);
                     float diskUsage = diskCounter.NextValue();
 
                     return Math.Min(diskUsage, 100);
@@ -489,7 +529,7 @@ namespace WinHubX.Forms.Base
                     using (var diskCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total"))
                     {
                         diskCounter.NextValue();
-                        await Task.Delay(1000, _monitoringCancellation.Token);
+                        await Task.Delay(1000, _monitoringToken);
                         float diskUsage = diskCounter.NextValue();
                         return Math.Min(diskUsage, 100);
                     }
@@ -547,10 +587,10 @@ namespace WinHubX.Forms.Base
                     BarCPUtext.Text = $"{cpuUsagePercentage:0}%";
                     if (MonitorSettings.PuliziaAutomaticaCPU && cpuUsagePercentage > (double)MonitorSettings.LimiteCPU)
                     {
-                        await Task.Run(CpuReduce, _monitoringCancellation.Token);
+                        await Task.Run(CpuReduce, _monitoringToken);
                     }
 
-                    await Task.Delay(2000, _monitoringCancellation.Token);
+                    await Task.Delay(2000, _monitoringToken);
                 }
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
@@ -570,7 +610,7 @@ namespace WinHubX.Forms.Base
                 {
                     try
                     {
-                        HardwareSnapshot snapshot = await Task.Run(PollHardware, _monitoringCancellation.Token);
+                        HardwareSnapshot snapshot = await Task.Run(PollHardware, _monitoringToken);
                         if (IsDisposed || !IsHandleCreated)
                         {
                             return;
@@ -589,7 +629,7 @@ namespace WinHubX.Forms.Base
                         Debug.WriteLine($"Lettura sensori hardware non riuscita: {ex}");
                     }
 
-                    await Task.Delay(1000, _monitoringCancellation.Token);
+                    await Task.Delay(1000, _monitoringToken);
                 }
             }
             catch (OperationCanceledException)
@@ -673,7 +713,7 @@ namespace WinHubX.Forms.Base
                 lastBytesReceived = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesReceived);
                 while (!_monitoringCancellation.IsCancellationRequested)
                 {
-                    await Task.Delay(1000, _monitoringCancellation.Token);
+                    await Task.Delay(1000, _monitoringToken);
 
                     try
                     {
@@ -768,7 +808,7 @@ namespace WinHubX.Forms.Base
         private async Task<double> GetCpuUsagePercentageAsync()
         {
             _ = _cpuCounter.NextValue();
-            await Task.Delay(1000, _monitoringCancellation.Token);
+            await Task.Delay(1000, _monitoringToken);
             return _cpuCounter.NextValue();
         }
 
