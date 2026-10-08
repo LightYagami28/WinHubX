@@ -10,7 +10,7 @@
         private static readonly HttpClient _httpClient = CreateHttpClient();
         private static long _totalDownloadedBytes = 0;
 
-        // 🔥 AGGIUNGI: CancellationTokenSource statico per gestire la cancellazione globale
+        private static readonly SemaphoreSlim _downloadSemaphore = new(1, 1);
         private static CancellationTokenSource? _globalCts;
         private static readonly object _stateLock = new();
 
@@ -29,12 +29,12 @@
             };
         }
 
-        // 🔥 AGGIUNGI: Metodo per forzare l'interruzione
         public static void ForceStopDownload()
         {
-            _globalCts?.Cancel();
-            IsDownloading = false;
-            DownloadStateChanged?.Invoke(false);
+            lock (_stateLock)
+            {
+                _globalCts?.Cancel();
+            }
         }
 
         public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4)
@@ -49,59 +49,102 @@
                 Directory.CreateDirectory(directory);
 
             string temporaryPath = $"{savePath}.{Guid.NewGuid():N}.download";
-            // Il token globale serve solo al comando di annullamento dell'interfaccia; ogni
-            // download riceve comunque una propria sorgente e non condivide lo stato dei file.
-            using var globalCts = new CancellationTokenSource();
-            lock (_stateLock)
-            {
-                _globalCts?.Cancel();
-                _globalCts?.Dispose();
-                _globalCts = globalCts;
-            }
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
-            var linkedToken = linkedCts.Token;
-
-            IsDownloading = true;
-            DownloadStateChanged?.Invoke(true);
-            ProgressPercentage = 0;
-            ProgressChanged?.Invoke(0);
+            await _downloadSemaphore.WaitAsync(token);
+            CancellationTokenSource? globalCts = null;
+            bool stateAnnounced = false;
 
             try
             {
-                linkedToken.ThrowIfCancellationRequested();
-
-                if (autoParallel)
+                globalCts = new CancellationTokenSource();
+                lock (_stateLock)
                 {
-                    bool useParallel = await SupportsParallelDownload(url, linkedToken);
-                    if (useParallel)
-                    {
-                        await DownloadParallelAutoAsync(url, temporaryPath, linkedToken, maxChunks);
-                        File.Move(temporaryPath, savePath, true);
-                        return;
-                    }
+                    _globalCts = globalCts;
+                    IsDownloading = true;
+                    ProgressPercentage = 0;
+                    _totalDownloadedBytes = 0;
                 }
 
-                await DownloadSequentialAsync(url, temporaryPath, linkedToken);
-                File.Move(temporaryPath, savePath, true);
-            }
-            catch (OperationCanceledException)
-            {
-                DeleteTemporaryFile(temporaryPath);
-                throw;
-            }
-            catch (Exception)
-            {
-                DeleteTemporaryFile(temporaryPath);
-                throw;
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
+                CancellationToken linkedToken = linkedCts.Token;
+                stateAnnounced = true;
+                PublishDownloadState(true);
+                PublishProgress(0);
+
+                try
+                {
+                    linkedToken.ThrowIfCancellationRequested();
+
+                    if (autoParallel && await SupportsParallelDownload(url, linkedToken))
+                    {
+                        await DownloadParallelAutoAsync(url, temporaryPath, linkedToken, maxChunks);
+                    }
+                    else
+                    {
+                        await DownloadSequentialAsync(url, temporaryPath, linkedToken);
+                    }
+
+                    File.Move(temporaryPath, savePath, true);
+                }
+                catch
+                {
+                    DeleteTemporaryFile(temporaryPath);
+                    throw;
+                }
             }
             finally
             {
-                IsDownloading = false;
-                DownloadStateChanged?.Invoke(false);
-                lock (_stateLock)
+                try
                 {
-                    if (ReferenceEquals(_globalCts, globalCts))
-                        _globalCts = null;
+                    lock (_stateLock)
+                    {
+                        IsDownloading = false;
+                        if (ReferenceEquals(_globalCts, globalCts))
+                            _globalCts = null;
+                        globalCts?.Dispose();
+                    }
+
+                    if (stateAnnounced)
+                        PublishDownloadState(false);
+                }
+                finally
+                {
+                    _downloadSemaphore.Release();
+                }
+            }
+        }
+
+        private static void PublishProgress(int progress)
+        {
+            if (ProgressChanged is not { } handlers)
+                return;
+
+            foreach (Action<int> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(progress);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Handler progresso download non riuscito: {ex}");
+                }
+            }
+        }
+
+        private static void PublishDownloadState(bool isDownloading)
+        {
+            if (DownloadStateChanged is not { } handlers)
+                return;
+
+            foreach (Action<bool> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(isDownloading);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Handler stato download non riuscito: {ex}");
                 }
             }
         }
@@ -113,8 +156,9 @@
                 if (File.Exists(path))
                     File.Delete(path);
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
+                System.Diagnostics.Debug.WriteLine($"File temporaneo download non eliminato: {ex}");
                 // Il file temporaneo non è mai esposto come output valido; il cleanup può
                 // essere completato dal sistema operativo al successivo avvio.
             }
@@ -137,7 +181,11 @@
                     return supportsRanges && contentLength > 1024 * 1024; // > 1MB
                 }
             }
-            catch
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
                 // Se fallisce la verifica, usa il metodo sequenziale
                 return false;
@@ -187,10 +235,10 @@
                     int bytesRead;
                     int lastReportedProgress = -1;
 
-                    while ((bytesRead = await contentStream.ReadAsync(buffer, token)) > 0)
+                    while ((bytesRead = await contentStream.ReadAsync(buffer.AsMemory(), token)) > 0)
                     {
                         token.ThrowIfCancellationRequested();
-                        await fileStream.WriteAsync(buffer, 0, bytesRead, token);
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
                         totalRead += bytesRead;
 
                         if (canReportProgress)
@@ -200,7 +248,7 @@
                             if (progress != lastReportedProgress && progress % 2 == 0) // Report ogni 2%
                             {
                                 ProgressPercentage = progress;
-                                ProgressChanged?.Invoke(progress);
+                                PublishProgress(progress);
                                 lastReportedProgress = progress;
                             }
                         }
@@ -209,7 +257,7 @@
             }
 
             ProgressPercentage = 100;
-            ProgressChanged?.Invoke(100);
+            PublishProgress(100);
         }
 
         private static async Task DownloadWithRanges(string url, string savePath, long totalBytes, int chunks, CancellationToken token)
@@ -237,34 +285,59 @@
 
             await Task.WhenAll(tasks);
             ProgressPercentage = 100;
-            ProgressChanged?.Invoke(100);
+            PublishProgress(100);
         }
 
         private static async Task DownloadChunkAsync(string url, string savePath, long start, long end, int chunkIndex, object progressLock, long totalBytes, CancellationToken token)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(start, end);
 
             using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token))
             {
                 response.EnsureSuccessStatusCode();
+                if (response.StatusCode != System.Net.HttpStatusCode.PartialContent)
+                {
+                    throw new HttpRequestException("Il server non ha rispettato l'intervallo richiesto per il download.");
+                }
 
-                using (var contentStream = await response.Content.ReadAsStreamAsync())
+                long expectedChunkBytes = end - start + 1;
+                var contentRange = response.Content.Headers.ContentRange;
+                if (contentRange is null ||
+                    !string.Equals(contentRange.Unit, "bytes", StringComparison.OrdinalIgnoreCase) ||
+                    contentRange.From != start ||
+                    contentRange.To != end ||
+                    contentRange.Length != totalBytes)
+                {
+                    throw new HttpRequestException("L'intervallo restituito dal server non corrisponde a quello richiesto.");
+                }
+
+                if (response.Content.Headers.ContentLength is long contentLength && contentLength != expectedChunkBytes)
+                {
+                    throw new EndOfStreamException("La dimensione del blocco scaricato non corrisponde a quella attesa.");
+                }
+
+                using (var contentStream = await response.Content.ReadAsStreamAsync(token))
                 using (var fileStream = new FileStream(savePath, FileMode.Open, FileAccess.Write, FileShare.Write, 65536, true))
                 {
                     var buffer = new byte[65536];
                     int bytesRead;
                     long chunkDownloaded = 0;
 
-                    while ((bytesRead = await contentStream.ReadAsync(buffer, token)) > 0)
+                    while ((bytesRead = await contentStream.ReadAsync(buffer.AsMemory(), token)) > 0)
                     {
                         token.ThrowIfCancellationRequested();
                         fileStream.Seek(start + chunkDownloaded, SeekOrigin.Begin);
-                        await fileStream.WriteAsync(buffer, 0, bytesRead, token);
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
                         chunkDownloaded += bytesRead;
 
                         // Aggiorna il progresso tramite un metodo thread-safe
                         UpdateDownloadProgress(bytesRead, totalBytes, progressLock);
+                    }
+
+                    if (chunkDownloaded != expectedChunkBytes)
+                    {
+                        throw new EndOfStreamException("Il download del blocco è terminato prima di ricevere tutti i byte previsti.");
                     }
                 }
             }
@@ -288,7 +361,7 @@
 
             // Gli handler UI possono reentrare: non invocarli mentre il lock è detenuto.
             if (progressToPublish.HasValue)
-                ProgressChanged?.Invoke(progressToPublish.Value);
+                PublishProgress(progressToPublish.Value);
         }
     }
 }
