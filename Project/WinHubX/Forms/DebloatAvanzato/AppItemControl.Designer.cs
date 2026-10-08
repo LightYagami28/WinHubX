@@ -38,7 +38,7 @@ namespace WinHubX.Forms.DebloatAvanzato
             // lblNome
             // 
             lblNome.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-            lblNome.Font = new Font("Arial", 9F, FontStyle.Bold);
+            lblNome.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             lblNome.ForeColor = Color.Black;
             lblNome.Location = new Point(69, 12);
             lblNome.Name = "lblNome";

@@ -109,7 +109,7 @@ namespace WinHubX.DialogBlock
             // Form_DialogBlock
             // 
             resources.ApplyResources(this, "$this");
-            AutoScaleMode = AutoScaleMode.Font;
+            AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.FromArgb(50, 50, 50);
             Controls.Add(btnVerificaVerdi);
             Controls.Add(btnClose);
