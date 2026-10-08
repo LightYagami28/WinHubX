@@ -9,6 +9,11 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormMonitoraggio : Form
     {
+        private sealed record HardwareSnapshot(string CpuTemperature, string GpuTemperature, double GpuUsage)
+        {
+            public static HardwareSnapshot Empty { get; } = new("N/A", "N/A", 0);
+        }
+
         #region Constants and Fields
         private const string RegistryKey = @"Software\WinHubX-Monitor";
         private const string RegistryValueMonitoraggio = "IsMonitoringOn";
@@ -21,6 +26,8 @@ namespace WinHubX.Forms.Base
         private const uint PROCESS_QUERY_INFORMATION = 0x0400;
 
         private NetworkInterface[] networkInterfaces = Array.Empty<NetworkInterface>();
+        private readonly object _hardwareSync = new();
+        private HardwareSnapshot _latestHardwareSnapshot = HardwareSnapshot.Empty;
         private DateTime lastUpdateTime;
         private long lastBytesSent;
         private long lastBytesReceived;
@@ -28,7 +35,6 @@ namespace WinHubX.Forms.Base
 
         private readonly Form1 _mainForm;
         private Computer _computer = new();
-        private System.Windows.Forms.Timer _monitoringTimer = new();
         private System.Windows.Forms.Timer _tempMonitorTimer = new();
         private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
         private readonly CancellationTokenSource _monitoringCancellation = new();
@@ -67,7 +73,7 @@ namespace WinHubX.Forms.Base
                 btnPulisciRam.Content = LanguageManager.CurrentLanguage == "it" ? "  Pulizia" : "  Clean";
                 btnSvuotaTemp.Content = LanguageManager.CurrentLanguage == "it" ? "  Svuota" : "  Empty";
 
-                InitializeComputer();
+                await Task.Run(InitializeComputer);
                 InitializeTimers();
                 InitializePerformanceCounter();
                 InitializeNotificationIcon();
@@ -75,7 +81,7 @@ namespace WinHubX.Forms.Base
                 StartCpuMonitoring();
                 StartRamMonitoring();
                 StartReteMonitoring();
-                StartGPUMonitoring();
+                StartHardwareMonitoring();
                 StartDiscoMonitoring();
                 StartTEMPMonitoring();
                 LoadMonitoraggioSettings();
@@ -90,23 +96,22 @@ namespace WinHubX.Forms.Base
         #region Initialization Methods
         private void InitializeComputer()
         {
-            _computer = new Computer
+            lock (_hardwareSync)
             {
-                IsCpuEnabled = true,
-                IsGpuEnabled = true,
-                IsStorageEnabled = true,
-                IsMotherboardEnabled = true,
-                IsControllerEnabled = true
-            };
-            _computer.Open();
+                _computer = new Computer
+                {
+                    IsCpuEnabled = true,
+                    IsGpuEnabled = true,
+                    IsStorageEnabled = false,
+                    IsMotherboardEnabled = false,
+                    IsControllerEnabled = false
+                };
+                _computer.Open();
+            }
         }
 
         private void InitializeTimers()
         {
-            _monitoringTimer = new System.Windows.Forms.Timer { Interval = 1000 };
-            _monitoringTimer.Tick += MonitoringTimer_Tick;
-            _monitoringTimer.Start();
-
             _tempMonitorTimer = new System.Windows.Forms.Timer { Interval = 5000 };
             _tempMonitorTimer.Tick += TempMonitorTimer_Tick;
             _tempMonitorTimer.Start();
@@ -159,15 +164,10 @@ namespace WinHubX.Forms.Base
         #endregion
 
         #region Temperature Monitoring
-        private void MonitoringTimer_Tick(object? sender, EventArgs e)
-        {
-            UpdateTemperatureDisplays();
-        }
-
         private void UpdateTemperatureDisplays()
         {
-            var cpuTemperature = GetTemperature(HardwareType.Cpu)?.ToString("0") ?? "N/A";
-            var gpuTemperature = GetGpuTemperature() ?? "N/A";
+            string cpuTemperature = _latestHardwareSnapshot.CpuTemperature;
+            string gpuTemperature = _latestHardwareSnapshot.GpuTemperature;
             var displayCpuTemp = ConvertTemperature(cpuTemperature, MonitorSettings.ShowFahrenheitcpu);
             var displayGpuTemp = ConvertTemperature(gpuTemperature, MonitorSettings.ShowFahrenheitgpu);
 
@@ -191,7 +191,6 @@ namespace WinHubX.Forms.Base
             {
                 if (hardware.HardwareType == hardwareType)
                 {
-                    hardware.Update();
                     var sensor = hardware.Sensors
                         .FirstOrDefault(s => s.SensorType == SensorType.Temperature);
                     return sensor?.Value;
@@ -469,17 +468,62 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private async void StartGPUMonitoring()
+        private async void StartHardwareMonitoring()
         {
-            await Task.Run(async () =>
+            try
             {
                 while (!_monitoringCancellation.IsCancellationRequested)
                 {
-                    double gpuUsage = GetGpuLoadPercentage() ?? 0;
-                    UpdateGpuUI(gpuUsage);
-                    await Task.Delay(2000);
+                    try
+                    {
+                        HardwareSnapshot snapshot = await Task.Run(PollHardware, _monitoringCancellation.Token);
+                        if (IsDisposed || !IsHandleCreated)
+                        {
+                            return;
+                        }
+
+                        _latestHardwareSnapshot = snapshot;
+                        UpdateTemperatureDisplays();
+                        UpdateGpuUI(snapshot.GpuUsage);
+                    }
+                    catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Lettura sensori hardware non riuscita: {ex}");
+                    }
+
+                    await Task.Delay(1000, _monitoringCancellation.Token);
                 }
-            });
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura sensori hardware non riuscita: {ex}");
+            }
+        }
+
+        private HardwareSnapshot PollHardware()
+        {
+            lock (_hardwareSync)
+            {
+                foreach (IHardware hardware in _computer.Hardware)
+                {
+                    if (hardware.HardwareType is HardwareType.Cpu or HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+                    {
+                        hardware.Update();
+                    }
+                }
+
+                string cpuTemperature = GetTemperature(HardwareType.Cpu)?.ToString("0") ?? "N/A";
+                string gpuTemperature = GetGpuTemperature() ?? "N/A";
+                double gpuUsage = GetGpuLoadPercentage() ?? 0;
+                return new HardwareSnapshot(cpuTemperature, gpuTemperature, gpuUsage);
+            }
         }
 
         private double? GetGpuLoadPercentage()
@@ -490,7 +534,6 @@ namespace WinHubX.Forms.Base
                     hardware.HardwareType == HardwareType.GpuAmd ||
                     hardware.HardwareType == HardwareType.GpuIntel)
                 {
-                    hardware.Update();
                     var loadSensor = hardware.Sensors.FirstOrDefault(s =>
                         s.SensorType == SensorType.Load &&
                         (s.Name.Contains("Core") ||
@@ -802,9 +845,36 @@ namespace WinHubX.Forms.Base
         public void CleanupResources()
         {
             _monitoringCancellation.Cancel();
-            _computer?.Close();
+            if (Monitor.TryEnter(_hardwareSync))
+            {
+                try
+                {
+                    _computer?.Close();
+                }
+                finally
+                {
+                    Monitor.Exit(_hardwareSync);
+                }
+            }
+            else
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        lock (_hardwareSync)
+                        {
+                            _computer?.Close();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Chiusura del monitor hardware non riuscita: {ex}");
+                    }
+                });
+            }
+
             _cpuCounter?.Dispose();
-            _monitoringTimer?.Dispose();
             _tempMonitorTimer?.Dispose();
             _notifyIcon?.Dispose();
             _monitoringCancellation.Dispose();
