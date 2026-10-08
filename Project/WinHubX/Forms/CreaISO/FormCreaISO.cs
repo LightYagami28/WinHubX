@@ -10,6 +10,15 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormCreaISO : Form
     {
+        private static readonly HttpClient ResourceClient = new(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        })
+        {
+            Timeout = TimeSpan.FromMinutes(2)
+        };
+
         private readonly Form1 form1;
         private string selectedFile = string.Empty;
         private string percorsoCompletoISO = string.Empty;
@@ -78,47 +87,43 @@ namespace WinHubX.Forms.Base
         }
         private async Task ScaricaFileAsync(string url, string destinazione)
         {
-            using (HttpClient client = new HttpClient())
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
+                throw new InvalidOperationException("Il download ISO richiede un URL HTTPS valido.");
+
+            using (HttpResponseMessage response = await ResourceClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
             {
-                using (HttpResponseMessage response = await client.GetAsync(url))
+                _ = response.EnsureSuccessStatusCode();
+                await using (FileStream fs = new(destinazione, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
                 {
-                    _ = response.EnsureSuccessStatusCode();
-                    using (FileStream fs = new FileStream(destinazione, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        await response.Content.CopyToAsync(fs);
-                    }
+                    await response.Content.CopyToAsync(fs);
                 }
             }
         }
 
         private async Task<string> GetZipUrlFromJsonAsync(string jsonUrl)
         {
-            using (HttpClient client = new HttpClient())
+            try
             {
-                try
-                {
-                    string jsonResponse = await client.GetStringAsync(jsonUrl);
-                    using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                    {
-                        JsonElement root = doc.RootElement;
-                        string? zipUrl = root.GetProperty("CreaISOWIN").GetProperty("creaiso").GetString();
-                        return zipUrl ?? string.Empty;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _ = MessageBox.Show($"Error: {ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return string.Empty;
-                }
+                if (!Uri.TryCreate(jsonUrl, UriKind.Absolute, out Uri? configUri) || configUri.Scheme != Uri.UriSchemeHttps)
+                    throw new InvalidOperationException("URL configurazione non valido: è richiesto HTTPS.");
+
+                string jsonResponse = await ResourceClient.GetStringAsync(configUri);
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+                string? zipUrl = root.GetProperty("CreaISOWIN").GetProperty("creaiso").GetString();
+                return zipUrl ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show($"Error: {ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return string.Empty;
             }
         }
         private async Task<string> GetZipUrlFromGitHubConfigAsync()
         {
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    var json = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
+                    var json = await ResourceClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
                     var obj = JObject.Parse(json);
                     string? url = obj["FormWin"]?["creaISOzip"]?.ToString();
 
@@ -126,7 +131,6 @@ namespace WinHubX.Forms.Base
                         throw new Exception("URL ZIP non trovato in Dipendenze.json");
 
                     return url;
-                }
             }
             catch (Exception ex)
             {
