@@ -40,6 +40,7 @@ namespace WinHubX.Forms.Base
         private System.Windows.Forms.Timer? _ramMonitorTimer;
         private PerformanceCounter? _cpuCounter;
         private PerformanceCounter? _diskUsageCounter;
+        private Task? _ramCleanupTask;
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private readonly CancellationToken _monitoringToken;
         private Task[] _monitoringTasks = Array.Empty<Task>();
@@ -96,7 +97,6 @@ namespace WinHubX.Forms.Base
                     return;
                 }
 
-                InitializeTimers();
                 InitializePerformanceCounter();
                 InitializeNotificationIcon();
                 ApplyTheme();
@@ -142,10 +142,6 @@ namespace WinHubX.Forms.Base
                 };
                 _computer.Open();
             }
-        }
-
-        private void InitializeTimers()
-        {
         }
 
         private void InitializePerformanceCounter()
@@ -312,12 +308,13 @@ namespace WinHubX.Forms.Base
             _lastAutomaticRamCleanupUtc = DateTime.UtcNow;
             try
             {
-                await Task.Run(() =>
+                _ramCleanupTask = Task.Run(() =>
                 {
                     CleanMemory();
                     CpuReduce();
                     OptimizeMemory();
                 }, _monitoringToken);
+                await _ramCleanupTask;
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
@@ -328,6 +325,7 @@ namespace WinHubX.Forms.Base
             }
             finally
             {
+                _ramCleanupTask = null;
                 Interlocked.Exchange(ref _ramCleanupRunning, 0);
             }
         }
@@ -1008,6 +1006,7 @@ namespace WinHubX.Forms.Base
 
         private async Task CleanupResourcesCoreAsync()
         {
+            _ramMonitorTimer?.Stop();
             try
             {
                 if (_initializationTask is not null)
@@ -1016,6 +1015,10 @@ namespace WinHubX.Forms.Base
                 }
 
                 await Task.WhenAll(_monitoringTasks);
+                if (_ramCleanupTask is not null)
+                {
+                    await _ramCleanupTask;
+                }
             }
             catch (OperationCanceledException)
             {
