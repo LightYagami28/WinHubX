@@ -6,7 +6,7 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
 {
-    public partial class FormDefender : Form
+    public partial class FormDefender : Form, IImportedSettingsForm
     {
         private sealed record DefenderSelection(HashSet<string> Disable, HashSet<string> Enable);
 
@@ -180,6 +180,11 @@ namespace WinHubX.Forms.Settaggi
             progressBar1.Value = 0;
             backgroundWorker1.RunWorkerAsync(selection);
         }
+
+        Task IImportedSettingsForm.ApplyImportedSettingsAsync() =>
+            ImportedSettingsWorker.RunAsync(
+                backgroundWorker1,
+                () => btnAvviaSelezionatiDef_Click(btnAvviaSelezionatiVerdi, EventArgs.Empty));
 
         private void btnRipristinaDefender_Click(object? sender, EventArgs e)
         {

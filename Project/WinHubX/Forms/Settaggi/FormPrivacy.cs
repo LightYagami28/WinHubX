@@ -8,7 +8,7 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
 {
-    public partial class FormPrivacy : Form
+    public partial class FormPrivacy : Form, IImportedSettingsForm
     {
         private sealed record PrivacySelection(HashSet<string> Disable, HashSet<string> Enable);
 
@@ -273,6 +273,11 @@ namespace WinHubX.Forms.Settaggi
             progressBar1.Value = 0;
             backgroundWorker1.RunWorkerAsync(selection);
         }
+
+        System.Threading.Tasks.Task IImportedSettingsForm.ApplyImportedSettingsAsync() =>
+            ImportedSettingsWorker.RunAsync(
+                backgroundWorker1,
+                () => btnAvviaSelezionati_Click(btnAvviaSelezionatiVerdi, EventArgs.Empty));
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
