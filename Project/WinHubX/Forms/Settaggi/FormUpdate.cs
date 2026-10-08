@@ -264,24 +264,24 @@ namespace WinHubX.Forms.Settaggi
                 }
                 StartService("BITS");
                 StartService("wuauserv");
-                var registryRemovals = new[]
+                var registryRemovals = new (string Path, string Name)[]
                 {
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Device Metadata", "PreventDeviceMetadataFromNetwork",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DontPromptForWindowsUpdate",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DontSearchWindowsUpdate",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DriverUpdateWizardWuSearchEnabled",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "ExcludeWUDriversInQualityUpdate",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "NoAutoRebootWithLoggedOnUsers",
-            @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "AUPowerManagement",
-            @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "BranchReadinessLevel",
-            @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "DeferFeatureUpdatesPeriodInDays",
-            @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "DeferQualityUpdatesPeriodInDays"
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\Device Metadata", "PreventDeviceMetadataFromNetwork"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DontPromptForWindowsUpdate"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DontSearchWindowsUpdate"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DriverSearching", "DriverUpdateWizardWuSearchEnabled"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "ExcludeWUDriversInQualityUpdate"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "NoAutoRebootWithLoggedOnUsers"),
+            (@"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "AUPowerManagement"),
+            (@"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "BranchReadinessLevel"),
+            (@"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "DeferFeatureUpdatesPeriodInDays"),
+            (@"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings", "DeferQualityUpdatesPeriodInDays")
                 };
 
                 foreach (var removal in registryRemovals)
                 {
-                    RemoveRegistryValue(removal, true);
-                    RemoveRegistryValue(removal, false);
+                    RemoveRegistryValue(removal.Path, removal.Name, true);
+                    RemoveRegistryValue(removal.Path, removal.Name, false);
                 }
                 string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
 
@@ -298,33 +298,18 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        private void RemoveRegistryValue(string path, bool is64Bit)
+        private void RemoveRegistryValue(string path, string name, bool is64Bit)
         {
-            var regPath = is64Bit ? path : path.Replace("SOFTWARE", "SOFTWARE\\WOW6432Node");
-
-            var startInfo = new System.Diagnostics.ProcessStartInfo()
+            const string localMachinePrefix = "HKLM\\";
+            if (!path.StartsWith(localMachinePrefix, StringComparison.OrdinalIgnoreCase))
             {
-                FileName = "reg.exe",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            startInfo.ArgumentList.Add("delete");
-            startInfo.ArgumentList.Add(regPath);
-            startInfo.ArgumentList.Add("/f");
-
-            using (var process = System.Diagnostics.Process.Start(startInfo)
-                ?? throw new InvalidOperationException("Impossibile avviare il processo di registro."))
-            {
-                process.WaitForExit();
-
-                var error = process.StandardError.ReadToEnd();
-                if (process.ExitCode != 0 && !error.Contains("ERROR_FILE_NOT_FOUND"))
-                {
-                    throw new Exception($"Failed to remove registry value: {error}");
-                }
+                throw new ArgumentException("Il percorso deve appartenere a HKEY_LOCAL_MACHINE.", nameof(path));
             }
+
+            RegistryView view = is64Bit ? RegistryView.Registry64 : RegistryView.Registry32;
+            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+            using RegistryKey? key = baseKey.OpenSubKey(path[localMachinePrefix.Length..], writable: true);
+            key?.DeleteValue(name, throwOnMissingValue: false);
         }
 
         private void StartService(string serviceName)
