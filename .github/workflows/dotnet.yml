@@ -2,9 +2,9 @@ name: .NET build
 
 on:
   push:
-    branches: [main]
+    branches: [main, experiment/net11-modernization]
   pull_request:
-    branches: [main]
+    branches: [main, experiment/net11-modernization]
 
 permissions:
   contents: read
@@ -14,9 +14,18 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
+      - name: Setup .NET 10 SDK
+        if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'main') || (github.event_name != 'pull_request' && github.ref_name == 'main') }}
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.x
+          dotnet-version: 10.0.x
+          dotnet-quality: ga
+      - name: Setup .NET 11 preview SDK
+        if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'experiment/net11-modernization') || (github.event_name != 'pull_request' && github.ref_name == 'experiment/net11-modernization') }}
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 11.0.x
+          dotnet-quality: preview
       - name: Restore
         run: dotnet restore Project/WinHubX.sln
       - name: Build
