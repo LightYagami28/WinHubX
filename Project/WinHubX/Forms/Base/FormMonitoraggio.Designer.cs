@@ -30,7 +30,6 @@ namespace WinHubX.Forms.Base
         {
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMonitoraggio));
-            tempMonitorTimer = new System.Windows.Forms.Timer(components);
             tableLayoutPanel17 = new TableLayoutPanel();
             cuiPanel5 = new HartUI.Controls.cuiPanel();
             domainUpDown1 = new DomainUpDown();
@@ -708,7 +707,6 @@ namespace WinHubX.Forms.Base
 
         #endregion
 
-        private System.Windows.Forms.Timer tempMonitorTimer;
         private TableLayoutPanel tableLayoutPanel17;
         private HartUI.Controls.cuiPanel cuiPanel3;
         private Label label2;
