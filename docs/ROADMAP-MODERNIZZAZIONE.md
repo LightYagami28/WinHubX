@@ -39,7 +39,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 - [x] 21. Verificare Authenticode per i binari pubblicati: ogni firma deve risultare valida; i file non firmati sono esplicitamente indicati come `NotSigned` nel manifest, senza bloccare lo stato attuale privo di certificato.
 - [x] 22. Updater con sostituzione atomica staged, backup, verifica SHA-256, attesa finestra avviata e rollback se startup fallisce; coperto da test di regressione.
 - [x] 23. Eliminare quoting fragile nei processi PowerShell/CMD (`ProcessStartInfo.Arguments` sostituito con `ArgumentList` per Office e `taskkill`; scansione C# senza assegnazioni fragili residue).
-- [ ] 24. Verificare privilegi minimi e isolare ogni azione che richiede UAC (manifest confermato `asInvoker`; audit ha rilevato e spostato in un unico batch UAC le scritture HKLM/HKU di `FormUtility`; restano da controllare gli altri form).
+- [ ] 24. Verificare privilegi minimi e isolare ogni azione che richiede UAC (manifest `asInvoker`; `FormUtility` e `FormUpdate` delegano le scritture HKLM/HKU selezionate a batch UAC; in `FormUpdate` corretto anche il ripristino dei nomi/percorsi dei valori e accorpata la modifica startup dei servizi; restano da controllare gli altri form).
 - [ ] 25. Audit completo di script, URL, file binari e risorse esterne.
 - [x] 26. Configurare Dependabot per NuGet e GitHub Actions.
 
