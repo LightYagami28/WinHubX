@@ -11,6 +11,10 @@ namespace WinHubX
         [STAThread]
         static void Main(string[] args)
         {
+            // Configurazione WinForms moderna: DPI, stili visuali e rendering
+            // vengono applicati prima di creare qualsiasi controllo.
+            ApplicationConfiguration.Initialize();
+
             // Carica configurazione
             // Imposta lingua in base a Windows se non impostata manualmente
             if (!Config.LanguageManuallySet)
@@ -66,9 +70,6 @@ namespace WinHubX
             };
 
             // Avvia app
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
             LanguageManager.SetLanguage(Config.Language);
             Thread.CurrentThread.CurrentUICulture = new CultureInfo(Config.Language);
             Thread.CurrentThread.CurrentCulture = new CultureInfo(Config.Language);
