@@ -560,8 +560,8 @@ namespace WinHubX.Forms.Personalizzazione_office
             string c2rCommand = $"\"{c2rExe}\" " +
                                 $"platform={arch} culture={lang} " +
                                 $"productstoadd={targetEdition}.16_{allLangs} " +
-                                $"cdnbaseurl.16=http://officecdn.microsoft.com/pr/{updch} " +
-                                $"baseurl.16=http://officecdn.microsoft.com/pr/{updch} " +
+                                $"cdnbaseurl.16=https://officecdn.microsoft.com/pr/{updch} " +
+                                $"baseurl.16=https://officecdn.microsoft.com/pr/{updch} " +
                                 $"version.16={version} mediatype.16=CDN sourcetype.16=CDN " +
                                 $"deliverymechanism={updch} " +
                                 $"{targetEdition}.excludedapps.16=groove{excludeList} " +
