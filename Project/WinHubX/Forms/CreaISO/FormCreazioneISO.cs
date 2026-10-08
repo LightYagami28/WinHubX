@@ -820,12 +820,17 @@ namespace WinHubX.Forms.CreaISO
                     var psi = new ProcessStartInfo
                     {
                         FileName = "powershell.exe",
-                        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{comando}; $pkgs.Count\"",
                         CreateNoWindow = true,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true
                     };
+                    psi.ArgumentList.Add("-NoProfile");
+                    psi.ArgumentList.Add("-NonInteractive");
+                    psi.ArgumentList.Add("-ExecutionPolicy");
+                    psi.ArgumentList.Add("RemoteSigned");
+                    psi.ArgumentList.Add("-Command");
+                    psi.ArgumentList.Add($"{comando}; $pkgs.Count");
 
                     using (var process = Process.Start(psi)
                         ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
