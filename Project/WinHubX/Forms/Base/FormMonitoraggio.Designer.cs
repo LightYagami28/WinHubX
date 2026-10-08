@@ -749,7 +749,7 @@ namespace WinHubX.Forms.Base
         private HartUI.Controls.cuiCircleProgressBar BarDISCO;
         private Label label18;
         private HartUI.Controls.cuiButton btnSvuotaTemp;
-        private HartUI.Controls.cuiButton btnPulisciRam;        
+        private HartUI.Controls.cuiButton btnPulisciRam;
         private Label BarTEMPtext;
         private HartUI.Controls.cuiCircleProgressBar BarTEMP;
         private DomainUpDown domainUpDown1;
