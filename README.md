@@ -30,9 +30,12 @@ WinHubX non automatizza attivazioni non autorizzate e non distribuisce certifica
 Scarica il pacchetto dalla [release più recente](https://github.com/LightYagami28/WinHubX/releases/latest), estrailo e avvia `WinHubX.exe`.
 
 ```powershell
-dotnet restore Project/WinHubX/WinHubX.csproj
-dotnet build Project/WinHubX/WinHubX.csproj --configuration Release --warnaserror
+dotnet restore Project/WinHubX.sln
+dotnet build Project/WinHubX.sln --configuration Release --warnaserror
+dotnet test Project/WinHubX.sln --configuration Release
 ```
+
+La suite include test di sicurezza per la validazione dei preset `.reg` importati.
 
 Il branch `main` segue .NET 10. `experiment/net11-modernization` è sperimentale e richiede l'SDK .NET 11 preview compatibile.
 
