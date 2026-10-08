@@ -143,12 +143,16 @@ namespace WinHubX.Forms.Settaggi
                 ProcessStartInfo processInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c dism /online /remove-package /package-name:Microsoft.Windows.Copilot",
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal
                 };
+                processInfo.ArgumentList.Add("/c");
+                processInfo.ArgumentList.Add("dism");
+                processInfo.ArgumentList.Add("/online");
+                processInfo.ArgumentList.Add("/remove-package");
+                processInfo.ArgumentList.Add("/package-name:Microsoft.Windows.Copilot");
 
                 _ = Process.Start(processInfo);
             }
@@ -182,12 +186,16 @@ namespace WinHubX.Forms.Settaggi
                 ProcessStartInfo processInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c dism /online /add-package /package-name:Microsoft.Windows.Copilot",
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal
                 };
+                processInfo.ArgumentList.Add("/c");
+                processInfo.ArgumentList.Add("dism");
+                processInfo.ArgumentList.Add("/online");
+                processInfo.ArgumentList.Add("/add-package");
+                processInfo.ArgumentList.Add("/package-name:Microsoft.Windows.Copilot");
 
                 _ = Process.Start(processInfo);
             }
@@ -204,12 +212,16 @@ namespace WinHubX.Forms.Settaggi
                 ProcessStartInfo processInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c dism /online /enable-feature /featurename:Recall",
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal
                 };
+                processInfo.ArgumentList.Add("/c");
+                processInfo.ArgumentList.Add("dism");
+                processInfo.ArgumentList.Add("/online");
+                processInfo.ArgumentList.Add("/enable-feature");
+                processInfo.ArgumentList.Add("/featurename:Recall");
                 _ = Process.Start(processInfo);
             }
             catch (Exception ex)
@@ -225,12 +237,16 @@ namespace WinHubX.Forms.Settaggi
                 ProcessStartInfo processInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c dism /online /disable-feature /featurename:Recall",
                     Verb = "runas",
                     UseShellExecute = true,
                     CreateNoWindow = false,
                     WindowStyle = ProcessWindowStyle.Normal
                 };
+                processInfo.ArgumentList.Add("/c");
+                processInfo.ArgumentList.Add("dism");
+                processInfo.ArgumentList.Add("/online");
+                processInfo.ArgumentList.Add("/disable-feature");
+                processInfo.ArgumentList.Add("/featurename:Recall");
                 _ = Process.Start(processInfo);
             }
             catch (Exception ex)
