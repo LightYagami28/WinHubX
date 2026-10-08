@@ -16,10 +16,22 @@ namespace WinHubX.Forms.Base
     public partial class FormDebloat : Form
     {
         private readonly Form1 form1;
+        private static readonly HttpClient ResourceClient = CreateResourceClient();
         private List<string> appxNames = new List<string>();
         public static Dictionary<string, string> appNameMappings = new Dictionary<string, string>();
         private Dictionary<string, string> imageUrls = new Dictionary<string, string>();
         private int totalSteps = 0;
+
+        private static HttpClient CreateResourceClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 4,
+                AutomaticDecompression = System.Net.DecompressionMethods.None,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            };
+            return new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2) };
+        }
 
         public FormDebloat(Form1 form1)
         {
@@ -32,8 +44,6 @@ namespace WinHubX.Forms.Base
         private async void FormDebloat_Shown(object? sender, EventArgs e)
         {
             Cursor = Cursors.WaitCursor;
-            await Task.Delay(50);
-
             try
             {
                 LanguageManager.LoadLanguageFromSettings();
@@ -91,9 +101,8 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                using (HttpClient client = new HttpClient())
                 {
-                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
+                    string json = await ResourceClient.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
                     var immaginiList = System.Text.Json.JsonSerializer.Deserialize<List<ImmagineData>>(json);
 
                     if (immaginiList != null)
@@ -119,9 +128,8 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                using (HttpClient client = new HttpClient())
                 {
-                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
+                    string json = await ResourceClient.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
                     appNameMappings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
                         ?? new Dictionary<string, string>();
                 }
@@ -139,11 +147,14 @@ namespace WinHubX.Forms.Base
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
-                    Arguments = "-Command \"Get-AppxPackage | Where-Object { $_.SignatureKind -eq 'Store' } | Select-Object -ExpandProperty Name\"",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add("-NoProfile");
+                psi.ArgumentList.Add("-NonInteractive");
+                psi.ArgumentList.Add("-Command");
+                psi.ArgumentList.Add("Get-AppxPackage | Where-Object { $_.SignatureKind -eq 'Store' } | Select-Object -ExpandProperty Name");
 
                 using (Process process = new Process { StartInfo = psi, EnableRaisingEvents = true })
                 {
