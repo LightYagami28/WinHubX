@@ -419,12 +419,14 @@ namespace WinHubX
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cscript.exe",
-                    Arguments = @"//nologo %windir%\system32\slmgr.vbs /xpr",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add("//nologo");
+                psi.ArgumentList.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "slmgr.vbs"));
+                psi.ArgumentList.Add("/xpr");
 
                 using var process = Process.Start(psi)
                     ?? throw new InvalidOperationException("Impossibile avviare cscript.");
