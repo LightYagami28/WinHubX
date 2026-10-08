@@ -43,6 +43,10 @@ namespace WinHubX.Forms.Base
             InitializeComponent();
             _mainForm = mainForm;
 
+            // Riduce tearing e ridisegni parziali durante gli aggiornamenti dei monitor.
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+            UpdateStyles();
+
             this.Shown += FormMonitoraggio_Shown;
         }
 
