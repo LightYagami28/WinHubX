@@ -7,12 +7,27 @@
         public static event Action<int>? ProgressChanged;
         public static event Action<bool>? DownloadStateChanged;
 
-        private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient = CreateHttpClient();
         private static long _totalDownloadedBytes = 0;
 
         // 🔥 AGGIUNGI: CancellationTokenSource statico per gestire la cancellazione globale
         private static CancellationTokenSource? _globalCts;
         private static readonly object _stateLock = new();
+
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 8,
+                AutomaticDecompression = System.Net.DecompressionMethods.None,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            };
+
+            return new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromMinutes(10)
+            };
+        }
 
         // 🔥 AGGIUNGI: Metodo per forzare l'interruzione
         public static void ForceStopDownload()
@@ -110,9 +125,11 @@
         {
             try
             {
-                using (var headResponse = await _httpClient.SendAsync(
-                    new HttpRequestMessage(HttpMethod.Head, url), token))
+                using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                using (var headResponse = await _httpClient.SendAsync(request,
+                    HttpCompletionOption.ResponseHeadersRead, token))
                 {
+                    headResponse.EnsureSuccessStatusCode();
                     // Verifica: 1) Supporta ranges, 2) Ha content length, 3) È abbastanza grande
                     bool supportsRanges = headResponse.Headers.AcceptRanges.Contains("bytes");
                     long contentLength = headResponse.Content.Headers.ContentLength ?? -1;
@@ -131,9 +148,11 @@
         {
             // Prima otteniamo le info complete sul file
             long totalBytes;
-            using (var headResponse = await _httpClient.SendAsync(
-                new HttpRequestMessage(HttpMethod.Head, url), token))
+            using var request = new HttpRequestMessage(HttpMethod.Head, url);
+            using (var headResponse = await _httpClient.SendAsync(request,
+                HttpCompletionOption.ResponseHeadersRead, token))
             {
+                headResponse.EnsureSuccessStatusCode();
                 totalBytes = headResponse.Content.Headers.ContentLength ?? -1;
             }
 
@@ -159,8 +178,9 @@
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 var canReportProgress = totalBytes != -1;
 
-                using (var contentStream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true))
+                using (var contentStream = await response.Content.ReadAsStreamAsync(token))
+                using (var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write,
+                    FileShare.None, 65536, FileOptions.Asynchronous | FileOptions.SequentialScan))
                 {
                     var buffer = new byte[65536];
                     long totalRead = 0;
@@ -252,6 +272,7 @@
 
         private static void UpdateDownloadProgress(long bytesDownloaded, long totalBytes, object progressLock)
         {
+            int? progressToPublish = null;
             lock (progressLock)
             {
                 // Usiamo una variabile statica per tracciare il totale
@@ -261,9 +282,13 @@
                 if (progress != ProgressPercentage && progress % 2 == 0)
                 {
                     ProgressPercentage = progress;
-                    ProgressChanged?.Invoke(progress);
+                    progressToPublish = progress;
                 }
             }
+
+            // Gli handler UI possono reentrare: non invocarli mentre il lock è detenuto.
+            if (progressToPublish.HasValue)
+                ProgressChanged?.Invoke(progressToPublish.Value);
         }
     }
 }
