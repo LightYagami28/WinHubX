@@ -14,6 +14,16 @@
     <PackageReference Include="Microsoft.Testing.Platform" />
     <PackageReference Include="Microsoft.Testing.Platform.MSBuild" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\WinHubX\Resources\it.json">
+      <LogicalName>WinHubX.Tests.Resources.it.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\WinHubX\Resources\en.json">
+      <LogicalName>WinHubX.Tests.Resources.en.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -22,5 +32,6 @@
     <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationScriptBuilder.cs" Link="Impostazioni\ServiceConfigurationScriptBuilder.cs" />
     <Compile Include="..\WinHubX\Impostazioni\UpdateManifestValidator.cs" Link="Impostazioni\UpdateManifestValidator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\NetworkUsageCalculator.cs" Link="Impostazioni\NetworkUsageCalculator.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\ThemeConfig.cs" Link="Impostazioni\ThemeConfig.cs" />
   </ItemGroup>
 </Project>

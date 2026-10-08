@@ -8,8 +8,8 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 - [x] 2. Mantenere branch separati .NET 10 stabile e .NET 11 preview.
 - [x] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro (`Directory.Packages.props`; audit NuGet 2026-10-08: nessun pacchetto vulnerabile; il branch .NET 11 usa Newtonsoft.Json 14 beta e pin delle dipendenze .NET 11 RC, soggetti a verifica prima del rilascio. Restano due update transitivi: Mono.Posix.NETStandard 5.20.1-preview (preview pubblicata nel 2020, non adottata senza compatibilità verificata) e ApplicationInsights 3.1.2 (richiede migrazione coordinata del provider MTP, resta 2.23.0).
 - [x] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
-- [ ] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi.
-- [ ] 6. Aggiungere test di regressione per configurazione, lingua e tema.
+- [x] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi (CI Windows avvia il publish, verifica la finestra principale e termina il processo senza applicare tweak).
+- [x] 6. Aggiungere test di regressione per configurazione, lingua e tema (round-trip impostazioni tema/lingua, parità chiavi/cataloghi IT-EN, proprietà JSON duplicate e placeholder).
 - [ ] 7. Documentare SDK, runtime, RID e processo di rilascio riproducibile.
 - [ ] 8. Verificare trimming, single-file e self-contained con report di pubblicazione.
 
