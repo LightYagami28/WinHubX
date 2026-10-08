@@ -211,12 +211,20 @@ namespace WinHubX.Forms.Settaggi
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = "reg.exe",
-                Arguments = $"add \"{regPath}\" /v \"{name}\" /t REG_DWORD /d {value} /f",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            startInfo.ArgumentList.Add("add");
+            startInfo.ArgumentList.Add(regPath);
+            startInfo.ArgumentList.Add("/v");
+            startInfo.ArgumentList.Add(name);
+            startInfo.ArgumentList.Add("/t");
+            startInfo.ArgumentList.Add("REG_DWORD");
+            startInfo.ArgumentList.Add("/d");
+            startInfo.ArgumentList.Add(value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            startInfo.ArgumentList.Add("/f");
 
             using (var process = System.Diagnostics.Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Impossibile avviare il processo di aggiornamento."))
@@ -294,12 +302,14 @@ namespace WinHubX.Forms.Settaggi
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = "reg.exe",
-                Arguments = $"delete \"{regPath}\" /f",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            startInfo.ArgumentList.Add("delete");
+            startInfo.ArgumentList.Add(regPath);
+            startInfo.ArgumentList.Add("/f");
 
             using (var process = System.Diagnostics.Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Impossibile avviare il processo di registro."))
@@ -319,12 +329,15 @@ namespace WinHubX.Forms.Settaggi
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = "sc.exe",
-                Arguments = $"config \"{serviceName}\" start= auto",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            startInfo.ArgumentList.Add("config");
+            startInfo.ArgumentList.Add(serviceName);
+            startInfo.ArgumentList.Add("start=");
+            startInfo.ArgumentList.Add("auto");
 
             using (var process = System.Diagnostics.Process.Start(startInfo)
                 ?? throw new InvalidOperationException($"Impossibile avviare il servizio {serviceName}."))
