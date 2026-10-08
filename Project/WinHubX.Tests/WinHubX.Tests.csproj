@@ -29,6 +29,7 @@
   <ItemGroup>
     <Compile Include="..\WinHubX\Impostazioni\RegistryPresetFileValidator.cs" Link="Impostazioni\RegistryPresetFileValidator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ElevatedRegistryMutationBatch.cs" Link="Impostazioni\ElevatedRegistryMutationBatch.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\ElevatedRegistryAclMutationBatch.cs" Link="Impostazioni\ElevatedRegistryAclMutationBatch.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationValidator.cs" Link="Impostazioni\ServiceConfigurationValidator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationScriptBuilder.cs" Link="Impostazioni\ServiceConfigurationScriptBuilder.cs" />
     <Compile Include="..\WinHubX\Impostazioni\UpdateManifestValidator.cs" Link="Impostazioni\UpdateManifestValidator.cs" />

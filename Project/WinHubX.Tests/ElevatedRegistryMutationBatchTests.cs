@@ -96,6 +96,33 @@ public sealed class ElevatedRegistryMutationBatchTests
         Assert.True(process.ExitCode == 0, standardError);
     }
 
+    [Fact]
+    public void ElevatedRegistryAclMutationBatch_ProducesValidRestrictedPowerShell()
+    {
+        ElevatedRegistryAclMutationBatch batch = new();
+        batch.AddLocalMachineTakeOwnership(
+            @"SYSTEM\CurrentControlSet\Services\WinDefend",
+            RegistryView.Registry64,
+            "S-1-5-21-111111111-222222222-333333333-1001");
+
+        string script = batch.BuildCommand();
+
+        Assert.Contains("RegistryRights]::TakeOwnership", script, StringComparison.Ordinal);
+        Assert.Contains("OpenBaseKey", script, StringComparison.Ordinal);
+        AssertValidPowerShellSyntax(script);
+    }
+
+    [Fact]
+    public void ElevatedRegistryAclMutationBatch_RejectsKeysOutsideDefenderServices()
+    {
+        ElevatedRegistryAclMutationBatch batch = new();
+
+        Assert.Throws<ArgumentException>(() => batch.AddLocalMachineTakeOwnership(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            RegistryView.Registry64,
+            "S-1-5-18"));
+    }
+
     [Theory]
     [InlineData(RegistryHive.CurrentUser)]
     [InlineData(RegistryHive.ClassesRoot)]

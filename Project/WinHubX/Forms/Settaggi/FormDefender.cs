@@ -14,6 +14,8 @@ namespace WinHubX.Forms.Settaggi
         private readonly FormSettaggi formSettaggi;
         private int totalSteps = 0;
         private int tIndex = -1;
+        private ElevatedRegistryMutationBatch? pendingRegistryMutations;
+        private ElevatedRegistryAclMutationBatch? pendingRegistryAclMutations;
         public FormDefender(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
@@ -190,6 +192,8 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
+                pendingRegistryMutations = new ElevatedRegistryMutationBatch();
+                pendingRegistryAclMutations = new ElevatedRegistryAclMutationBatch();
                 SetMpPreference("EnableControlledFolderAccess", true);
                 SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry64);
                 SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry32);
@@ -210,9 +214,11 @@ namespace WinHubX.Forms.Settaggi
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry32);
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry64);
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
+                ApplyPendingRegistryMutations();
             }
             catch (Exception)
             {
+                pendingRegistryMutations = null;
                 MessageBox.Show("Si è verificato un errore durante il ripristino. Controlla i permessi o il registro eventi.",
                     "WinHubX - Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -228,50 +234,67 @@ namespace WinHubX.Forms.Settaggi
         }
 
 
-        private static void DeleteRegistryValue(string keyPath, string valueName, RegistryView registryView)
+        private void DeleteRegistryValue(string keyPath, string valueName, RegistryView registryView)
         {
-            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView);
-            using RegistryKey? key = baseKey.OpenSubKey(keyPath, writable: true);
-            key?.DeleteValue(valueName, throwOnMissingValue: false);
+            GetPendingRegistryMutations().DeleteValue(RegistryHive.LocalMachine, keyPath, valueName, registryView);
         }
 
-        private static void SetDwordRegistryValue(string keyPath, string valueName, int value, RegistryView registryView)
+        private void SetDwordRegistryValue(string keyPath, string valueName, int value, RegistryView registryView)
         {
-            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView);
-            using RegistryKey key = baseKey.CreateSubKey(keyPath, writable: true)
-                ?? throw new InvalidOperationException($"Impossibile aprire o creare la chiave HKLM\\{keyPath}.");
-            key.SetValue(valueName, value, RegistryValueKind.DWord);
+            GetPendingRegistryMutations().SetValue(RegistryHive.LocalMachine, keyPath, valueName, value,
+                RegistryValueKind.DWord, registryView);
         }
 
         void GrantRegistryTakeOwnershipRight(string keyPath, RegistryView registryView)
         {
-            try
-            {
-                using (RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView).OpenSubKey(keyPath, writable: true))
-                {
-                    if (key != null)
-                    {
-                        RegistrySecurity security = key.GetAccessControl();
-                        WindowsIdentity identity = WindowsIdentity.GetCurrent();
-                        SecurityIdentifier sid = identity.User
-                            ?? throw new InvalidOperationException("Impossibile determinare l'identità Windows corrente.");
-                        security.AddAccessRule(new RegistryAccessRule(sid, RegistryRights.TakeOwnership, AccessControlType.Allow));
-                        key.SetAccessControl(security);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Impossibile aggiornare le ACL di HKLM\\{keyPath}: {ex.Message}");
-            }
+            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            string userSid = identity.User?.Value
+                ?? throw new InvalidOperationException("Impossibile determinare l'identità Windows corrente.");
+            GetPendingRegistryAclMutations().AddLocalMachineTakeOwnership(keyPath, registryView, userSid);
         }
         private void SetStringRegistryValue(string keyPath, string name, string value, RegistryView view)
         {
-            using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view))
-            using (var key = baseKey.CreateSubKey(keyPath))
+            GetPendingRegistryMutations().SetValue(RegistryHive.LocalMachine, keyPath, name, value,
+                RegistryValueKind.ExpandString, view);
+        }
+
+        private ElevatedRegistryMutationBatch GetPendingRegistryMutations() =>
+            pendingRegistryMutations ??= new ElevatedRegistryMutationBatch();
+
+        private ElevatedRegistryAclMutationBatch GetPendingRegistryAclMutations() =>
+            pendingRegistryAclMutations ??= new ElevatedRegistryAclMutationBatch();
+
+        private void ApplyPendingRegistryMutations()
+        {
+            if ((pendingRegistryMutations is null || pendingRegistryMutations.Count == 0)
+                && (pendingRegistryAclMutations is null || pendingRegistryAclMutations.Count == 0))
+                return;
+
+            string script = pendingRegistryMutations is { Count: > 0 }
+                ? pendingRegistryMutations.BuildCommand()
+                : "$ErrorActionPreference = 'Stop'";
+            if (pendingRegistryAclMutations is { Count: > 0 })
+                script += Environment.NewLine + pendingRegistryAclMutations.BuildCommand();
+
+            string encodedScript = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+            var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                key.SetValue(name, value, RegistryValueKind.ExpandString);
-            }
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                Verb = "runas"
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-EncodedCommand");
+            startInfo.ArgumentList.Add(encodedScript);
+            using System.Diagnostics.Process process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare le modifiche Defender con privilegi elevati.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"Le modifiche del Registro Defender sono terminate con codice {process.ExitCode}.");
+            pendingRegistryMutations = null;
+            pendingRegistryAclMutations = null;
         }
 
         private void SetMpPreference(string preference, bool enabled)
@@ -286,10 +309,12 @@ namespace WinHubX.Forms.Settaggi
             psi.ArgumentList.Add("-NoProfile");
             psi.ArgumentList.Add("-NonInteractive");
             psi.ArgumentList.Add("-Command");
-            psi.ArgumentList.Add($"Set-MpPreference -{preference} {(enabled ? "Enabled" : "Disabled")}");
+            psi.ArgumentList.Add($"$ErrorActionPreference = 'Stop'; Set-MpPreference -{preference} {(enabled ? "Enabled" : "Disabled")}");
             using var process = System.Diagnostics.Process.Start(psi)
                 ?? throw new InvalidOperationException("Impossibile avviare Set-MpPreference.");
             process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"Set-MpPreference -{preference} è terminato con codice {process.ExitCode}.");
         }
 
         private void backgroundWorker1_DoWork(object? sender, System.ComponentModel.DoWorkEventArgs e)
@@ -301,6 +326,8 @@ namespace WinHubX.Forms.Settaggi
 
             int currentStep = 0;
             var failures = new List<string>();
+            pendingRegistryMutations = new ElevatedRegistryMutationBatch();
+            pendingRegistryAclMutations = new ElevatedRegistryAclMutationBatch();
             if (selection.Disable.Contains("Disabilita Controllo Accesso Cartella"))
             {
                 SetCheckboxState("DisabilitaControlloAccessoCartella", true);
@@ -535,14 +562,8 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     string systrayKeyPath = @"SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray";
-                    using (var key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).CreateSubKey(systrayKeyPath, writable: true))
-                    {
-                        key64?.SetValue("HideSystray", 1, RegistryValueKind.DWord);
-                    }
-                    using (var key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).CreateSubKey(systrayKeyPath, writable: true))
-                    {
-                        key32?.SetValue("HideSystray", 1, RegistryValueKind.DWord);
-                    }
+                    SetDwordRegistryValue(systrayKeyPath, "HideSystray", 1, RegistryView.Registry64);
+                    SetDwordRegistryValue(systrayKeyPath, "HideSystray", 1, RegistryView.Registry32);
                     var osVersion = Environment.OSVersion.Version;
                     if (osVersion.Build == 14393)
                     {
@@ -888,6 +909,15 @@ namespace WinHubX.Forms.Settaggi
                 SetCheckboxState("AbilitaWindowsDefenderServices", false);
             }
 
+            try
+            {
+                ApplyPendingRegistryMutations();
+            }
+            catch (Exception ex)
+            {
+                failures.Add($"Modifiche Registro Defender (UAC): {ex.GetBaseException().Message}");
+            }
+
             e.Result = failures;
         }
 
@@ -895,6 +925,8 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
+                pendingRegistryMutations = new ElevatedRegistryMutationBatch();
+                pendingRegistryAclMutations = new ElevatedRegistryAclMutationBatch();
                 SetMpPreference("EnableControlledFolderAccess", false);
                 DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", RegistryView.Registry64);
                 DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", RegistryView.Registry64);
@@ -920,9 +952,11 @@ namespace WinHubX.Forms.Settaggi
                 SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0, RegistryView.Registry32);
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry32);
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
+                ApplyPendingRegistryMutations();
             }
             catch (Exception ex)
             {
+                pendingRegistryMutations = null;
                 _ = MessageBox.Show(
                     $"La protezione minima non è stata applicata completamente: {ex.GetBaseException().Message}",
                     "WinHubX - Errore",
