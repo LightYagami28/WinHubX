@@ -459,7 +459,7 @@ namespace WinHubX.Forms.Settaggi
                 stopwatch.Restart();
                 using (FileStream input = new(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.SequentialScan))
                 {
-                    _ = input.CopyTo(Stream.Null);
+                    input.CopyTo(Stream.Null);
                 }
                 stopwatch.Stop();
                 double readSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
