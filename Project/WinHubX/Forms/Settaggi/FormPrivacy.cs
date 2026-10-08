@@ -146,58 +146,47 @@ namespace WinHubX.Forms.Settaggi
 
         private void ExecutePowerShellScript(string script, bool use32BitRegistry = false)
         {
-            Thread thread = new Thread(() =>
+            if (use32BitRegistry)
             {
-                try
-                {
-                    if (use32BitRegistry)
-                    {
-                        script = script.Replace("HKLM:\\SOFTWARE\\", "HKLM:\\SOFTWARE\\WOW6432Node\\");
-                    }
+                script = script.Replace("HKLM:\\SOFTWARE\\", "HKLM:\\SOFTWARE\\WOW6432Node\\");
+            }
 
-                    var startInfo = new System.Diagnostics.ProcessStartInfo()
-                    {
-                        FileName = @"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-                    startInfo.ArgumentList.Add("-NoProfile");
-                    startInfo.ArgumentList.Add("-NonInteractive");
-                    startInfo.ArgumentList.Add("-Command");
-                    startInfo.ArgumentList.Add(script);
-                    using (var process = System.Diagnostics.Process.Start(startInfo))
-                    {
-                        if (process != null)
-                        {
-                            process.WaitForExit();
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(script);
 
-                            var output = process.StandardOutput.ReadToEnd();
-                            var error = process.StandardError.ReadToEnd();
-                            if (!string.IsNullOrEmpty(output))
-                            {
-                                System.Diagnostics.Debug.WriteLine(output);
-                            }
+            using var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare Windows PowerShell.");
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
 
-                            if (!string.IsNullOrEmpty(error))
-                            {
-                                System.Diagnostics.Debug.WriteLine(error);
-                            }
-                        }
-                        else
-                        {
+            string output = outputTask.GetAwaiter().GetResult();
+            string error = errorTask.GetAwaiter().GetResult();
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                System.Diagnostics.Debug.WriteLine(output);
+            }
 
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Script privacy non eseguito: {ex.Message}");
-                }
-            });
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    $"Lo script PowerShell è terminato con codice {process.ExitCode}: {error}");
+            }
 
-            thread.Start();
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                System.Diagnostics.Debug.WriteLine(error);
+            }
         }
 
         private void btnSuggeriti_Click(object sender, EventArgs e)
