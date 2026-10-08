@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net;
 using WinHubX.Forms.Base;
 using WinHubX.Impostazioni;
 
@@ -13,7 +14,31 @@ namespace WinHubX.Forms.Settaggi
         private readonly Form1 form1;
         private FormSettaggi formSettaggi;
         private readonly string tempFolder = Path.Combine(Path.GetTempPath(), "WinHubX");
+        private static readonly HttpClient ResourceClient = CreateResourceClient();
         private int totalSteps = 0;
+
+        private static HttpClient CreateResourceClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 4,
+                AutomaticDecompression = DecompressionMethods.None,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            };
+            return new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2) };
+        }
+
+        private static Uri RequireTrustedHttpsUri(string value)
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
+                || uri.Scheme != Uri.UriSchemeHttps
+                || !uri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
+                   && !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("La risorsa deve provenire da GitHub tramite HTTPS.");
+            }
+            return uri;
+        }
         public FormPersonalizzazione(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
@@ -314,14 +339,11 @@ namespace WinHubX.Forms.Settaggi
                 string zipFilePath = Path.Combine(tempFolder, "resources.zip");
 
                 await ScaricaFile(zipFileUrl, zipFilePath);
-                await Task.Delay(1000);
-
                 string? regFilePath = EstraiFileReg(zipFilePath, regFileName);
 
                 if (regFilePath != null)
                 {
                     EseguiFileReg(regFilePath);
-                    await Task.Delay(3000);
                 }
                 else
                 {
@@ -331,7 +353,6 @@ namespace WinHubX.Forms.Settaggi
                 if (File.Exists(zipFilePath))
                 {
                     File.Delete(zipFilePath);
-                    await Task.Delay(3000);
                 }
 
                 if (Directory.Exists(tempFolder))
@@ -339,7 +360,6 @@ namespace WinHubX.Forms.Settaggi
                     try
                     {
                         Directory.Delete(tempFolder, true);
-                        await Task.Delay(3000);
                     }
                     catch (IOException)
                     {
@@ -356,34 +376,28 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task<string> OttieniUrlRegFile(string jsonUrl)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                var response = await client.GetStringAsync(jsonUrl);
-                var json = JObject.Parse(response);
-                return json["PersonaTastoDestro"]?["PersoTastoDestro"]?.Value<string>()
-                    ?? throw new InvalidOperationException("URL risorsa non presente nella configurazione.");
-            }
+            Uri configUri = RequireTrustedHttpsUri(jsonUrl);
+            var response = await ResourceClient.GetStringAsync(configUri);
+            var json = JObject.Parse(response);
+            string? resourceUrl = json["PersonaTastoDestro"]?["PersoTastoDestro"]?.Value<string>();
+            return RequireTrustedHttpsUri(resourceUrl
+                ?? throw new InvalidOperationException("URL risorsa non presente nella configurazione.")).ToString();
         }
 
         private async Task ScaricaFile(string url, string filePath)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                _ = Directory.CreateDirectory(tempFolder);
-                using (var response = await client.GetAsync(url))
-                {
-                    _ = response.EnsureSuccessStatusCode();
-                    using (var fs = new FileStream(filePath, FileMode.CreateNew))
-                    {
-                        await response.Content.CopyToAsync(fs);
-                    }
-                }
-            }
+            Uri resourceUri = RequireTrustedHttpsUri(url);
+            _ = Directory.CreateDirectory(tempFolder);
+            await DownloadManager.DownloadFileAsync(resourceUri.ToString(), filePath,
+                CancellationToken.None, autoParallel: false);
         }
 
         private string? EstraiFileReg(string zipFilePath, string regFileName)
         {
-            string extractedRegFilePath = Path.Combine(tempFolder, regFileName);
+            string extractionRoot = Path.GetFullPath(tempFolder) + Path.DirectorySeparatorChar;
+            string extractedRegFilePath = Path.GetFullPath(Path.Combine(tempFolder, regFileName));
+            if (!extractedRegFilePath.StartsWith(extractionRoot, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Percorso di estrazione non valido.");
             using (ZipArchive archive = ZipFile.OpenRead(zipFilePath))
             {
                 foreach (ZipArchiveEntry entry in archive.Entries)

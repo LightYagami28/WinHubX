@@ -4,7 +4,7 @@ namespace WinHubX.Impostazioni
 {
     internal static class Dipendenze
     {
-        public const string GitHubConfigUrl = "https://raw.githubusercontent.com/MrNico98/WinHubX-Resource/refs/heads/main/Dipendenze.json";
+        public const string GitHubConfigUrl = "https://raw.githubusercontent.com/LightYagami28/WinHubX-Resource/refs/heads/main/Dipendenze.json";
     }
 
     public static class OfficeSettings
