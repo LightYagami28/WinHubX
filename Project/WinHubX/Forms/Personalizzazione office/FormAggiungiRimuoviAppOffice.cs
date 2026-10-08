@@ -634,7 +634,10 @@ namespace WinHubX.Forms.Personalizzazione_office
                     audienceId = key?.GetValue("AudienceId")?.ToString();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura AudienceId Office in vista registro a 32 bit non riuscita: {ex}");
+            }
             if (string.IsNullOrWhiteSpace(audienceId))
             {
                 try
@@ -645,7 +648,10 @@ namespace WinHubX.Forms.Personalizzazione_office
                         audienceId = key?.GetValue("AudienceId")?.ToString();
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Lettura AudienceId Office in vista registro a 64 bit non riuscita: {ex}");
+                }
             }
 
             return audienceId;
@@ -727,8 +733,9 @@ namespace WinHubX.Forms.Personalizzazione_office
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Lettura configurazione Click-to-Run non riuscita: {ex}");
             }
 
             string versionText = LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "office_non_trovato");

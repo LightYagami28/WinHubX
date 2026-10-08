@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 using System.Xml;
+using System.Runtime.InteropServices;
 using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Personalizzazione_office
@@ -86,8 +87,17 @@ namespace WinHubX.Forms.Personalizzazione_office
                         return "32";
                 }
             }
-            catch { }
-            return "64";
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura architettura hardware non riuscita; uso l'architettura OS: {ex}");
+            }
+
+            return RuntimeInformation.OSArchitecture switch
+            {
+                Architecture.X86 => "32",
+                Architecture.X64 or Architecture.Arm64 => "64",
+                _ => throw new PlatformNotSupportedException($"Architettura non supportata: {RuntimeInformation.OSArchitecture}.")
+            };
         }
 
         private void AddVisioElement(string version, string xmlFilePath)
