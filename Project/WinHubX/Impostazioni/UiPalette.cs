@@ -15,4 +15,6 @@ internal static class UiPalette
     internal static readonly Color DarkText = Color.FromArgb(241, 245, 249);
     internal static readonly Color LightText = Color.FromArgb(15, 23, 42);
     internal static readonly Color Accent = Color.FromArgb(56, 189, 248);
+    internal static readonly Color DarkMutedText = Color.FromArgb(148, 163, 184);
+    internal static readonly Color LightMutedText = Color.FromArgb(71, 85, 105);
 }

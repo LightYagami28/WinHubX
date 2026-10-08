@@ -137,8 +137,8 @@ namespace WinHubX.Impostazioni
                 {
                     bool isVerdi = cuoreBtn.Name.Contains("Verdi");
                     bool isBianco = cuoreBtn.Name.Contains("Bianco");
-                    Color themeBack = darkTheme ? Color.FromArgb(37, 38, 39) : Color.White;
-                    Color themeFore = darkTheme ? Color.White : Color.Black;
+                    Color themeBack = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
+                    Color themeFore = darkTheme ? UiPalette.DarkText : UiPalette.LightText;
 
                     // BackColor e NormalBackground seguono sempre il tema
                     cuoreBtn.BackColor = themeBack;
@@ -170,25 +170,25 @@ namespace WinHubX.Impostazioni
                         // Regole speciali per bottoni "Bianco"
                         if (darkTheme)
                         {
-                            cuoreBtn.NormalBackground = Color.FromArgb(37, 38, 39);
-                            cuoreBtn.NormalForeColor = Color.White;
-                            cuoreBtn.NormalImageTint = Color.White;
-                            cuoreBtn.NormalOutline = Color.White;
+                            cuoreBtn.NormalBackground = UiPalette.DarkSurface;
+                            cuoreBtn.NormalForeColor = UiPalette.DarkText;
+                            cuoreBtn.NormalImageTint = UiPalette.DarkText;
+                            cuoreBtn.NormalOutline = UiPalette.DarkBorder;
 
                             cuoreBtn.HoverBackground = Color.White;
                             cuoreBtn.HoverForeColor = Color.Black;
                             cuoreBtn.HoverImageTint = Color.Black;
                             cuoreBtn.HoverOutline = Color.White;
 
-                            cuoreBtn.PressedBackground = Color.FromArgb(37, 38, 39);
-                            cuoreBtn.PressedForeColor = Color.White;
-                            cuoreBtn.PressedImageTint = Color.White;
-                            cuoreBtn.PressedOutline = Color.White;
+                            cuoreBtn.PressedBackground = UiPalette.DarkSurface;
+                            cuoreBtn.PressedForeColor = UiPalette.DarkText;
+                            cuoreBtn.PressedImageTint = UiPalette.DarkText;
+                            cuoreBtn.PressedOutline = UiPalette.DarkBorder;
 
-                            cuoreBtn.CheckedBackground = Color.FromArgb(37, 38, 39);
-                            cuoreBtn.CheckedForeColor = Color.White;
-                            cuoreBtn.CheckedImageTint = Color.White;
-                            cuoreBtn.CheckedOutline = Color.White;
+                            cuoreBtn.CheckedBackground = UiPalette.DarkSurface;
+                            cuoreBtn.CheckedForeColor = UiPalette.DarkText;
+                            cuoreBtn.CheckedImageTint = UiPalette.DarkText;
+                            cuoreBtn.CheckedOutline = UiPalette.DarkBorder;
                         }
                         else
                         {
@@ -238,7 +238,7 @@ namespace WinHubX.Impostazioni
                     }
                     if (cuoreBtn.Name.EndsWith("Disattivo", StringComparison.OrdinalIgnoreCase))
                     {
-                        Color grigio = Color.Gray;
+                        Color grigio = darkTheme ? UiPalette.DarkMutedText : UiPalette.LightMutedText;
 
                         cuoreBtn.ForeColor = grigio;
                         cuoreBtn.NormalForeColor = grigio;
