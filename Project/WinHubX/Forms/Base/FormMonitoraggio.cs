@@ -490,27 +490,29 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                await Task.Run(async () =>
+                while (!_monitoringCancellation.IsCancellationRequested)
                 {
-                    while (!_monitoringCancellation.IsCancellationRequested)
+                    try
                     {
-                        try
-                        {
-                            double discoUsage = await GetDiscoUsagePercentageAsync();
-                            UpdateDiscoUI(discoUsage);
-                            await Task.Delay(3000, _monitoringToken);
-                        }
-                        catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                        double discoUsage = await GetDiscoUsagePercentageAsync();
+                        if (IsDisposed || !IsHandleCreated)
                         {
                             return;
                         }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Lettura utilizzo disco non riuscita: {ex}");
-                            await Task.Delay(3000, _monitoringToken);
-                        }
+
+                        UpdateDiscoUI(discoUsage);
+                        await Task.Delay(3000, _monitoringToken);
                     }
-                }, _monitoringToken);
+                    catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Lettura utilizzo disco non riuscita: {ex}");
+                        await Task.Delay(3000, _monitoringToken);
+                    }
+                }
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
