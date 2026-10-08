@@ -19,6 +19,8 @@
 		<DebugType>none</DebugType>
 		<DebugSymbols>false</DebugSymbols>
 		<Optimize>true</Optimize>
+		<TieredCompilation>true</TieredCompilation>
+		<TieredPGO>true</TieredPGO>
 		<Deterministic>true</Deterministic>
 		<SatelliteResourceLanguages>it;en</SatelliteResourceLanguages>
 		<PublishSingleFile>true</PublishSingleFile>
@@ -29,12 +31,6 @@
 		<EventSourceSupport>false</EventSourceSupport>
 		<StartupObject>WinHubX.Program</StartupObject>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<!-- Ottimizza il codice caldo dopo l'avvio senza trasformare WinForms in un'app server. -->
-		<RuntimeHostConfigurationOption Include="System.Runtime.TieredCompilation" Value="true" />
-		<RuntimeHostConfigurationOption Include="System.Runtime.TieredPGO" Value="true" />
-	</ItemGroup>
 
   <ItemGroup>
     <None Remove="Resources\en.json" />
