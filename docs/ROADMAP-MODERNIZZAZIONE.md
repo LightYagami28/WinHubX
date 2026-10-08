@@ -5,9 +5,9 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 ## Fondamenta e toolchain
 
 - [ ] 1. Consolidare `.editorconfig`, analizzatori .NET e regole di formattazione.
-- [ ] 2. Mantenere branch separati .NET 10 stabile e .NET 11 preview.
+- [x] 2. Mantenere branch separati .NET 10 stabile e .NET 11 preview.
 - [ ] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro.
-- [ ] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
+- [x] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
 - [ ] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi.
 - [ ] 6. Aggiungere test di regressione per configurazione, lingua e tema.
 - [ ] 7. Documentare SDK, runtime, RID e processo di rilascio riproducibile.
@@ -35,7 +35,7 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 - [ ] 23. Eliminare quoting fragile nei processi PowerShell/CMD.
 - [ ] 24. Verificare privilegi minimi e isolare ogni azione che richiede UAC.
 - [ ] 25. Audit completo di script, URL, file binari e risorse esterne.
-- [ ] 26. Configurare Dependabot per NuGet, GitHub Actions e manifest supportati.
+- [x] 26. Configurare Dependabot per NuGet e GitHub Actions.
 
 ## UX, distribuzione e documentazione
 
