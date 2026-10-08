@@ -99,10 +99,8 @@ public partial class FormServizi : Form
                                     {
                                         FileName = "powershell.exe",
                                         Verb = "runas",
-                                        UseShellExecute = false,
-                                        CreateNoWindow = true,
-                                        RedirectStandardOutput = true,
-                                        RedirectStandardError = true
+                                        UseShellExecute = true,
+                                        WindowStyle = ProcessWindowStyle.Hidden
                                     };
                                     psi.ArgumentList.Add("-NoProfile");
                                     psi.ArgumentList.Add("-NonInteractive");
@@ -114,8 +112,6 @@ public partial class FormServizi : Form
                                     using (var proc = Process.Start(psi)
                                         ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
                                     {
-                                        string output = proc.StandardOutput.ReadToEnd();
-                                        string error = proc.StandardError.ReadToEnd();
                                         proc.WaitForExit();
 
                                         if (proc.ExitCode == 0)
@@ -124,8 +120,7 @@ public partial class FormServizi : Form
                                         }
                                         else
                                         {
-                                            string errorMessage = error.Split(new[] { "\r\n" }, StringSplitOptions.None).FirstOrDefault() ?? error;
-                                            return $"❌ Error: {errorMessage}";
+                                            return $"❌ PowerShell terminato con codice {proc.ExitCode}.";
                                         }
                                     }
                                 }

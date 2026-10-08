@@ -421,22 +421,23 @@ namespace WinHubX.Forms.Base
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-command \"{command}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
             };
+            processStartInfo.ArgumentList.Add("-NoProfile");
+            processStartInfo.ArgumentList.Add("-NonInteractive");
+            processStartInfo.ArgumentList.Add("-Command");
+            processStartInfo.ArgumentList.Add(command);
 
             using (var process = Process.Start(processStartInfo))
             {
-                if (process != null)
-                {
-                    process.WaitForExit();
-                    _ = process.StandardOutput.ReadToEnd();
-                    _ = process.StandardError.ReadToEnd();
-                }
+                if (process is null)
+                    throw new InvalidOperationException("Impossibile avviare il comando di rimozione AppX.");
+
+                process.WaitForExit();
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"Rimozione AppX terminata con codice {process.ExitCode}.");
             }
         }
 
