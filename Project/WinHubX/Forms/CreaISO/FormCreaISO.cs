@@ -359,8 +359,9 @@ namespace WinHubX.Forms.Base
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
             await Task.WhenAll(outputTask, errorTask);
-            if (!string.IsNullOrWhiteSpace(errorTask.Result))
-                Debug.WriteLine($"PowerShell error: {errorTask.Result.Trim()}");
+            string standardError = await errorTask;
+            if (!string.IsNullOrWhiteSpace(standardError))
+                Debug.WriteLine($"PowerShell error: {standardError.Trim()}");
             return process.ExitCode;
         }
 
@@ -375,9 +376,11 @@ namespace WinHubX.Forms.Base
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
             await Task.WhenAll(outputTask, errorTask);
-            if (!string.IsNullOrWhiteSpace(errorTask.Result))
-                Debug.WriteLine($"PowerShell error: {errorTask.Result.Trim()}");
-            return outputTask.Result;
+            string standardOutput = await outputTask;
+            string standardError = await errorTask;
+            if (!string.IsNullOrWhiteSpace(standardError))
+                Debug.WriteLine($"PowerShell error: {standardError.Trim()}");
+            return standardOutput;
         }
 
         private static ProcessStartInfo CreatePowerShellStartInfo(string command)
