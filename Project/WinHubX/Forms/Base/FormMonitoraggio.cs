@@ -348,7 +348,7 @@ namespace WinHubX.Forms.Base
                 {
                 }
 
-                await Task.Delay(10000);
+                await Task.Delay(10000, _monitoringCancellation.Token);
             }
         }
         private int GetSelectedGB()
@@ -385,12 +385,12 @@ namespace WinHubX.Forms.Base
                     {
                         double discoUsage = await GetDiscoUsagePercentageAsync();
                         UpdateDiscoUI(discoUsage);
-                        await Task.Delay(3000);
+                        await Task.Delay(3000, _monitoringCancellation.Token);
                     }
                     catch (Exception)
                     {
                         UpdateDiscoUI(0);
-                        await Task.Delay(3000);
+                        await Task.Delay(3000, _monitoringCancellation.Token);
                     }
                 }
             });
@@ -402,7 +402,7 @@ namespace WinHubX.Forms.Base
                 using (var diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total"))
                 {
                     diskCounter.NextValue();
-                    await Task.Delay(1000);
+                    await Task.Delay(1000, _monitoringCancellation.Token);
                     float diskUsage = diskCounter.NextValue();
 
                     return Math.Min(diskUsage, 100);
@@ -415,7 +415,7 @@ namespace WinHubX.Forms.Base
                     using (var diskCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total"))
                     {
                         diskCounter.NextValue();
-                        await Task.Delay(1000);
+                        await Task.Delay(1000, _monitoringCancellation.Token);
                         float diskUsage = diskCounter.NextValue();
                         return Math.Min(diskUsage, 100);
                     }
