@@ -35,16 +35,17 @@ namespace WinHubX.Forms.Base
 
         private readonly Form1 _mainForm;
         private Computer _computer = new();
-        private System.Windows.Forms.Timer _tempMonitorTimer = new();
+        private System.Windows.Forms.Timer? _tempMonitorTimer;
         private System.Windows.Forms.Timer? _ramMonitorTimer;
-        private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
+        private PerformanceCounter? _cpuCounter;
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private readonly CancellationToken _monitoringToken;
         private bool _monitoringStarted;
         private int _ramCleanupRunning;
         private DateTime _lastAutomaticRamCleanupUtc = DateTime.MinValue;
 
-        private NotifyIcon _notifyIcon = new();
+        private NotifyIcon? _notifyIcon;
+        private bool _resourcesCleaned;
         #endregion
 
         #region Constructor
@@ -69,6 +70,10 @@ namespace WinHubX.Forms.Base
             _monitoringStarted = true;
             Cursor = Cursors.WaitCursor;
             await Task.Delay(50);
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
 
             try
             {
@@ -79,6 +84,11 @@ namespace WinHubX.Forms.Base
                 btnSvuotaTemp.Content = LanguageManager.CurrentLanguage == "it" ? "  Svuota" : "  Empty";
 
                 await Task.Run(InitializeComputer);
+                if (IsDisposed || !IsHandleCreated)
+                {
+                    return;
+                }
+
                 InitializeTimers();
                 InitializePerformanceCounter();
                 InitializeNotificationIcon();
@@ -91,9 +101,18 @@ namespace WinHubX.Forms.Base
                 StartTEMPMonitoring();
                 LoadMonitoraggioSettings();
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Avvio monitoraggio non riuscito: {ex}");
+                ShowErrorMessage($"Impossibile avviare il monitoraggio:\n{ex.Message}");
+                Close();
+            }
             finally
             {
-                Cursor = Cursors.Default;
+                if (!IsDisposed)
+                {
+                    Cursor = Cursors.Default;
+                }
             }
         }
         #endregion
@@ -807,9 +826,11 @@ namespace WinHubX.Forms.Base
 
         private async Task<double> GetCpuUsagePercentageAsync()
         {
-            _ = _cpuCounter.NextValue();
+            PerformanceCounter cpuCounter = _cpuCounter
+                ?? throw new InvalidOperationException("Contatore CPU non inizializzato.");
+            _ = cpuCounter.NextValue();
             await Task.Delay(1000, _monitoringToken);
-            return _cpuCounter.NextValue();
+            return cpuCounter.NextValue();
         }
 
         private void CpuReduce()
@@ -1011,6 +1032,12 @@ namespace WinHubX.Forms.Base
 
         public void CleanupResources()
         {
+            if (_resourcesCleaned)
+            {
+                return;
+            }
+
+            _resourcesCleaned = true;
             _monitoringCancellation.Cancel();
             if (Monitor.TryEnter(_hardwareSync))
             {
