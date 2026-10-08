@@ -350,7 +350,8 @@ namespace WinHubX.Forms.Settaggi
 
         private static void RestartExplorer()
         {
-            _ = System.Diagnostics.Process.Start("explorer.exe");
+            string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            _ = System.Diagnostics.Process.Start(explorerPath);
         }
 
         private void DisableScheduledTask(string taskPath)
@@ -707,7 +708,7 @@ namespace WinHubX.Forms.Settaggi
 
                     using (Process process = Process.Start(new ProcessStartInfo
                     {
-                        FileName = "taskkill",
+                        FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
                         Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
@@ -1495,7 +1496,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     using (Process process = Process.Start(new ProcessStartInfo
                     {
-                        FileName = "taskkill",
+                        FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
                         Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
@@ -1562,7 +1563,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = "powercfg.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "powercfg.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
