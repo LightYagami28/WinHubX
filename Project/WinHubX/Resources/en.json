@@ -133,6 +133,14 @@
     "download": "Download: {0} KB/s",
     "velocita": "Speed: {0} KB/s"
   },
+  "FormServizi": {
+    "confirmTitle": "Confirm service changes",
+    "confirmMessage": "You are about to stop and change the startup configuration of {0} Windows services with administrator privileges. This may interrupt Windows or application features. Continue?",
+    "serviceSuccess": "Service \"{0}\": changed successfully",
+    "serviceFailure": "Service \"{0}\": {1}",
+    "serviceSummaryFailure": "Some changes failed (exit code {0}).",
+    "uacCancelled": "Operation cancelled at the UAC prompt."
+  },
   "FormSettaggi": {
     "savezip": "Save the zip file in the Downloads folder and press 'OK' when the download is finished.",
     "runbatnotfound": "The 'Run.bat' file was not found in the extracted directory.",

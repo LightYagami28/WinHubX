@@ -326,6 +326,14 @@
     "confermaEsecuzione": "Sei sicuro di voler eseguire questa operazione?",
     "titoloConferma": "Conferma"
   },
+  "FormServizi": {
+    "confirmTitle": "Conferma modifica servizi",
+    "confirmMessage": "Stai per interrompere e modificare l'avvio di {0} servizi Windows con privilegi amministrativi. Potresti interrompere funzioni di Windows o applicazioni. Continuare?",
+    "serviceSuccess": "Servizio \"{0}\": modificato correttamente",
+    "serviceFailure": "Servizio \"{0}\": {1}",
+    "serviceSummaryFailure": "Alcune modifiche non sono riuscite (codice {0}).",
+    "uacCancelled": "Operazione annullata nella richiesta UAC."
+  },
   "FormTools": {
     "paneltitle": "WinHubXliteOS",
     "tooltip_kasperky": "Scarica Kaspersky live, installalo su USB e avvialo per fare una scansione completa del pc (funziona come una distro live linux)",

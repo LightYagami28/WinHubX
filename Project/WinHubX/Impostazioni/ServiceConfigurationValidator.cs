@@ -3,6 +3,7 @@ namespace WinHubX.Impostazioni;
 public static class ServiceConfigurationValidator
 {
     private const int MaximumServiceCount = 512;
+    private const int MaximumServiceNameLength = 256;
 
     private static readonly HashSet<string> AllowedStartupTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -37,6 +38,7 @@ public static class ServiceConfigurationValidator
     {
         if (service is null ||
             string.IsNullOrWhiteSpace(service.Name) ||
+            service.Name.Length > MaximumServiceNameLength ||
             service.Name.Any(char.IsControl) ||
             service.Name.Contains('\'', StringComparison.Ordinal))
         {
