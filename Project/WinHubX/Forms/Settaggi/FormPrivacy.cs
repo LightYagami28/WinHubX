@@ -549,38 +549,20 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64_1 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64_1?.SetValue("Value", "Deny", RegistryValueKind.String);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location",
+                            "Value", "Deny", RegistryValueKind.String, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}",
+                            "SensorPermissionState", 0, RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration",
+                            "Status", 0, RegistryValueKind.DWord, view);
                     }
-
-                    using (RegistryKey? key64_2 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}", writable: true))
-                    {
-                        key64_2?.SetValue("SensorPermissionState", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64_3 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration", writable: true))
-                    {
-                        key64_3?.SetValue("Status", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32_1 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", writable: true))
-                    {
-                        key32_1?.SetValue("Value", "Deny", RegistryValueKind.String);
-                    }
-                    using (RegistryKey? key32_2 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}", writable: true))
-                    {
-                        key32_2?.SetValue("SensorPermissionState", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32_3 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration", writable: true))
-                    {
-                        key32_3?.SetValue("Status", 0, RegistryValueKind.DWord);
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -598,24 +580,21 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows\Windows Error Reporting", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64?.SetValue("Disabled", 1, RegistryValueKind.DWord);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", 1,
+                            RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                              .OpenSubKey(@"SOFTWARE\Microsoft\Windows\Windows Error Reporting", writable: true))
-                    {
-                        key32?.SetValue("Disabled", 1, RegistryValueKind.DWord);
-                    }
-                    using (Microsoft.Win32.TaskScheduler.TaskService ts = new Microsoft.Win32.TaskScheduler.TaskService())
-                    {
-                        Microsoft.Win32.TaskScheduler.Task task = ts.GetTask(@"Microsoft\Windows\Windows Error Reporting\QueueReporting");
-                        if (task != null)
-                        {
-                            task.Enabled = false;
-                        }
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges, @"
+            $taskPath = '\Microsoft\Windows\Windows Error Reporting\'
+            $taskName = 'QueueReporting'
+            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+            if ($null -ne $task -and $task.State -ne 'Disabled') {
+                Disable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
+            }
+            ");
                 }
                 catch (Exception ex)
                 {
@@ -762,6 +741,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", 0,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    ApplyElevatedRegistryMutations(registryChanges);
+
                     ExecutePowerShellScript(@"
                 Get-AppxPackage ""Microsoft.XboxApp"" | Remove-AppxPackage -ErrorAction SilentlyContinue;
                 Get-AppxPackage ""Microsoft.XboxIdentityProvider"" | Remove-AppxPackage -ErrorAction SilentlyContinue;
@@ -774,11 +759,6 @@ namespace WinHubX.Forms.Settaggi
                                                              .OpenSubKey(@"System\GameConfigStore", writable: true))
                     {
                         key32?.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", writable: true))
-                    {
-                        key64?.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
                     }
                 }
                 catch (Exception ex)
@@ -797,16 +777,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64?.SetValue("MaintenanceDisabled", 1, RegistryValueKind.DWord);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance",
+                            "MaintenanceDisabled", 1, RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
-                    {
-                        key32?.SetValue("MaintenanceDisabled", 1, RegistryValueKind.DWord);
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -824,17 +802,17 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    ExecutePowerShellScript(@"Set-WindowsReservedStorageState -State Disabled");
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64?.SetValue("ReservedStorageState", 0, RegistryValueKind.DWord);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", "ReservedStorageState", 0,
+                            RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", writable: true))
-                    {
-                        key32?.SetValue("ReservedStorageState", 0, RegistryValueKind.DWord);
-                    }
+                    string script = "$ErrorActionPreference = 'Stop'" + Environment.NewLine
+                        + "Set-WindowsReservedStorageState -State Disabled -Online -ErrorAction Stop" + Environment.NewLine
+                        + registryChanges.BuildCommand();
+                    RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
                 }
                 catch (Exception ex)
                 {
@@ -852,41 +830,23 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    ExecutePowerShellScript(@"
-                Set-ItemProperty -Path ""HKLM:\System\GameConfigStore"" -Name ""GameDVR_DXGIHonorFSEWindowsCompatible"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\System\GameConfigStore"" -Name ""GameDVR_HonorUserFSEBehaviorMode"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\System\GameConfigStore"" -Name ""GameDVR_EFSEFeatureFlags"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\System\GameConfigStore"" -Name ""GameDVR_Enabled"" -Type DWord -Value 00000000;
-            ", false);
-
-                    ExecutePowerShellScript(@"
-                Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_DXGIHonorFSEWindowsCompatible"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_HonorUserFSEBehaviorMode"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_EFSEFeatureFlags"" -Type Hex -Value 00000000;
-                Set-ItemProperty -Path ""HKLM:\SOFTWARE\WOW6432Node\System\GameConfigStore"" -Name ""GameDVR_Enabled"" -Type DWord -Value 00000000;
-            ", true);
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        foreach (string valueName in new[]
                         {
-                            key64.SetValue("GameDVR_DXGIHonorFSEWindowsCompatible", 0, RegistryValueKind.Binary);
-                            key64.SetValue("GameDVR_HonorUserFSEBehaviorMode", 0, RegistryValueKind.Binary);
-                            key64.SetValue("GameDVR_EFSEFeatureFlags", 0, RegistryValueKind.Binary);
-                            key64.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
-                        }
-                    }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
-                    {
-                        if (key32 != null)
+                            "GameDVR_DXGIHonorFSEWindowsCompatible",
+                            "GameDVR_HonorUserFSEBehaviorMode",
+                            "GameDVR_EFSEFeatureFlags"
+                        })
                         {
-                            key32.SetValue("GameDVR_DXGIHonorFSEWindowsCompatible", 0, RegistryValueKind.Binary);
-                            key32.SetValue("GameDVR_HonorUserFSEBehaviorMode", 0, RegistryValueKind.Binary);
-                            key32.SetValue("GameDVR_EFSEFeatureFlags", 0, RegistryValueKind.Binary);
-                            key32.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
+                            registryChanges.SetValue(RegistryHive.LocalMachine, @"SYSTEM\GameConfigStore", valueName,
+                                new byte[4], RegistryValueKind.Binary, view);
                         }
+                        registryChanges.SetValue(RegistryHive.LocalMachine, @"SYSTEM\GameConfigStore", "GameDVR_Enabled",
+                            0, RegistryValueKind.DWord, view);
                     }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -904,26 +864,17 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System"))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        foreach (string valueName in new[] { "EnableActivityFeed", "PublishUserActivities", "UploadUserActivities" })
                         {
-                            key64.SetValue("EnableActivityFeed", 0, RegistryValueKind.DWord);
-                            key64.SetValue("PublishUserActivities", 0, RegistryValueKind.DWord);
-                            key64.SetValue("UploadUserActivities", 0, RegistryValueKind.DWord);
+                            registryChanges.SetValue(RegistryHive.LocalMachine,
+                                @"SOFTWARE\Policies\Microsoft\Windows\System", valueName, 0,
+                                RegistryValueKind.DWord, view);
                         }
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System"))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("EnableActivityFeed", 0, RegistryValueKind.DWord);
-                            key32.SetValue("PublishUserActivities", 0, RegistryValueKind.DWord);
-                            key32.SetValue("UploadUserActivities", 0, RegistryValueKind.DWord);
-                        }
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -941,60 +892,29 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowWiFiHotSpotReporting", 0,
+                            RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowAutoConnectToWiFiSenseHotspots", 0,
+                            RegistryValueKind.DWord, view);
+                        foreach (string policyName in new[] { "AllowWiFiHotSpotReporting", "AllowAutoConnectToWiFiSenseHotspots" })
                         {
-                            key64.SetValue("AllowWiFiHotSpotReporting", 0, RegistryValueKind.DWord);
-                            key64.SetValue("AllowAutoConnectToWiFiSenseHotspots", 0, RegistryValueKind.DWord);
+                            registryChanges.SetValue(RegistryHive.LocalMachine,
+                                $@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\{policyName}", "Value", 0,
+                                RegistryValueKind.DWord, view);
                         }
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "AutoConnectAllowedOEM", 0,
+                            RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "WiFISenseAllowed", 0,
+                            RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("AllowWiFiHotSpotReporting", 0, RegistryValueKind.DWord);
-                            key32.SetValue("AllowAutoConnectToWiFiSenseHotspots", 0, RegistryValueKind.DWord);
-                        }
-                    }
-                    using (RegistryKey? key32WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
-                    {
-                        key32WiFiHotSpot?.SetValue("Value", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
-                    {
-                        key64WiFiHotSpot?.SetValue("Value", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
-                    {
-                        key32AutoConnect?.SetValue("Value", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
-                    {
-                        key64AutoConnect?.SetValue("Value", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key32OEM?.SetValue("AutoConnectAllowedOEM", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key64OEM?.SetValue("AutoConnectAllowedOEM", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key32SenseAllowed?.SetValue("WiFISenseAllowed", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key64SenseAllowed?.SetValue("WiFISenseAllowed", 0, RegistryValueKind.DWord);
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -1380,7 +1300,24 @@ namespace WinHubX.Forms.Settaggi
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 SetCheckboxState("AbilitaSpazioRiservato", true);
-                ExecutePowerShellScript(@"Set-WindowsReservedStorageState -State Enabled");
+                try
+                {
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                    {
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", "ReservedStorageState", 1,
+                            RegistryValueKind.DWord, view);
+                    }
+                    string script = "$ErrorActionPreference = 'Stop'" + Environment.NewLine
+                        + "Set-WindowsReservedStorageState -State Enabled -Online -ErrorAction Stop" + Environment.NewLine
+                        + registryChanges.BuildCommand();
+                    RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
+                }
+                catch (Exception ex)
+                {
+                    failures.Add(ex.GetBaseException().Message);
+                }
             }
             else
             {
@@ -1463,60 +1400,29 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                             .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowWiFiHotSpotReporting", 1,
+                            RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowAutoConnectToWiFiSenseHotspots", 1,
+                            RegistryValueKind.DWord, view);
+                        foreach (string policyName in new[] { "AllowWiFiHotSpotReporting", "AllowAutoConnectToWiFiSenseHotspots" })
                         {
-                            key64.SetValue("AllowWiFiHotSpotReporting", 1, RegistryValueKind.DWord);
-                            key64.SetValue("AllowAutoConnectToWiFiSenseHotspots", 1, RegistryValueKind.DWord);
+                            registryChanges.SetValue(RegistryHive.LocalMachine,
+                                $@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\{policyName}", "Value", 1,
+                                RegistryValueKind.DWord, view);
                         }
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "AutoConnectAllowedOEM", 1,
+                            RegistryValueKind.DWord, view);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "WiFISenseAllowed", 1,
+                            RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                             .CreateSubKey(@"Software\Microsoft\PolicyManager\default\WiFi"))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("AllowWiFiHotSpotReporting", 1, RegistryValueKind.DWord);
-                            key32.SetValue("AllowAutoConnectToWiFiSenseHotspots", 1, RegistryValueKind.DWord);
-                        }
-                    }
-                    using (RegistryKey? key32WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
-                    {
-                        key32WiFiHotSpot?.SetValue("Value", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64WiFiHotSpot = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting", true))
-                    {
-                        key64WiFiHotSpot?.SetValue("Value", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
-                    {
-                        key32AutoConnect?.SetValue("Value", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64AutoConnect = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots", true))
-                    {
-                        key64AutoConnect?.SetValue("Value", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key32OEM?.SetValue("AutoConnectAllowedOEM", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64OEM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key64OEM?.SetValue("AutoConnectAllowedOEM", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key32SenseAllowed?.SetValue("WiFISenseAllowed", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64SenseAllowed = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", true))
-                    {
-                        key64SenseAllowed?.SetValue("WiFISenseAllowed", 1, RegistryValueKind.DWord);
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (UnauthorizedAccessException ex)
                 {

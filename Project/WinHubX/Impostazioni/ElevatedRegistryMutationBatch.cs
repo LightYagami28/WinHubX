@@ -25,7 +25,7 @@ internal sealed class ElevatedRegistryMutationBatch
         ArgumentNullException.ThrowIfNull(value);
         ValidateTarget(hive, subKeyPath, valueName, view);
         if (valueKind is not (RegistryValueKind.String or RegistryValueKind.ExpandString
-            or RegistryValueKind.DWord or RegistryValueKind.QWord or RegistryValueKind.MultiString))
+            or RegistryValueKind.DWord or RegistryValueKind.QWord or RegistryValueKind.MultiString or RegistryValueKind.Binary))
         {
             throw new ArgumentOutOfRangeException(nameof(valueKind), "Tipo di valore Registro non supportato.");
         }
@@ -35,6 +35,7 @@ internal sealed class ElevatedRegistryMutationBatch
             RegistryValueKind.DWord => value is int or uint,
             RegistryValueKind.QWord => value is long or ulong,
             RegistryValueKind.MultiString => value is string[],
+            RegistryValueKind.Binary => value is byte[],
             _ => false
         };
         if (!valueMatchesKind)
@@ -92,6 +93,7 @@ internal sealed class ElevatedRegistryMutationBatch
                                 }
                                 QWord { [long]$mutation.Value; break }
                                 MultiString { [string[]]$mutation.Value; break }
+                                Binary { [Convert]::FromBase64String([string]$mutation.Value); break }
                                 default { [string]$mutation.Value }
                             }
                             $key.SetValue([string]$mutation.Name, $value, $kind)
