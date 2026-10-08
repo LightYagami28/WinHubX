@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
@@ -132,9 +132,9 @@ namespace WinHubX
                 control is CheckBox ||
                 control is ComboBox ||
                 control is ListBox ||
-                control is CuoreUI.Controls.cuiSwitch ||
-                control is CuoreUI.Controls.cuiFileDropper ||
-                control is CuoreUI.Controls.cuiPictureBox ||
+                control is HartUI.Controls.cuiSwitch ||
+                control is HartUI.Controls.cuiFileDropper ||
+                control is HartUI.Controls.cuiPictureBox ||
                 control is RadioButton)
                 return;
             control.MouseDown += (s, e) =>

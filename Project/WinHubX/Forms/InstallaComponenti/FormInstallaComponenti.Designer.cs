@@ -30,7 +30,7 @@ namespace WinHubX.Forms.InstallaComponenti
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormInstallaComponenti));
             label3 = new Label();
-            btnInstallaVerdi = new CuoreUI.Controls.cuiButton();
+            btnInstallaVerdi = new HartUI.Controls.cuiButton();
             pictureBoxPowerPoint = new PictureBox();
             pictureBoxExcel = new PictureBox();
             pictureBoxWord = new PictureBox();
@@ -164,7 +164,7 @@ namespace WinHubX.Forms.InstallaComponenti
         #endregion
 
         private Label label3;
-        private CuoreUI.Controls.cuiButton btnInstallaVerdi;
+        private HartUI.Controls.cuiButton btnInstallaVerdi;
         private PictureBox pictureBoxPowerPoint;
         private PictureBox pictureBoxExcel;
         private PictureBox pictureBoxWord;

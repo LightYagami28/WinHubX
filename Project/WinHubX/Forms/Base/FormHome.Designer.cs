@@ -29,9 +29,9 @@ namespace WinHubX
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormHome));
-            cuiProgressTrackerHorizontal1 = new CuoreUI.Controls.cuiProgressTrackerHorizontal();
-            cuiSpinner1 = new CuoreUI.Controls.cuiSpinner();
-            cuiSeparator1 = new CuoreUI.Controls.cuiSeparator();
+            cuiProgressTrackerHorizontal1 = new HartUI.Controls.cuiProgressTrackerHorizontal();
+            cuiSpinner1 = new HartUI.Controls.cuiSpinner();
+            cuiSeparator1 = new HartUI.Controls.cuiSeparator();
             labelverifica = new Label();
             label1 = new Label();
             labelcpu = new Label();
@@ -45,7 +45,7 @@ namespace WinHubX
             labelwindows = new Label();
             labeloffice = new Label();
             label7 = new Label();
-            btnVerificaVerdi = new CuoreUI.Controls.cuiButton();
+            btnVerificaVerdi = new HartUI.Controls.cuiButton();
             label5 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
@@ -60,7 +60,6 @@ namespace WinHubX
             cuiProgressTrackerHorizontal1.LineThickness = 13;
             cuiProgressTrackerHorizontal1.Name = "cuiProgressTrackerHorizontal1";
             cuiProgressTrackerHorizontal1.Rounding = 10;
-            cuiProgressTrackerHorizontal1.ShowSymbols = true;
             cuiProgressTrackerHorizontal1.TaskForeColor = Color.FromArgb(128, 128, 128);
             cuiProgressTrackerHorizontal1.Tasks = new string[]
     {
@@ -248,9 +247,9 @@ namespace WinHubX
         }
 
         #endregion
-        private CuoreUI.Controls.cuiProgressTrackerHorizontal cuiProgressTrackerHorizontal1;
-        private CuoreUI.Controls.cuiSpinner cuiSpinner1;
-        private CuoreUI.Controls.cuiSeparator cuiSeparator1;
+        private HartUI.Controls.cuiProgressTrackerHorizontal cuiProgressTrackerHorizontal1;
+        private HartUI.Controls.cuiSpinner cuiSpinner1;
+        private HartUI.Controls.cuiSeparator cuiSeparator1;
         private Label labelverifica;
         private Label label1;
         private Label labelcpu;
@@ -264,7 +263,7 @@ namespace WinHubX
         private Label labelwindows;
         private Label labeloffice;
         private Label label7;
-        private CuoreUI.Controls.cuiButton btnVerificaVerdi;
+        private HartUI.Controls.cuiButton btnVerificaVerdi;
         private Label label5;
     }
 }

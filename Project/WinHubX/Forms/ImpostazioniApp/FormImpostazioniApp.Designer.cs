@@ -33,14 +33,14 @@ namespace WinHubX.Forms.ImpostazioniApp
             radioButton_temadisistema = new RadioButton();
             radioButton_temascuro = new RadioButton();
             radioButton_temachiaro = new RadioButton();
-            btnApplicaVerdi = new CuoreUI.Controls.cuiButton();
-            cuiPanel6 = new CuoreUI.Controls.cuiPanel();
+            btnApplicaVerdi = new HartUI.Controls.cuiButton();
+            cuiPanel6 = new HartUI.Controls.cuiPanel();
             pictureBox7 = new PictureBox();
             pictureBox6 = new PictureBox();
             pictureBox2 = new PictureBox();
             label8 = new Label();
             pictureBox10 = new PictureBox();
-            cuiPanel1 = new CuoreUI.Controls.cuiPanel();
+            cuiPanel1 = new HartUI.Controls.cuiPanel();
             pictureBox5 = new PictureBox();
             pictureBox4 = new PictureBox();
             pictureBox3 = new PictureBox();
@@ -50,8 +50,8 @@ namespace WinHubX.Forms.ImpostazioniApp
             radioButton_italianolinuga = new RadioButton();
             pictureBox1 = new PictureBox();
             labelversione = new Label();
-            btnAggiornamento = new CuoreUI.Controls.cuiButton();
-            switch_aggiornamentoavvio = new CuoreUI.Controls.cuiSwitch();
+            btnAggiornamento = new HartUI.Controls.cuiButton();
+            switch_aggiornamentoavvio = new HartUI.Controls.cuiSwitch();
             label6 = new Label();
             cuiPanel6.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox7).BeginInit();
@@ -314,7 +314,6 @@ namespace WinHubX.Forms.ImpostazioniApp
             switch_aggiornamentoavvio.CheckedOutlineColor = Color.Empty;
             switch_aggiornamentoavvio.Name = "switch_aggiornamentoavvio";
             switch_aggiornamentoavvio.OutlineThickness = 1F;
-            switch_aggiornamentoavvio.ShowSymbols = false;
             switch_aggiornamentoavvio.ThumbSizeModifier = new Size(0, 0);
             switch_aggiornamentoavvio.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             switch_aggiornamentoavvio.UncheckedForeground = Color.White;
@@ -367,10 +366,10 @@ namespace WinHubX.Forms.ImpostazioniApp
         private RadioButton radioButton_temachiaro;
         private RadioButton radioButton_temadisistema;
         private RadioButton radioButton_temascuro;
-        private CuoreUI.Controls.cuiPanel cuiPanel6;
+        private HartUI.Controls.cuiPanel cuiPanel6;
         private Label label8;
         private PictureBox pictureBox10;
-        private CuoreUI.Controls.cuiPanel cuiPanel1;
+        private HartUI.Controls.cuiPanel cuiPanel1;
         private RadioButton radioButton_sistemalingua;
         private RadioButton radioButton_ingleselingua;
         private Label label1;
@@ -383,9 +382,9 @@ namespace WinHubX.Forms.ImpostazioniApp
         private PictureBox pictureBox7;
         private PictureBox pictureBox6;
         private Label labelversione;
-        private CuoreUI.Controls.cuiButton btnAggiornamento;
-        private CuoreUI.Controls.cuiButton btnApplicaVerdi;
-        private CuoreUI.Controls.cuiSwitch switch_aggiornamentoavvio;
+        private HartUI.Controls.cuiButton btnAggiornamento;
+        private HartUI.Controls.cuiButton btnApplicaVerdi;
+        private HartUI.Controls.cuiSwitch switch_aggiornamentoavvio;
         private Label label6;
     }
 }

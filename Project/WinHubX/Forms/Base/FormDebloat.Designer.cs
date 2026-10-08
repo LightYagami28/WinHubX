@@ -32,18 +32,18 @@ namespace WinHubX.Forms.Base
             flowLayoutPanel1 = new FlowLayoutPanel();
             textBox1 = new TextBox();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            progressBar1 = new CuoreUI.Controls.cuiProgressBarHorizontal();
-            btnAvviaSelezionatiVerdi = new CuoreUI.Controls.cuiButton();
-            btnModificaServiziDisattivo = new CuoreUI.Controls.cuiButton();
-            cuiPanel2 = new CuoreUI.Controls.cuiPanel();
+            progressBar1 = new HartUI.Controls.cuiProgressBarHorizontal();
+            btnAvviaSelezionatiVerdi = new HartUI.Controls.cuiButton();
+            btnModificaServiziDisattivo = new HartUI.Controls.cuiButton();
+            cuiPanel2 = new HartUI.Controls.cuiPanel();
             pictureBoxPowerPoint = new PictureBox();
-            btnDebloatAutomaticoVerdi = new CuoreUI.Controls.cuiButton();
+            btnDebloatAutomaticoVerdi = new HartUI.Controls.cuiButton();
             label3 = new Label();
             label5 = new Label();
-            cuiPanel1 = new CuoreUI.Controls.cuiPanel();
+            cuiPanel1 = new HartUI.Controls.cuiPanel();
             label1 = new Label();
-            cuiSwitch1 = new CuoreUI.Controls.cuiSwitch();
-            btnInstallaComponentiVerdi = new CuoreUI.Controls.cuiButton();
+            cuiSwitch1 = new HartUI.Controls.cuiSwitch();
+            btnInstallaComponentiVerdi = new HartUI.Controls.cuiButton();
             cuiPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPowerPoint).BeginInit();
             cuiPanel1.SuspendLayout();
@@ -238,7 +238,6 @@ namespace WinHubX.Forms.Base
             cuiSwitch1.CheckedOutlineColor = Color.Empty;
             cuiSwitch1.Name = "cuiSwitch1";
             cuiSwitch1.OutlineThickness = 1F;
-            cuiSwitch1.ShowSymbols = false;
             cuiSwitch1.ThumbSizeModifier = new Size(0, 0);
             cuiSwitch1.UncheckedBackground = Color.FromArgb(64, 128, 128, 128);
             cuiSwitch1.UncheckedForeground = Color.White;
@@ -304,18 +303,18 @@ namespace WinHubX.Forms.Base
         #endregion
         private FlowLayoutPanel flowLayoutPanel1;
         private TextBox textBox1;
-        private CuoreUI.Controls.cuiButton btnModificaServiziDisattivo;
+        private HartUI.Controls.cuiButton btnModificaServiziDisattivo;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar1;
-        private CuoreUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
-        private CuoreUI.Controls.cuiPanel cuiPanel2;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar1;
+        private HartUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
+        private HartUI.Controls.cuiPanel cuiPanel2;
         private PictureBox pictureBoxPowerPoint;
-        private CuoreUI.Controls.cuiButton btnDebloatAutomaticoVerdi;
+        private HartUI.Controls.cuiButton btnDebloatAutomaticoVerdi;
         private Label label3;
         private Label label5;
-        private CuoreUI.Controls.cuiPanel cuiPanel1;
+        private HartUI.Controls.cuiPanel cuiPanel1;
         private Label label1;
-        private CuoreUI.Controls.cuiSwitch cuiSwitch1;
-        private CuoreUI.Controls.cuiButton btnInstallaComponentiVerdi;
+        private HartUI.Controls.cuiSwitch cuiSwitch1;
+        private HartUI.Controls.cuiButton btnInstallaComponentiVerdi;
     }
 }

@@ -35,16 +35,16 @@ namespace WinHubX.Forms.Settaggi
             label2 = new Label();
             label1 = new Label();
             toolTip1 = new ToolTip(components);
-            cuiPanel2 = new CuoreUI.Controls.cuiPanel();
+            cuiPanel2 = new HartUI.Controls.cuiPanel();
             pictureBoxPowerPoint = new PictureBox();
-            btnSuggeritiVerdi = new CuoreUI.Controls.cuiButton();
+            btnSuggeritiVerdi = new HartUI.Controls.cuiButton();
             label3 = new Label();
             label5 = new Label();
-            btnRipristinaWinUpdateVerdi = new CuoreUI.Controls.cuiButton();
-            btnUpdateEssenzialeVerdi = new CuoreUI.Controls.cuiButton();
-            btnAvviaSelezionatiVerdi = new CuoreUI.Controls.cuiButton();
-            progressBar2 = new CuoreUI.Controls.cuiProgressBarHorizontal();
-            btnResetVerdi = new CuoreUI.Controls.cuiButton();
+            btnRipristinaWinUpdateVerdi = new HartUI.Controls.cuiButton();
+            btnUpdateEssenzialeVerdi = new HartUI.Controls.cuiButton();
+            btnAvviaSelezionatiVerdi = new HartUI.Controls.cuiButton();
+            progressBar2 = new HartUI.Controls.cuiProgressBarHorizontal();
+            btnResetVerdi = new HartUI.Controls.cuiButton();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             cuiPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPowerPoint).BeginInit();
@@ -332,15 +332,15 @@ namespace WinHubX.Forms.Settaggi
         private Label label1;
         private ToolTip toolTip1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
-        private CuoreUI.Controls.cuiButton btnRipristinaWinUpdateVerdi;
-        private CuoreUI.Controls.cuiButton btnUpdateEssenzialeVerdi;
-        private CuoreUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar2;
-        private CuoreUI.Controls.cuiPanel cuiPanel2;
+        private HartUI.Controls.cuiButton btnRipristinaWinUpdateVerdi;
+        private HartUI.Controls.cuiButton btnUpdateEssenzialeVerdi;
+        private HartUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar2;
+        private HartUI.Controls.cuiPanel cuiPanel2;
         private PictureBox pictureBoxPowerPoint;
-        private CuoreUI.Controls.cuiButton btnSuggeritiVerdi;
+        private HartUI.Controls.cuiButton btnSuggeritiVerdi;
         private Label label3;
         private Label label5;
-        private CuoreUI.Controls.cuiButton btnResetVerdi;
+        private HartUI.Controls.cuiButton btnResetVerdi;
     }
 }

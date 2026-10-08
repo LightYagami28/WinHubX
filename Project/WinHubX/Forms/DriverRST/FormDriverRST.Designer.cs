@@ -30,7 +30,7 @@ namespace WinHubX.Forms.DriverRST
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDriverRST));
             label3 = new Label();
-            btnInstallaVerdi = new CuoreUI.Controls.cuiButton();
+            btnInstallaVerdi = new HartUI.Controls.cuiButton();
             richTextBox1 = new RichTextBox();
             SuspendLayout();
             // 
@@ -98,7 +98,7 @@ namespace WinHubX.Forms.DriverRST
         #endregion
 
         private Label label3;
-        private CuoreUI.Controls.cuiButton btnInstallaVerdi;
+        private HartUI.Controls.cuiButton btnInstallaVerdi;
         private RichTextBox richTextBox1;
     }
 }

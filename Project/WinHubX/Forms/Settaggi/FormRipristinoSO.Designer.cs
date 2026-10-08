@@ -32,10 +32,10 @@ namespace WinHubX.Forms.Settaggi
             checkBox_hw = new CheckBox();
             checkBox_sw = new CheckBox();
             dateTimePicker1 = new DateTimePicker();
-            progressBar1 = new CuoreUI.Controls.cuiProgressBarHorizontal();
+            progressBar1 = new HartUI.Controls.cuiProgressBarHorizontal();
             label3 = new Label();
             labeltempo = new Label();
-            btn_CreaISOVerdi = new CuoreUI.Controls.cuiButton();
+            btn_CreaISOVerdi = new HartUI.Controls.cuiButton();
             richTextBox1 = new RichTextBox();
             richTextBox2 = new RichTextBox();
             SuspendLayout();
@@ -161,10 +161,10 @@ namespace WinHubX.Forms.Settaggi
         private CheckBox checkBox_hw;
         private CheckBox checkBox_sw;
         private DateTimePicker dateTimePicker1;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar1;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar1;
         private Label label3;
         private Label labeltempo;
-        private CuoreUI.Controls.cuiButton btn_CreaISOVerdi;
+        private HartUI.Controls.cuiButton btn_CreaISOVerdi;
         private RichTextBox richTextBox1;
         private RichTextBox richTextBox2;
     }

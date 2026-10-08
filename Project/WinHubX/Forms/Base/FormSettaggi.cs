@@ -1,4 +1,4 @@
-﻿using CuoreUI.Controls;
+using HartUI.Controls;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Reflection;
@@ -348,12 +348,12 @@ namespace WinHubX.Forms.Base
 
         }
 
-        private void cuiFileDropper2_FileDropped(object sender, CuoreUI.Controls.FileDroppedEventArgs e)
+        private void cuiFileDropper2_FileDropped(object sender, HartUI.Controls.FileDroppedEventArgs e)
         {
 
         }
 
-        private void cuiFileDropper1_FileDropped(object sender, CuoreUI.Controls.FileDroppedEventArgs e)
+        private void cuiFileDropper1_FileDropped(object sender, HartUI.Controls.FileDroppedEventArgs e)
         {
             DoImport();
         }

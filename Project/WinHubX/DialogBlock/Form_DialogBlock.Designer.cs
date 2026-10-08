@@ -29,12 +29,12 @@ namespace WinHubX.DialogBlock
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form_DialogBlock));
-            btnVerificaVerdi = new CuoreUI.Controls.cuiButton();
+            btnVerificaVerdi = new HartUI.Controls.cuiButton();
             btnClose = new Button();
             label4 = new Label();
             label3 = new Label();
             pictureBox1 = new PictureBox();
-            cuiFormRounder1 = new CuoreUI.Components.cuiFormRounder();
+            cuiFormRounder1 = new HartUI.Components.cuiFormRounder();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -125,11 +125,11 @@ namespace WinHubX.DialogBlock
 
         #endregion
 
-        private CuoreUI.Controls.cuiButton btnVerificaVerdi;
+        private HartUI.Controls.cuiButton btnVerificaVerdi;
         private Button btnClose;
         private Label label4;
         private Label label3;
         private PictureBox pictureBox1;
-        private CuoreUI.Components.cuiFormRounder cuiFormRounder1;
+        private HartUI.Components.cuiFormRounder cuiFormRounder1;
     }
 }

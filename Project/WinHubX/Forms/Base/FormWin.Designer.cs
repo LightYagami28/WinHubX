@@ -30,11 +30,11 @@ namespace WinHubX
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormWin));
             panel50 = new Panel();
-            btnDriverRSTPrinci = new CuoreUI.Controls.cuiButton();
-            btnDownloadIsoPrinci = new CuoreUI.Controls.cuiButton();
-            btnAttivaWindowsPrinci = new CuoreUI.Controls.cuiButton();
-            btnCambiaEdizionePrinci = new CuoreUI.Controls.cuiButton();
-            btnCreaIsoPrinci = new CuoreUI.Controls.cuiButton();
+            btnDriverRSTPrinci = new HartUI.Controls.cuiButton();
+            btnDownloadIsoPrinci = new HartUI.Controls.cuiButton();
+            btnAttivaWindowsPrinci = new HartUI.Controls.cuiButton();
+            btnCambiaEdizionePrinci = new HartUI.Controls.cuiButton();
+            btnCreaIsoPrinci = new HartUI.Controls.cuiButton();
             panel50.SuspendLayout();
             SuspendLayout();
             // 
@@ -223,10 +223,10 @@ namespace WinHubX
         #endregion
 
         private Panel panel50;
-        private CuoreUI.Controls.cuiButton btnDriverRSTPrinci;
-        private CuoreUI.Controls.cuiButton btnDownloadIsoPrinci;
-        private CuoreUI.Controls.cuiButton btnAttivaWindowsPrinci;
-        private CuoreUI.Controls.cuiButton btnCambiaEdizionePrinci;
-        private CuoreUI.Controls.cuiButton btnCreaIsoPrinci;
+        private HartUI.Controls.cuiButton btnDriverRSTPrinci;
+        private HartUI.Controls.cuiButton btnDownloadIsoPrinci;
+        private HartUI.Controls.cuiButton btnAttivaWindowsPrinci;
+        private HartUI.Controls.cuiButton btnCambiaEdizionePrinci;
+        private HartUI.Controls.cuiButton btnCreaIsoPrinci;
     }
 }

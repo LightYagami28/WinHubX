@@ -42,7 +42,7 @@ namespace WinHubX.Forms.Settaggi
             label3 = new Label();
             label1 = new Label();
             label2 = new Label();
-            btnApplyVerdi = new CuoreUI.Controls.cuiButton();
+            btnApplyVerdi = new HartUI.Controls.cuiButton();
             SuspendLayout();
             // 
             // chkHideFileExtensions
@@ -197,6 +197,6 @@ namespace WinHubX.Forms.Settaggi
         private Label label3;
         private Label label1;
         private Label label2;
-        private CuoreUI.Controls.cuiButton btnApplyVerdi;
+        private HartUI.Controls.cuiButton btnApplyVerdi;
     }
 }

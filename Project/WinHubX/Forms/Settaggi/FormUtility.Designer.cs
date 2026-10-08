@@ -36,14 +36,14 @@ namespace WinHubX.Forms.Settaggi
             label1 = new Label();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             toolTip1 = new ToolTip(components);
-            cuiPanel2 = new CuoreUI.Controls.cuiPanel();
+            cuiPanel2 = new HartUI.Controls.cuiPanel();
             pictureBoxPowerPoint = new PictureBox();
-            btnSuggeritiVerdi = new CuoreUI.Controls.cuiButton();
+            btnSuggeritiVerdi = new HartUI.Controls.cuiButton();
             label3 = new Label();
             label2 = new Label();
-            btnAvviaSelezionatiVerdi = new CuoreUI.Controls.cuiButton();
-            progressBar1 = new CuoreUI.Controls.cuiProgressBarHorizontal();
-            btnResetVerdi = new CuoreUI.Controls.cuiButton();
+            btnAvviaSelezionatiVerdi = new HartUI.Controls.cuiButton();
+            progressBar1 = new HartUI.Controls.cuiProgressBarHorizontal();
+            btnResetVerdi = new HartUI.Controls.cuiButton();
             cuiPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPowerPoint).BeginInit();
             SuspendLayout();
@@ -264,13 +264,13 @@ namespace WinHubX.Forms.Settaggi
         private Label label1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private ToolTip toolTip1;
-        private CuoreUI.Controls.cuiPanel cuiPanel2;
+        private HartUI.Controls.cuiPanel cuiPanel2;
         private PictureBox pictureBoxPowerPoint;
-        private CuoreUI.Controls.cuiButton btnSuggeritiVerdi;
+        private HartUI.Controls.cuiButton btnSuggeritiVerdi;
         private Label label3;
         private Label label2;
-        private CuoreUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar1;
-        private CuoreUI.Controls.cuiButton btnResetVerdi;
+        private HartUI.Controls.cuiButton btnAvviaSelezionatiVerdi;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar1;
+        private HartUI.Controls.cuiButton btnResetVerdi;
     }
 }

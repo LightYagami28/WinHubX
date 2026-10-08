@@ -44,8 +44,8 @@ namespace WinHubX.Forms.Personalizzazione_office
             flowPanelAppsRimuovi = new FlowLayoutPanel();
             label3 = new Label();
             panel20 = new Panel();
-            btn_avviaVerdi = new CuoreUI.Controls.cuiButton();
-            progressBar1 = new CuoreUI.Controls.cuiProgressBarHorizontal();
+            btn_avviaVerdi = new HartUI.Controls.cuiButton();
+            progressBar1 = new HartUI.Controls.cuiProgressBarHorizontal();
             tableLayoutPanel2.SuspendLayout();
             panel5.SuspendLayout();
             panel6.SuspendLayout();
@@ -212,8 +212,8 @@ namespace WinHubX.Forms.Personalizzazione_office
         private Label label4;
         private Label label1;
         private Panel panel20;
-        private CuoreUI.Controls.cuiButton btn_avviaVerdi;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar1;
+        private HartUI.Controls.cuiButton btn_avviaVerdi;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar1;
         private FlowLayoutPanel flowPanelAppsInstall;
         private FlowLayoutPanel flowPanelAppsRimuovi;
     }

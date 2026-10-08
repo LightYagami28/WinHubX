@@ -55,8 +55,8 @@ namespace WinHubX.Forms.Personalizzazione_office
             comboBoxVerOffice = new ComboBox();
             labelversione = new Label();
             lblSelezionLingua = new Label();
-            progressBar_office = new CuoreUI.Controls.cuiProgressBarHorizontal();
-            btn_CreaISOVerdi = new CuoreUI.Controls.cuiButton();
+            progressBar_office = new HartUI.Controls.cuiProgressBarHorizontal();
+            btn_CreaISOVerdi = new HartUI.Controls.cuiButton();
             panel7.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBoxPublisher).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBoxProject).BeginInit();
@@ -376,7 +376,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         private ComboBox comboBoxVerOffice;
         private Label labelversione;
         private Label lblSelezionLingua;
-        private CuoreUI.Controls.cuiProgressBarHorizontal progressBar_office;
+        private HartUI.Controls.cuiProgressBarHorizontal progressBar_office;
         private PictureBox pictureBoxPublisher;
         private PictureBox pictureBoxProject;
         private PictureBox pictureBoxVisio;
@@ -387,6 +387,6 @@ namespace WinHubX.Forms.Personalizzazione_office
         private PictureBox pictureBoxPowerPoint;
         private PictureBox pictureBoxExcel;
         private Label label1;
-        private CuoreUI.Controls.cuiButton btn_CreaISOVerdi;
+        private HartUI.Controls.cuiButton btn_CreaISOVerdi;
     }
 }

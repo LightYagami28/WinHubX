@@ -1,4 +1,4 @@
-﻿namespace WinHubX
+namespace WinHubX
 {
     partial class Form1
     {
@@ -41,7 +41,7 @@
             pictureBoxLogoForm1 = new PictureBox();
             panel2 = new Panel();
             picImpostazioniApp = new PictureBox();
-            pnlNav = new CuoreUI.Controls.cuiPanel();
+            pnlNav = new HartUI.Controls.cuiPanel();
             btnmonitoraggio = new Button();
             btnDebloat = new Button();
             btnSettaggi = new Button();
@@ -49,7 +49,7 @@
             btnWin = new Button();
             btnHome = new Button();
             PnlFormLoader = new Panel();
-            cuiFormRounder1 = new CuoreUI.Components.cuiFormRounder();
+            cuiFormRounder1 = new HartUI.Components.cuiFormRounder();
             tableLayoutPanel1.SuspendLayout();
             panel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
@@ -296,15 +296,15 @@
         public Button btnHome;
         public Label lblPanelTitle;
         public Panel PnlFormLoader;
-        private CuoreUI.Controls.cuiPanel pnlNav;
+        private HartUI.Controls.cuiPanel pnlNav;
         public Panel panel3;
         public PictureBox pictureBoxlblalto;
-        public CuoreUI.Controls.cuiPictureBox cuiPictureBox4;
+        public HartUI.Controls.cuiPictureBox cuiPictureBox4;
         private PictureBox picCloseApp;
         private PictureBox picEspandiApp;
         private PictureBox picMinimizzaApp;
         private PictureBox picImpostazioniApp;
         public PictureBox pictureBox3;
-        private CuoreUI.Components.cuiFormRounder cuiFormRounder1;
+        private HartUI.Components.cuiFormRounder cuiFormRounder1;
     }
 }

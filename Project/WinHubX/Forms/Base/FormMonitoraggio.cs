@@ -1,4 +1,4 @@
-﻿using CuoreUI.Controls;
+using HartUI.Controls;
 using LibreHardwareMonitor.Hardware;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
