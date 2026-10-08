@@ -12,6 +12,19 @@ namespace WinHubX.Forms.Settaggi
         private readonly FormSettaggi formSettaggi;
         private int tIndex = -1;
         private int totalSteps = 0;
+        private sealed record UtilitySelection(HashSet<string> Disable, HashSet<string> Enable);
+
+        private static HashSet<string> SnapshotCheckedItems(CheckedListBox list)
+        {
+            var selectedItems = new HashSet<string>(StringComparer.Ordinal);
+            foreach (object item in list.CheckedItems)
+            {
+                if (item is string name)
+                    selectedItems.Add(name);
+            }
+
+            return selectedItems;
+        }
         public FormUtility(FormSettaggi formSettaggi, Form1 form1)
         {
             InitializeComponent();
@@ -288,16 +301,18 @@ namespace WinHubX.Forms.Settaggi
 
         private void btnAvviaSelezionatiUti_Click(object? sender, EventArgs e)
         {
-            totalSteps = 0;
-
-            totalSteps = DisabilitaUtility.CheckedItems.Count + AbilitaUtility.CheckedItems.Count;
+            var selection = new UtilitySelection(
+                SnapshotCheckedItems(DisabilitaUtility),
+                SnapshotCheckedItems(AbilitaUtility)
+            );
+            totalSteps = selection.Disable.Count + selection.Enable.Count;
             if (totalSteps == 0) totalSteps = 1;
             progressBar1.MaxValue = totalSteps;
             progressBar1.Value = 0;
 
             if (!backgroundWorker1.IsBusy)
             {
-                backgroundWorker1.RunWorkerAsync();
+                backgroundWorker1.RunWorkerAsync(selection);
             }
         }
 
@@ -429,8 +444,16 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_DoWork(object? sender, System.ComponentModel.DoWorkEventArgs e)
         {
+            if (e.Argument is not UtilitySelection selection)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            HashSet<string> selectedToDisable = selection.Disable;
+            HashSet<string> selectedToEnable = selection.Enable;
             int currentStep = 0;
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Background App"))
+            if (selectedToDisable.Contains("Disabilita Background App"))
             {
                 SetCheckboxState("DisabilitaBackgroundApp", true);
                 currentStep++;
@@ -472,7 +495,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaBackgroundApp", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Feedback"))
+            if (selectedToDisable.Contains("Disabilita Feedback"))
             {
                 SetCheckboxState("DisabilitaFeedback", true);
                 currentStep++;
@@ -507,7 +530,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaFeedback", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Advertising ID"))
+            if (selectedToDisable.Contains("Disabilita Advertising ID"))
             {
                 SetCheckboxState("DisabilitaAdvertisingID", true);
                 currentStep++;
@@ -533,7 +556,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaAdvertisingID", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Filtro Smart Screen"))
+            if (selectedToDisable.Contains("Disabilita Filtro Smart Screen"))
             {
                 SetCheckboxState("DisabilitaFiltroSmartScreen", true);
                 currentStep++;
@@ -568,7 +591,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaFiltroSmartScreen", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Desktop Remoto"))
+            if (selectedToDisable.Contains("Disabilita Desktop Remoto"))
             {
                 SetCheckboxState("DisabilitaDesktopRemoto", true);
                 currentStep++;
@@ -605,7 +628,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaDesktopRemoto", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita attivazione del Numlock in avvio"))
+            if (selectedToDisable.Contains("Disabilita attivazione del Numlock in avvio"))
             {
                 SetCheckboxState("DisabilitaattivazionedelNumlockinavvio", true);
                 currentStep++;
@@ -636,7 +659,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaattivazionedelNumlockinavvio", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita News e Interessi"))
+            if (selectedToDisable.Contains("Disabilita News e Interessi"))
             {
                 SetCheckboxState("DisabilitaNewseInteressi", true);
                 currentStep++;
@@ -686,7 +709,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaNewseInteressi", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Index File"))
+            if (selectedToDisable.Contains("Disabilita Index File"))
             {
                 SetCheckboxState("DisabilitaIndexFile", true);
                 currentStep++;
@@ -704,7 +727,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaIndexFile", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Edge PDF"))
+            if (selectedToDisable.Contains("Disabilita Edge PDF"))
             {
                 SetCheckboxState("DisabilitaEdgePDF", true);
                 currentStep++;
@@ -758,7 +781,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaEdgePDF", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Mappe"))
+            if (selectedToDisable.Contains("Disabilita Mappe"))
             {
                 SetCheckboxState("DisabilitaMappe", true);
                 currentStep++;
@@ -783,7 +806,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaMappe", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita UWP apps"))
+            if (selectedToDisable.Contains("Disabilita UWP apps"))
             {
                 SetCheckboxState("DisabilitaUWPapps", true);
                 currentStep++;
@@ -860,7 +883,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaUWPapps", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Esperienze Personalizzate Microsoft"))
+            if (selectedToDisable.Contains("Disabilita Esperienze Personalizzate Microsoft"))
             {
                 SetCheckboxState("DisabilitaEsperienzePersonalizzateMicrosoft", true);
                 currentStep++;
@@ -902,7 +925,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaEsperienzePersonalizzateMicrosoft", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Storage Check"))
+            if (selectedToDisable.Contains("Disabilita Storage Check"))
             {
                 SetCheckboxState("DisabilitaStorageCheck", true);
                 currentStep++;
@@ -927,7 +950,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaStorageCheck", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Superfetch"))
+            if (selectedToDisable.Contains("Disabilita Superfetch"))
             {
                 SetCheckboxState("DisabilitaSuperfetch", true);
                 currentStep++;
@@ -945,7 +968,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaSuperfetch", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Storage Check"))
+            if (selectedToDisable.Contains("Disabilita Storage Check"))
             {
                 SetCheckboxState("DisabilitaStorageCheck", true);
                 currentStep++;
@@ -964,7 +987,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaStorageCheck", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Ibernazione"))
+            if (selectedToDisable.Contains("Disabilita Ibernazione"))
             {
                 SetCheckboxState("DisabilitaIbernazione", true);
                 currentStep++;
@@ -984,7 +1007,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaIbernazione", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Ottimizzazione FullScreen"))
+            if (selectedToDisable.Contains("Disabilita Ottimizzazione FullScreen"))
             {
                 SetCheckboxState("DisabilitaOttimizzazioneFullScreen", true);
                 currentStep++;
@@ -1009,7 +1032,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaOttimizzazioneFullScreen", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Avvio Rapido"))
+            if (selectedToDisable.Contains("Disabilita Avvio Rapido"))
             {
                 SetCheckboxState("DisabilitaAvvioRapido", true);
                 currentStep++;
@@ -1027,7 +1050,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaAvvioRapido", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Normal Bandwidth"))
+            if (selectedToDisable.Contains("Normal Bandwidth"))
             {
                 SetCheckboxState("NormalBandwidth", true);
                 currentStep++;
@@ -1046,7 +1069,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("NormalBandwidth", false);
             }
-            if (DisabilitaUtility.CheckedItems.Contains("Disabilita Migliora uso SSD"))
+            if (selectedToDisable.Contains("Disabilita Migliora uso SSD"))
             {
                 SetCheckboxState("DisabilitaMigliorausoSSD", true);
                 currentStep++;
@@ -1068,7 +1091,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaMigliorausoSSD", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Storage Check"))
+            if (selectedToEnable.Contains("Abilita Storage Check"))
             {
                 SetCheckboxState("AbilitaStorageCheck", true);
                 currentStep++;
@@ -1120,7 +1143,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaStorageCheck", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Superfetch"))
+            if (selectedToEnable.Contains("Abilita Superfetch"))
             {
                 SetCheckboxState("AbilitaSuperfetch", true);
                 currentStep++;
@@ -1140,7 +1163,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaSuperfetch", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Ibernazione"))
+            if (selectedToEnable.Contains("Abilita Ibernazione"))
             {
                 SetCheckboxState("AbilitaIbernazione", true);
                 currentStep++;
@@ -1162,7 +1185,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaIbernazione", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Ottimizzazione FullScreen"))
+            if (selectedToEnable.Contains("Abilita Ottimizzazione FullScreen"))
             {
                 SetCheckboxState("AbilitaOttimizzazioneFullScreen", true);
                 currentStep++;
@@ -1187,7 +1210,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaOttimizzazioneFullScreen", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Avvio Rapido"))
+            if (selectedToEnable.Contains("Abilita Avvio Rapido"))
             {
                 SetCheckboxState("AbilitaAvvioRapido", true);
                 currentStep++;
@@ -1206,7 +1229,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaAvvioRapido", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("All Bandwidth"))
+            if (selectedToEnable.Contains("All Bandwidth"))
             {
                 SetCheckboxState("AllBandwidth", true);
                 currentStep++;
@@ -1225,7 +1248,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AllBandwidth", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Background App"))
+            if (selectedToEnable.Contains("Abilita Background App"))
             {
                 SetCheckboxState("AbilitaBackgroundApp", true);
                 currentStep++;
@@ -1261,7 +1284,7 @@ namespace WinHubX.Forms.Settaggi
                 SetCheckboxState("AbilitaBackgroundApp", false);
             }
 
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Feedback"))
+            if (selectedToEnable.Contains("Abilita Feedback"))
             {
                 SetCheckboxState("AbilitaFeedback", true);
                 currentStep++;
@@ -1296,7 +1319,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaFeedback", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Advertising ID"))
+            if (selectedToEnable.Contains("Abilita Advertising ID"))
             {
                 SetCheckboxState("AbilitaAdvertisingID", true);
                 currentStep++;
@@ -1335,7 +1358,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaAdvertisingID", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Filtro Smart Screen"))
+            if (selectedToEnable.Contains("Abilita Filtro Smart Screen"))
             {
                 SetCheckboxState("AbilitaFiltroSmartScreen", true);
                 currentStep++;
@@ -1372,7 +1395,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaFiltroSmartScreen", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Desktop Remoto"))
+            if (selectedToEnable.Contains("Abilita Desktop Remoto"))
             {
                 SetCheckboxState("AbilitaDesktopRemoto", true);
                 currentStep++;
@@ -1399,7 +1422,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaDesktopRemoto", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita attivazione del Numlock in avvio"))
+            if (selectedToEnable.Contains("Abilita attivazione del Numlock in avvio"))
             {
                 SetCheckboxState("AbilitaattivazionedelNumlockinavvio", true);
                 currentStep++;
@@ -1424,7 +1447,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaattivazionedelNumlockinavvio", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita News e Interessi"))
+            if (selectedToEnable.Contains("Abilita News e Interessi"))
             {
                 SetCheckboxState("AbilitaNewseInteressi", true);
                 currentStep++;
@@ -1472,7 +1495,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaNewseInteressi", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Index File"))
+            if (selectedToEnable.Contains("Abilita Index File"))
             {
                 SetCheckboxState("AbilitaIndexFile", true);
                 currentStep++;
@@ -1491,7 +1514,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaIndexFile", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Risparmio Energetico Personalizzato"))
+            if (selectedToEnable.Contains("Abilita Risparmio Energetico Personalizzato"))
             {
                 SetCheckboxState("AbilitaRisparmioEnergeticoPersonalizzato", true);
                 currentStep++;
@@ -1525,7 +1548,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaRisparmioEnergeticoPersonalizzato", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Migliora uso SSD"))
+            if (selectedToEnable.Contains("Abilita Migliora uso SSD"))
             {
                 SetCheckboxState("MigliorausoSSD", true);
                 currentStep++;
@@ -1548,7 +1571,7 @@ namespace WinHubX.Forms.Settaggi
                 SetCheckboxState("MigliorausoSSD", false);
             }
 
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Mappe"))
+            if (selectedToEnable.Contains("Abilita Mappe"))
             {
                 SetCheckboxState("AbilitaMappe", true);
                 currentStep++;
@@ -1567,7 +1590,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaMappe", false);
             }
-            if (AbilitaUtility.CheckedItems.Contains("Abilita UWP apps"))
+            if (selectedToEnable.Contains("Abilita UWP apps"))
             {
                 SetCheckboxState("AbilitaUWPapps", true);
                 currentStep++;
@@ -1636,7 +1659,7 @@ namespace WinHubX.Forms.Settaggi
                 SetCheckboxState("AbilitaUWPapps", false);
             }
 
-            if (AbilitaUtility.CheckedItems.Contains("Abilita Esperienze Personalizzate Microsoft"))
+            if (selectedToEnable.Contains("Abilita Esperienze Personalizzate Microsoft"))
             {
                 SetCheckboxState("AbilitaEsperienzePersonalizzateMicrosoft", true);
                 currentStep++;
