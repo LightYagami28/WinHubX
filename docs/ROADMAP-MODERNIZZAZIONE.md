@@ -4,9 +4,9 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 
 ## Fondamenta e toolchain
 
-- [ ] 1. Consolidare `.editorconfig`, analizzatori .NET e regole di formattazione.
+- [x] 1. Consolidare `.editorconfig`, analizzatori .NET e regole di formattazione (policy comuni in `Directory.Build.props`, warning-as-error e code-style enforcement).
 - [x] 2. Mantenere branch separati .NET 10 stabile e .NET 11 preview.
-- [ ] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro.
+- [x] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro (`Directory.Packages.props`; audit NuGet 2026-10-08: nessun pacchetto vulnerabile o update stabile diretto dell’app; ApplicationInsights 2.23.0 resta transitivo dal provider MTP, la 3.x richiede upgrade coordinato).
 - [x] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
 - [ ] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi.
 - [ ] 6. Aggiungere test di regressione per configurazione, lingua e tema.
