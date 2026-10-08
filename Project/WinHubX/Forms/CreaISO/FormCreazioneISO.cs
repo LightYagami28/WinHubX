@@ -728,37 +728,108 @@ namespace WinHubX.Forms.CreaISO
         }
         private async Task ExecuteCommand(string command, CancellationToken token)
         {
-            Log($"[ESEGUITO] {command}");
+            token.ThrowIfCancellationRequested();
+            IReadOnlyList<string> parsedArguments = ParseRegistryCommand(command);
+            Log($"[ESEGUITO] reg.exe {string.Join(' ', parsedArguments.Skip(1))}");
 
-            using (Process process = new Process())
+            var startInfo = new ProcessStartInfo
             {
-                process.StartInfo.FileName = "cmd.exe";
-                process.StartInfo.Arguments = $"/C {command}";
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
+                FileName = Path.Combine(Environment.SystemDirectory, "reg.exe"),
+                WorkingDirectory = Environment.SystemDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            foreach (string argument in parsedArguments.Skip(1))
+                startInfo.ArgumentList.Add(argument);
 
-                _ = process.Start();
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare reg.exe.");
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-                var outputTask = Task.Run(() =>
+            try
+            {
+                await process.WaitForExitAsync(token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                try
                 {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                });
-
-                _ = await Task.WhenAny(outputTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(false);
-
-                if (token.IsCancellationRequested)
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or AggregateException)
                 {
-                    process.Kill();
-                    string operazioneannullata = LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken");
-                    Log(operazioneannullata);
+                    Debug.WriteLine($"WinHubX registry command cancellation failed: {ex.Message}");
                 }
 
-                await outputTask.ConfigureAwait(false);
-                process.WaitForExit();
+                await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+                _ = await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
+                throw;
             }
+
+            string output = await outputTask.ConfigureAwait(false);
+            string error = await errorTask.ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(output))
+                Log(output.Trim());
+            if (!string.IsNullOrWhiteSpace(error))
+                Log(error.Trim());
+
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException(
+                    $"reg.exe è terminato con codice {process.ExitCode}: {string.Join(Environment.NewLine, new[] { output.Trim(), error.Trim() }.Where(static text => text.Length > 0))}");
+        }
+
+        private static IReadOnlyList<string> ParseRegistryCommand(string command)
+        {
+            var arguments = new List<string>();
+            var argument = new StringBuilder();
+            bool insideQuotes = false;
+
+            for (int index = 0; index < command.Length;)
+            {
+                while (index < command.Length && char.IsWhiteSpace(command[index]) && !insideQuotes)
+                    index++;
+                if (index >= command.Length)
+                    break;
+
+                argument.Clear();
+                while (index < command.Length && (!char.IsWhiteSpace(command[index]) || insideQuotes))
+                {
+                    int backslashCount = 0;
+                    while (index < command.Length && command[index] == '\\')
+                    {
+                        backslashCount++;
+                        index++;
+                    }
+
+                    if (index < command.Length && command[index] == '"')
+                    {
+                        argument.Append('\\', backslashCount / 2);
+                        if (backslashCount % 2 == 0)
+                            insideQuotes = !insideQuotes;
+                        else
+                            argument.Append('"');
+                        index++;
+                        continue;
+                    }
+
+                    argument.Append('\\', backslashCount);
+                    if (index < command.Length && (!char.IsWhiteSpace(command[index]) || insideQuotes))
+                        argument.Append(command[index++]);
+                }
+
+                if (insideQuotes)
+                    throw new InvalidOperationException("Il comando di registro contiene virgolette non bilanciate.");
+                arguments.Add(argument.ToString());
+            }
+
+            if (arguments.Count < 2 || !string.Equals(arguments[0], "reg", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Sono consentiti solo comandi reg nel flusso di personalizzazione ISO.");
+
+            return arguments;
         }
 
         private async Task RimozioneDiAlcuniProcessi(CancellationToken token)
