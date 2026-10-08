@@ -1,0 +1,6 @@
+MSBUILD : error MSB1001: opzione sconosciuta.
+    Riga di comando completa: 'C:\Program Files\dotnet\sdk\11.0.100-rc.1.26425.128\MSBuild.exe -maxcpucount --verbosity:m -tlp:default=auto --property:Configuration=Release --property:NuGetInteractive=false --target:Clean --verbosity:minimal --nologo Project\WinHubX.sln --no-restore -distributedlogger:Microsoft.DotNet.Cli.Commands.MSBuild.MSBuildLogger,C:\Program Files\dotnet\sdk\11.0.100-rc.1.26425.128\dotnet.dll*Microsoft.DotNet.Cli.Commands.MSBuild.MSBuildForwardingLogger,C:\Program Files\dotnet\sdk\11.0.100-rc.1.26425.128\dotnet.dll -tlp:DISABLENODEDISPLAY'
+  Opzioni accodate da file di risposta:
+Opzione: --no-restore
+
+Per la sintassi delle opzioni, digitare "MSBuild -help"

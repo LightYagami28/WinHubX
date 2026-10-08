@@ -3139,3 +3139,5 @@ C:\Users\utente\source\repos\WinHubX\WinHubX\obj\Release\net8.0-windows\WinHubX.
 C:\Users\utente\source\repos\WinHubX\WinHubX\obj\Release\net8.0-windows\WinHubX.Forms.ImpostazioniApp.FormImpostazioniApp.en.resources
 C:\Users\utente\source\repos\WinHubX\WinHubX\obj\Release\net8.0-windows\WinHubX.Forms.InstallaComponenti.FormInstallaComponenti.en.resources
 C:\Users\utente\source\repos\WinHubX\WinHubX\obj\Release\net8.0-windows\WinHubX.Forms.Settaggi.FormExplorer.en.resources
+E:\repo\WinHubX\Project\WinHubX\obj\Release\net8.0-windows\WinHubX.dll
+E:\repo\WinHubX\Project\WinHubX\obj\Release\net8.0-windows\refint\WinHubX.dll

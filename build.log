@@ -1,0 +1,8 @@
+C:\Program Files\dotnet\sdk\11.0.100-rc.1.26425.128\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.RuntimeIdentifierInference.targets(385,5): message NETSDK1057: si sta usando una versione in anteprima di .NET. Vedere https://aka.ms/dotnet-support-policy [E:\repo\WinHubX\Project\WinHubX\WinHubX.csproj]
+  WinHubX -> E:\repo\WinHubX\Project\WinHubX\bin\Release\net10.0-windows\WinHubX.dll
+
+Compilazione completata.
+    Avvisi: 0
+    Errori: 0
+
+Tempo trascorso 00:00:00.11

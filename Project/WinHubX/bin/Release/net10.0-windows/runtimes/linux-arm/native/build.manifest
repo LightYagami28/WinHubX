@@ -1,0 +1,68 @@
+{
+  "HashType": "SHA256Hash",
+  "Files": [
+    {
+      "Source": "build.manifest",
+      "Hash": "",
+      "Paths": [
+        "build.manifest"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/manifest.spdx.json.sha256",
+      "Hash": "006D1D57F6F61AAFD3940C25944F727677726A17201606BD39FBE13526E6863B",
+      "Paths": [
+        "_manifest/spdx_2.2/manifest.spdx.json.sha256"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/bsi.json",
+      "Hash": "02BAA3259172287337C6BB10F9F18CDC0FC51158FDCA3A633D6EDEAEA5305D28",
+      "Paths": [
+        "_manifest/spdx_2.2/bsi.json"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/ESRPClientLogs1007230122969.json",
+      "Hash": "6C1CD44489CEE35A974F3B959A5FBEDFDE44EC4F17AA1671F1A3CBE0915C4B87",
+      "Paths": [
+        "_manifest/spdx_2.2/ESRPClientLogs1007230122969.json"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/bsi.cose",
+      "Hash": "73E4FBC1A9E1E09AF80C2313F29076671EF916EA3167BDE7DC5C1BBFDD13E078",
+      "Paths": [
+        "_manifest/spdx_2.2/bsi.cose"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/manifest.cat",
+      "Hash": "99877C71DD6FC688F2750DF97E5B4CAE9239C5BBA89970BBCEF38CA75E637DAD",
+      "Paths": [
+        "_manifest/spdx_2.2/manifest.cat"
+      ]
+    },
+    {
+      "Source": "libpsl-native.so",
+      "Hash": "9ECE8E5DA3DB8E269BCFDFDBB34F29D033A4172BAF1DF2D1861B0999E0D09FC2",
+      "Paths": [
+        "libpsl-native.so"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/manifest.spdx.json",
+      "Hash": "D07C5935A712EC3A423CDD2B07B319B9EE2FC65EB95DEC03C048B12D7E7ABB5A",
+      "Paths": [
+        "_manifest/spdx_2.2/manifest.spdx.json"
+      ]
+    },
+    {
+      "Source": "_manifest/spdx_2.2/manifest.spdx.cose",
+      "Hash": "FD9831F895016B843D017FC3D68F9E136C138CEDC0B4ABB9DF5008F82AF44DBF",
+      "Paths": [
+        "_manifest/spdx_2.2/manifest.spdx.cose"
+      ]
+    }
+  ]
+}

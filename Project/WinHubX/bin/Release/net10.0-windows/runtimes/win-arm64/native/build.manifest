@@ -1,0 +1,82 @@
+{
+    "Files":  [
+                  {
+                      "Paths":  [
+                                    "build.manifest"
+                                ],
+                      "Source":  "build.manifest",
+                      "Hash":  ""
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/bsi.json"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/bsi.json",
+                      "Hash":  "02BAA3259172287337C6BB10F9F18CDC0FC51158FDCA3A633D6EDEAEA5305D28"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/manifest.spdx.json.sha256"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/manifest.spdx.json.sha256",
+                      "Hash":  "16C4D935F66DBDF50577CECF51A5B6871BD858B57BACC5F91FF459DB5ED98211"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/manifest.cat"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/manifest.cat",
+                      "Hash":  "2CEF7ADFF7D84B3D2D190C8136B50422B9B5725DE4B24C769C58B4DFCB46C133"
+                  },
+                  {
+                      "Paths":  [
+                                    "pwrshplugin.dll"
+                                ],
+                      "Source":  "pwrshplugin.dll",
+                      "Hash":  "31080C5728597EA0A82A5E90976FC0ECCD2830978AE55B0D2A94FD9D52ADE69C"
+                  },
+                  {
+                      "Paths":  [
+                                    "PowerShell.Core.Instrumentation.dll"
+                                ],
+                      "Source":  "PowerShell.Core.Instrumentation.dll",
+                      "Hash":  "3CB9880F59C6696EB45F986968EDFE90BE6618E88DFE36D357274EB569EDBCA1"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/manifest.spdx.cose"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/manifest.spdx.cose",
+                      "Hash":  "5A4DEF4155C3F84173D5F35C90F2752B58011040292C529D5B0BE62DA2D6FAF4"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/bsi.cose"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/bsi.cose",
+                      "Hash":  "8B613859827072E4016BB33DE0052EAFC46A89241CB3E04B6105EB4C2D84AF43"
+                  },
+                  {
+                      "Paths":  [
+                                    "pwrshplugin.pdb"
+                                ],
+                      "Source":  "pwrshplugin.pdb",
+                      "Hash":  "D12CC51B20FF67791CB10358F0591141BED0EC50DEE7D61049C33038EF53DE31"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/ESRPClientLogs1007231233649.json"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/ESRPClientLogs1007231233649.json",
+                      "Hash":  "D92CF88F0BA2858135E181BCACC06D3497BCF82817E6D31016AF1375D82FEAFB"
+                  },
+                  {
+                      "Paths":  [
+                                    "_manifest/spdx_2.2/manifest.spdx.json"
+                                ],
+                      "Source":  "_manifest/spdx_2.2/manifest.spdx.json",
+                      "Hash":  "ED80E06995BA3FBEFCC395B5A738B3DE4FA54DF5CCFCCD2E8DE2C6A3F39D6DDA"
+                  }
+              ],
+    "HashType":  "SHA256Hash"
+}
