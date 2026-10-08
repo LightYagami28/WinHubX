@@ -384,7 +384,7 @@ namespace WinHubX.Forms.Base
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
