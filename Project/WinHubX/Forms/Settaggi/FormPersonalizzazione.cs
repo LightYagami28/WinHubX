@@ -140,21 +140,7 @@ namespace WinHubX.Forms.Settaggi
                         explorerAdvanced?.SetValue("ShowCopilotButton", 0, RegistryValueKind.DWord);
                     }
                 }
-                ProcessStartInfo processInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
-                processInfo.ArgumentList.Add("/c");
-                processInfo.ArgumentList.Add("dism");
-                processInfo.ArgumentList.Add("/online");
-                processInfo.ArgumentList.Add("/remove-package");
-                processInfo.ArgumentList.Add("/package-name:Microsoft.Windows.Copilot");
-
-                _ = Process.Start(processInfo);
+                StartElevatedDism("/online", "/remove-package", "/package-name:Microsoft.Windows.Copilot");
             }
             catch (Exception ex)
             {
@@ -183,21 +169,7 @@ namespace WinHubX.Forms.Settaggi
                         explorerAdvanced?.SetValue("ShowCopilotButton", 1, RegistryValueKind.DWord);
                     }
                 }
-                ProcessStartInfo processInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
-                processInfo.ArgumentList.Add("/c");
-                processInfo.ArgumentList.Add("dism");
-                processInfo.ArgumentList.Add("/online");
-                processInfo.ArgumentList.Add("/add-package");
-                processInfo.ArgumentList.Add("/package-name:Microsoft.Windows.Copilot");
-
-                _ = Process.Start(processInfo);
+                StartElevatedDism("/online", "/add-package", "/package-name:Microsoft.Windows.Copilot");
             }
             catch (Exception ex)
             {
@@ -209,20 +181,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                ProcessStartInfo processInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
-                processInfo.ArgumentList.Add("/c");
-                processInfo.ArgumentList.Add("dism");
-                processInfo.ArgumentList.Add("/online");
-                processInfo.ArgumentList.Add("/enable-feature");
-                processInfo.ArgumentList.Add("/featurename:Recall");
-                _ = Process.Start(processInfo);
+                StartElevatedDism("/online", "/enable-feature", "/featurename:Recall");
             }
             catch (Exception ex)
             {
@@ -234,25 +193,28 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                ProcessStartInfo processInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
-                processInfo.ArgumentList.Add("/c");
-                processInfo.ArgumentList.Add("dism");
-                processInfo.ArgumentList.Add("/online");
-                processInfo.ArgumentList.Add("/disable-feature");
-                processInfo.ArgumentList.Add("/featurename:Recall");
-                _ = Process.Start(processInfo);
+                StartElevatedDism("/online", "/disable-feature", "/featurename:Recall");
             }
             catch (Exception ex)
             {
                 _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static void StartElevatedDism(params string[] arguments)
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "dism.exe"),
+                Verb = "runas",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+            foreach (string argument in arguments)
+                processInfo.ArgumentList.Add(argument);
+
+            _ = Process.Start(processInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare DISM con privilegi elevati.");
         }
 
         private void AvviaProcessoOttimizzaRicerca()
