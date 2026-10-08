@@ -712,16 +712,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                                                          .OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        key64?.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
+                        registryChanges.SetValue(RegistryHive.LocalMachine,
+                            @"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 0,
+                            RegistryValueKind.DWord, view);
                     }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                                                          .OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Remote Assistance", writable: true))
-                    {
-                        key32?.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -737,7 +735,21 @@ namespace WinHubX.Forms.Settaggi
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 SetCheckboxState("DisbailitaSchedulDefrag", true);
-                ExecutePowerShellScript(@"Disable-ScheduledTask -TaskName \""Microsoft\\Windows\\Defrag\\ScheduledDefrag\""");
+                try
+                {
+                    ApplyElevatedRegistryMutations(new ElevatedRegistryMutationBatch(), @"
+            $taskPath = '\Microsoft\Windows\Defrag\'
+            $taskName = 'ScheduledDefrag'
+            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+            if ($null -ne $task -and $task.State -ne 'Disabled') {
+                Disable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
+            }
+            ");
+                }
+                catch (Exception ex)
+                {
+                    failures.Add(ex.GetBaseException().Message);
+                }
             }
             else
             {
@@ -1059,6 +1071,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableWindowsConsumerFeatures",
+                        RegistryView.Registry64);
+                    ApplyElevatedRegistryMutations(registryChanges);
+
                     string contentDeliveryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager";
                     using (RegistryKey key = Registry.CurrentUser.CreateSubKey(contentDeliveryPath))
                     {
@@ -1075,11 +1093,6 @@ namespace WinHubX.Forms.Settaggi
                             key.DeleteValue("SubscribedContent-338387Enabled", false);
                             key.DeleteValue("SubscribedContent-353698Enabled", false);
                         }
-                    }
-                    string cloudContentPath = @"SOFTWARE\Policies\Microsoft\Windows\CloudContent";
-                    using (RegistryKey? policyKey = Registry.LocalMachine.OpenSubKey(cloudContentPath, writable: true))
-                    {
-                        policyKey?.DeleteValue("DisableWindowsConsumerFeatures", false);
                     }
                 }
                 catch (Exception ex)
@@ -1128,21 +1141,17 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    string capabilityAccessPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location";
-                    string sensorOverridesPath = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}";
-                    string serviceConfigurationPath = @"SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration";
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(capabilityAccessPath))
-                    {
-                        key?.SetValue("Value", "Allow", RegistryValueKind.String);
-                    }
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(sensorOverridesPath))
-                    {
-                        key?.SetValue("SensorPermissionState", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(serviceConfigurationPath))
-                    {
-                        key?.SetValue("Status", 1, RegistryValueKind.DWord);
-                    }
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location",
+                        "Value", "Allow", RegistryValueKind.String, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}",
+                        "SensorPermissionState", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration",
+                        "Status", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (Exception ex)
                 {
@@ -1160,28 +1169,19 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    string errorReportingPath64 = @"SOFTWARE\Microsoft\Windows\Windows Error Reporting";
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(errorReportingPath64, writable: true))
-                    {
-                        key64?.DeleteValue("Disabled", false);
-                    }
-                    string errorReportingPath32 = @"SOFTWARE\WOW6432Node\Microsoft\Windows\Windows Error Reporting";
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(errorReportingPath32, writable: true))
-                    {
-                        key32?.DeleteValue("Disabled", false);
-                    }
-                    using (var taskService = new TaskService())
-                    {
-                        var task = taskService.GetTask(@"Microsoft\Windows\Windows Error Reporting\QueueReporting");
-                        if (task != null)
-                        {
-                            if (task.State == TaskState.Disabled)
-                            {
-                                task.Enabled = true;
-                                _ = taskService.RootFolder.RegisterTaskDefinition(task.Name, task.Definition);
-                            }
-                        }
-                    }
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry64);
+                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry32);
+                    ApplyElevatedRegistryMutations(registryChanges, @"
+            $taskPath = '\Microsoft\Windows\Windows Error Reporting\'
+            $taskName = 'QueueReporting'
+            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+            if ($null -ne $task -and $task.State -eq 'Disabled') {
+                Enable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
+            }
+            ");
                 }
                 catch (Exception ex)
                 {
@@ -1271,16 +1271,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    string remoteAssistanceKey64 = @"SYSTEM\CurrentControlSet\Control\Remote Assistance";
-                    string remoteAssistanceKey32 = @"SOFTWARE\WOW6432Node\SYSTEM\CurrentControlSet\Control\Remote Assistance";
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey64, true))
-                    {
-                        key64?.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(remoteAssistanceKey32, true))
-                    {
-                        key32?.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
-                    }
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 1,
+                        RegistryValueKind.DWord, RegistryView.Registry32);
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -1302,21 +1300,21 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (TaskService ts = new TaskService())
-                    {
-                        Microsoft.Win32.TaskScheduler.Task task = ts.FindTask("Microsoft\\Windows\\Defrag\\ScheduledDefrag");
-
-                        if (task != null)
-                        {
-                            task.Enabled = true;
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                    ModifyRegistryForDefrag(true);
-                    ModifyRegistryForDefrag(false);
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag",
+                        "ScheduledDefrag", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag",
+                        "ScheduledDefrag", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    ApplyElevatedRegistryMutations(registryChanges, @"
+            $taskPath = '\Microsoft\Windows\Defrag\'
+            $taskName = 'ScheduledDefrag'
+            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
+            if ($null -ne $task -and $task.State -eq 'Disabled') {
+                Enable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
+            }
+            ");
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -1355,28 +1353,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
-                    {
-                        if (key64 != null)
-                        {
-                            key64.SetValue("MaintenanceDisabled", 0, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", writable: true))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("MaintenanceDisabled", 0, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
-                        }
-                    }
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance",
+                        "MaintenanceDisabled", 0, RegistryValueKind.DWord, RegistryView.Registry64);
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance",
+                        "MaintenanceDisabled", 0, RegistryValueKind.DWord, RegistryView.Registry32);
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -1411,34 +1395,21 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SYSTEM\GameConfigStore", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        foreach (string valueName in new[]
                         {
-                            key64.DeleteValue("GameDVR_DXGIHonorFSEWindowsCompatible", throwOnMissingValue: false);
-                            key64.DeleteValue("GameDVR_HonorUserFSEBehaviorMode", throwOnMissingValue: false);
-                            key64.DeleteValue("GameDVR_EFSEFeatureFlags", throwOnMissingValue: false);
-                            key64.DeleteValue("GameDVR_Enabled", throwOnMissingValue: false);
-                        }
-                        else
+                            "GameDVR_DXGIHonorFSEWindowsCompatible",
+                            "GameDVR_HonorUserFSEBehaviorMode",
+                            "GameDVR_EFSEFeatureFlags",
+                            "GameDVR_Enabled"
+                        })
                         {
-
+                            registryChanges.DeleteValue(RegistryHive.LocalMachine, @"SYSTEM\GameConfigStore", valueName, view);
                         }
                     }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\SYSTEM\GameConfigStore", writable: true))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.DeleteValue("GameDVR_DXGIHonorFSEWindowsCompatible", throwOnMissingValue: false);
-                            key32.DeleteValue("GameDVR_HonorUserFSEBehaviorMode", throwOnMissingValue: false);
-                            key32.DeleteValue("GameDVR_EFSEFeatureFlags", throwOnMissingValue: false);
-                            key32.DeleteValue("GameDVR_Enabled", throwOnMissingValue: false);
-                        }
-                        else
-                        {
-
-                        }
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -1460,32 +1431,17 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key64 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", writable: true))
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
                     {
-                        if (key64 != null)
+                        foreach (string valueName in new[] { "EnableActivityFeed", "PublishUserActivities", "UploadUserActivities" })
                         {
-                            key64.SetValue("EnableActivityFeed", 1, RegistryValueKind.DWord);
-                            key64.SetValue("PublishUserActivities", 1, RegistryValueKind.DWord);
-                            key64.SetValue("UploadUserActivities", 1, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
+                            registryChanges.SetValue(RegistryHive.LocalMachine,
+                                @"SOFTWARE\Policies\Microsoft\Windows\System", valueName, 1,
+                                RegistryValueKind.DWord, view);
                         }
                     }
-                    using (RegistryKey? key32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Policies\Microsoft\Windows\System", writable: true))
-                    {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("EnableActivityFeed", 1, RegistryValueKind.DWord);
-                            key32.SetValue("PublishUserActivities", 1, RegistryValueKind.DWord);
-                            key32.SetValue("UploadUserActivities", 1, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
-                        }
-                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
                 }
                 catch (UnauthorizedAccessException ex)
                 {
@@ -1628,6 +1584,18 @@ namespace WinHubX.Forms.Settaggi
             RunElevatedPowerShellScript(encodedScript);
         }
 
+        private static void ApplyElevatedRegistryMutations(ElevatedRegistryMutationBatch registryChanges, string? additionalScript = null)
+        {
+            ArgumentNullException.ThrowIfNull(registryChanges);
+            if (registryChanges.Count == 0 && string.IsNullOrWhiteSpace(additionalScript))
+                return;
+
+            string script = registryChanges.Count > 0 ? registryChanges.BuildCommand() : "$ErrorActionPreference = 'Stop'";
+            if (!string.IsNullOrWhiteSpace(additionalScript))
+                script += Environment.NewLine + additionalScript;
+            RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
+        }
+
         private static void RunElevatedPowerShellScript(string encodedScript)
         {
             var startInfo = new System.Diagnostics.ProcessStartInfo
@@ -1648,20 +1616,6 @@ namespace WinHubX.Forms.Settaggi
             process.WaitForExit();
             if (process.ExitCode != 0)
                 throw new InvalidOperationException($"La configurazione del servizio è terminata con codice {process.ExitCode}.");
-        }
-
-        private void ModifyRegistryForDefrag(bool is32Bit)
-        {
-            string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag";
-            RegistryView view = is32Bit ? RegistryView.Registry32 : RegistryView.Registry64;
-            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
-            using RegistryKey? registryKey = baseKey.OpenSubKey(registryPath, writable: true);
-            if (registryKey is null)
-            {
-                return;
-            }
-
-            registryKey.SetValue("ScheduledDefrag", 1, RegistryValueKind.DWord);
         }
 
         private void AbilitaPrivacy_ItemCheck(object? sender, ItemCheckEventArgs e)
