@@ -125,12 +125,14 @@ namespace WinHubX.Forms.InstallaComponenti
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = "/c WSReset -i",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            startInfo.ArgumentList.Add("/c");
+            startInfo.ArgumentList.Add("WSReset");
+            startInfo.ArgumentList.Add("-i");
 
             using (Process process = new Process { StartInfo = startInfo })
             {
