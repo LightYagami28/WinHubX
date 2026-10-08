@@ -8,6 +8,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormDefender : Form
     {
+        private sealed record DefenderSelection(HashSet<string> Disable, HashSet<string> Enable);
+
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private int totalSteps = 0;
@@ -160,17 +162,23 @@ namespace WinHubX.Forms.Settaggi
 
         private void btnAvviaSelezionatiDef_Click(object? sender, EventArgs e)
         {
-            totalSteps = 0;
+            if (backgroundWorker1.IsBusy)
+            {
+                return;
+            }
 
-            totalSteps = DisabilitaDefender.CheckedItems.Count + AbilitaDefender.CheckedItems.Count;
-            if (totalSteps == 0) totalSteps = 1;
+            var selection = new DefenderSelection(
+                DisabilitaDefender.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal),
+                AbilitaDefender.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal));
+            totalSteps = selection.Disable.Count + selection.Enable.Count;
+            if (totalSteps == 0)
+            {
+                return;
+            }
+
             progressBar1.MaxValue = totalSteps;
             progressBar1.Value = 0;
-
-            if (!backgroundWorker1.IsBusy)
-            {
-                backgroundWorker1.RunWorkerAsync();
-            }
+            backgroundWorker1.RunWorkerAsync(selection);
         }
 
         private void btnRipristinaDefender_Click(object? sender, EventArgs e)
@@ -339,8 +347,13 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_DoWork(object? sender, System.ComponentModel.DoWorkEventArgs e)
         {
+            if (e.Argument is not DefenderSelection selection)
+            {
+                throw new InvalidOperationException("Selezione delle impostazioni Defender non valida.");
+            }
+
             int currentStep = 0;
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Controllo Accesso Cartella"))
+            if (selection.Disable.Contains("Disabilita Controllo Accesso Cartella"))
             {
                 SetCheckboxState("DisabilitaControlloAccessoCartella", true);
                 currentStep++;
@@ -358,7 +371,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaControlloAccessoCartella", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Isolamento Core"))
+            if (selection.Disable.Contains("Disabilita Isolamento Core"))
             {
                 SetCheckboxState("DisabilitaIsolamentoCore", true);
                 currentStep++;
@@ -377,7 +390,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaIsolamentoCore", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Applicazione Defender Guard"))
+            if (selection.Disable.Contains("Disabilita Applicazione Defender Guard"))
             {
                 SetCheckboxState("DisabilitaApplicazioneDefernderGuard", true);
                 currentStep++;
@@ -412,7 +425,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaApplicazioneDefernderGuard", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Protezione Account Warning"))
+            if (selection.Disable.Contains("Disabilita Protezione Account Warning"))
             {
                 SetCheckboxState("DisabilitaProtezioneAccountWarning", true);
                 currentStep++;
@@ -431,7 +444,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaProtezioneAccountWarning", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Blocco Download Files"))
+            if (selection.Disable.Contains("Disabilita Blocco Download Files"))
             {
                 SetCheckboxState("DisabilitaBloccoDownloadFiles", true);
                 currentStep++;
@@ -450,7 +463,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaBloccoDownloadFiles", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Windows Script Host"))
+            if (selection.Disable.Contains("Disabilita Windows Script Host"))
             {
                 SetCheckboxState("DisabilitaWindowsScriptHost", true);
                 currentStep++;
@@ -469,7 +482,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWindowsScriptHost", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita .NET Strong Cryptography"))
+            if (selection.Disable.Contains("Disabilita .NET Strong Cryptography"))
             {
                 SetCheckboxState("DisabilitaNETStrongCryptography", true);
                 currentStep++;
@@ -488,7 +501,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaNETStrongCryptography", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Livello Minimo UAC"))
+            if (selection.Disable.Contains("Livello Minimo UAC"))
             {
                 SetCheckboxState("LivelloMinimoUAC", true);
                 currentStep++;
@@ -507,7 +520,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("LivelloMinimoUAC", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Implicit Administrative Sheres"))
+            if (selection.Disable.Contains("Disabilita Implicit Administrative Sheres"))
             {
                 SetCheckboxState("DisabilitaImplicitAdministrativeSheres", true);
                 currentStep++;
@@ -526,7 +539,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaImplicitAdministrativeSheres", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Windows Firewall"))
+            if (selection.Disable.Contains("Disabilita Windows Firewall"))
             {
                 SetCheckboxState("DisabilitaWindowsFirewall", true);
                 currentStep++;
@@ -545,7 +558,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWindowsFirewall", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Windows Defender CLoud"))
+            if (selection.Disable.Contains("Disabilita Windows Defender CLoud"))
             {
                 SetCheckboxState("DisabilitaWindowsDefenderCLoud", true);
                 currentStep++;
@@ -566,7 +579,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWindowsDefenderCLoud", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Windows Defender SysTray"))
+            if (selection.Disable.Contains("Disabilita Windows Defender SysTray"))
             {
                 SetCheckboxState("DisabilitaWindowsDefenderSysTray", true);
                 currentStep++;
@@ -601,7 +614,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWindowsDefenderSysTray", false);
             }
-            if (DisabilitaDefender.CheckedItems.Contains("Disabilita Windows Defender Services"))
+            if (selection.Disable.Contains("Disabilita Windows Defender Services"))
             {
                 SetCheckboxState("DisabilitaWindowsDefenderServices", true);
                 currentStep++;
@@ -626,7 +639,7 @@ namespace WinHubX.Forms.Settaggi
 
                 }
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Controllo Accesso Cartella"))
+            if (selection.Enable.Contains("Abilita Controllo Accesso Cartella"))
             {
                 SetCheckboxState("AbilitaControlloAccessoCartella", true);
                 currentStep++;
@@ -645,7 +658,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaControlloAccessoCartella", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Isolamento Core"))
+            if (selection.Enable.Contains("Abilita Isolamento Core"))
             {
                 SetCheckboxState("AbilitaIsolamentoCore", true);
                 currentStep++;
@@ -664,7 +677,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaIsolamentoCore", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Applicazione Defender Guard"))
+            if (selection.Enable.Contains("Abilita Applicazione Defender Guard"))
             {
                 SetCheckboxState("AbilitaApplicazioneDefenderGuard", true);
                 currentStep++;
@@ -699,7 +712,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaApplicazioneDefenderGuard", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Protezione Account Warning"))
+            if (selection.Enable.Contains("Abilita Protezione Account Warning"))
             {
                 SetCheckboxState("AbilitaProtezioneAccountWarning", true);
                 currentStep++;
@@ -718,7 +731,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaProtezioneAccountWarning", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Blocco Download Files"))
+            if (selection.Enable.Contains("Abilita Blocco Download Files"))
             {
                 SetCheckboxState("AbilitaBloccoDownloadFiles", true);
                 currentStep++;
@@ -737,7 +750,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaBloccoDownloadFiles", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Windows Script Host"))
+            if (selection.Enable.Contains("Abilita Windows Script Host"))
             {
                 SetCheckboxState("AbilitaWindowsScriptHost", true);
                 currentStep++;
@@ -756,7 +769,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaWindowsScriptHost", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita .NET Strong Cryptography"))
+            if (selection.Enable.Contains("Abilita .NET Strong Cryptography"))
             {
                 SetCheckboxState("AbilitaNETStrongCryptography", true);
                 currentStep++;
@@ -777,7 +790,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaNETStrongCryptography", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Livello Massimo UAC"))
+            if (selection.Enable.Contains("Livello Massimo UAC"))
             {
                 SetCheckboxState("LivelloMassimoUAC", true);
                 currentStep++;
@@ -799,7 +812,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("LivelloMassimoUAC", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Implicit Administrative Sheres"))
+            if (selection.Enable.Contains("Abilita Implicit Administrative Sheres"))
             {
                 SetCheckboxState("AbilitaImplicitAdministrativeSheres", true);
                 currentStep++;
@@ -818,7 +831,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaImplicitAdministrativeSheres", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Windows Firewall"))
+            if (selection.Enable.Contains("Abilita Windows Firewall"))
             {
                 SetCheckboxState("AbilitaWindowsFirewall", true);
                 currentStep++;
@@ -837,7 +850,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaWindowsFirewall", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Windows Defender CLoud"))
+            if (selection.Enable.Contains("Abilita Windows Defender CLoud"))
             {
                 SetCheckboxState("AbilitaWindowsDefenderCLoud", true);
                 currentStep++;
@@ -859,7 +872,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaWindowsDefenderCLoud", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Windows Defender SysTray"))
+            if (selection.Enable.Contains("Abilita Windows Defender SysTray"))
             {
                 SetCheckboxState("AbilitaWindowsDefenderSysTray", true);
                 currentStep++;
@@ -895,7 +908,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaWindowsDefenderSysTray", false);
             }
-            if (AbilitaDefender.CheckedItems.Contains("Abilita Windows Defender Services"))
+            if (selection.Enable.Contains("Abilita Windows Defender Services"))
             {
                 SetCheckboxState("AbilitaWindowsDefenderServices", true);
                 currentStep++;
