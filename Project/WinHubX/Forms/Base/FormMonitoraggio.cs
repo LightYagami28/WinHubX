@@ -41,6 +41,8 @@ namespace WinHubX.Forms.Base
         private PerformanceCounter? _cpuCounter;
         private PerformanceCounter? _diskUsageCounter;
         private Task? _ramCleanupTask;
+        private Task? _manualRamCleanupTask;
+        private Task? _manualCpuCleanupTask;
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private readonly CancellationToken _monitoringToken;
         private Task[] _monitoringTasks = Array.Empty<Task>();
@@ -932,11 +934,12 @@ namespace WinHubX.Forms.Base
             btnPulisciRam.Enabled = false;
             try
             {
-                await Task.Run(() =>
+                _manualRamCleanupTask = Task.Run(() =>
                 {
                     CleanMemory();
                     OptimizeMemory();
                 });
+                await _manualRamCleanupTask;
             }
             catch (Exception ex)
             {
@@ -944,6 +947,7 @@ namespace WinHubX.Forms.Base
             }
             finally
             {
+                _manualRamCleanupTask = null;
                 if (!IsDisposed)
                 {
                     btnPulisciRam.Enabled = true;
@@ -956,7 +960,8 @@ namespace WinHubX.Forms.Base
             btnPulisciCPU.Enabled = false;
             try
             {
-                await Task.Run(CpuReduce);
+                _manualCpuCleanupTask = Task.Run(CpuReduce);
+                await _manualCpuCleanupTask;
             }
             catch (Exception ex)
             {
@@ -964,6 +969,7 @@ namespace WinHubX.Forms.Base
             }
             finally
             {
+                _manualCpuCleanupTask = null;
                 if (!IsDisposed)
                 {
                     btnPulisciCPU.Enabled = true;
@@ -1015,9 +1021,13 @@ namespace WinHubX.Forms.Base
                 }
 
                 await Task.WhenAll(_monitoringTasks);
-                if (_ramCleanupTask is not null)
+                Task[] cleanupTasks = new Task?[]
+                    { _ramCleanupTask, _manualRamCleanupTask, _manualCpuCleanupTask }
+                    .OfType<Task>()
+                    .ToArray();
+                if (cleanupTasks.Length > 0)
                 {
-                    await _ramCleanupTask;
+                    await Task.WhenAll(cleanupTasks);
                 }
             }
             catch (OperationCanceledException)
