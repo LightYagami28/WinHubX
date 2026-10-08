@@ -38,6 +38,62 @@ Hide-Console
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+function Get-AvailableWslDistribution {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Ubuntu', 'Debian', 'KaliLinux', 'Opensuse', 'Oracle')]
+        [string]$Selection
+    )
+
+    $wslPath = Join-Path ([Environment]::SystemDirectory) 'wsl.exe'
+    $catalogLines = @(& $wslPath --list --online 2>&1)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Impossibile leggere il catalogo WSL (codice $LASTEXITCODE)."
+    }
+
+    # WSL may emit UTF-16 text; remove NUL characters for Windows PowerShell 5.1 compatibility.
+    $catalog = ($catalogLines -join "`n") -replace "`0", ''
+    $distributionNames = @(
+        foreach ($line in ($catalog -split "`r?`n")) {
+            if ($line -match '^\s*(?<Name>[A-Za-z0-9][A-Za-z0-9._-]*)\s{2,}\S') {
+                $Matches.Name
+            }
+        }
+    )
+
+    switch ($Selection) {
+        'Ubuntu' {
+            if ($distributionNames -contains 'Ubuntu') { return 'Ubuntu' }
+        }
+        'Debian' {
+            if ($distributionNames -contains 'Debian') { return 'Debian' }
+        }
+        'KaliLinux' {
+            if ($distributionNames -contains 'kali-linux') { return 'kali-linux' }
+        }
+        'Opensuse' {
+            $latest = foreach ($name in $distributionNames) {
+                if ($name -match '^openSUSE-Leap-(?<Version>\d+(?:\.\d+)+)$') {
+                    [pscustomobject]@{ Name = $name; Version = [version]$Matches.Version }
+                }
+            }
+            $candidate = $latest | Sort-Object Version -Descending | Select-Object -First 1
+            if ($null -ne $candidate) { return $candidate.Name }
+        }
+        'Oracle' {
+            $latest = foreach ($name in $distributionNames) {
+                if ($name -match '^OracleLinux_(?<Version>\d+(?:_\d+)+)$') {
+                    [pscustomobject]@{ Name = $name; Version = [version]($Matches.Version -replace '_', '.') }
+                }
+            }
+            $candidate = $latest | Sort-Object Version -Descending | Select-Object -First 1
+            if ($null -ne $candidate) { return $candidate.Name }
+        }
+    }
+
+    throw "Nessuna distribuzione disponibile per la scelta '$Selection'."
+}
+
 # Create form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Attivazione WSL"
@@ -113,22 +169,9 @@ $buildButton.Add_Click({
         $Distro = "Oracle"
     }
 
-    $distribution = switch ($Distro) {
-        "Ubuntu" { "Ubuntu" }
-        "Debian" { "Debian" }
-        "KaliLinux" { "kali-linux" }
-        "Opensuse" { "openSUSE-Leap-16.0" }
-        "Oracle" { "OracleLinux_9_5" }
-        default { $null }
-    }
-
-    if ([string]::IsNullOrWhiteSpace($distribution)) {
-        [System.Windows.Forms.MessageBox]::Show("La distribuzione selezionata non e valida.", "Installazione WSL", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        return
-    }
-
     $wslPath = Join-Path ([Environment]::SystemDirectory) 'wsl.exe'
     try {
+        $distribution = Get-AvailableWslDistribution -Selection $Distro
         $installProcess = Start-Process -FilePath $wslPath `
             -ArgumentList @('--install', '--distribution', $distribution, '--no-launch') `
             -Wait -PassThru
