@@ -342,7 +342,8 @@ if ($existingRestorePoints.Count -eq 0) {
             {
                 try
                 {
-                    await RunPowerShellAsync($"Dismount-DiskImage -ImagePath '{AppState.IsoPath}'");
+                    await RunPowerShellAsync(
+                        $"Dismount-DiskImage -ImagePath '{EscapePowerShellLiteral(AppState.IsoPath)}'");
                     AppState.IsoMontata = false;
                     AppState.IsoDriveLetter = null;
                     AppState.IsoPath = null;
@@ -365,17 +366,22 @@ if ($existingRestorePoints.Count -eq 0) {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
-                    Arguments = $"-Command \"{command}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 }
             };
+            process.StartInfo.ArgumentList.Add("-NoProfile");
+            process.StartInfo.ArgumentList.Add("-NonInteractive");
+            process.StartInfo.ArgumentList.Add("-Command");
+            process.StartInfo.ArgumentList.Add(command);
             process.Start();
             await process.WaitForExitAsync();
             return process.ExitCode;
         }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''");
         private void btnMnmz_Click(object sender, EventArgs e)
         {
             WindowState = FormWindowState.Minimized;
