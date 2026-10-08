@@ -31,6 +31,8 @@ namespace WinHubX.Forms.Base
         private System.Windows.Forms.Timer _monitoringTimer = new();
         private System.Windows.Forms.Timer _tempMonitorTimer = new();
         private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
+        private readonly CancellationTokenSource _monitoringCancellation = new();
+        private bool _monitoringStarted;
 
         private NotifyIcon _notifyIcon = new();
         #endregion
@@ -46,6 +48,10 @@ namespace WinHubX.Forms.Base
 
         private async void FormMonitoraggio_Shown(object? sender, EventArgs e)
         {
+            if (_monitoringStarted)
+                return;
+
+            _monitoringStarted = true;
             Cursor = Cursors.WaitCursor;
             await Task.Delay(50);
 
@@ -318,7 +324,7 @@ namespace WinHubX.Forms.Base
         {
             string tempPath = Path.GetTempPath();
 
-            while (true)
+            while (!_monitoringCancellation.IsCancellationRequested)
             {
                 try
                 {
@@ -369,7 +375,7 @@ namespace WinHubX.Forms.Base
         {
             await Task.Run(async () =>
             {
-                while (true)
+                while (!_monitoringCancellation.IsCancellationRequested)
                 {
                     try
                     {
@@ -445,7 +451,7 @@ namespace WinHubX.Forms.Base
 
         private async void StartCpuMonitoring()
         {
-            while (true)
+            while (!_monitoringCancellation.IsCancellationRequested)
             {
                 double cpuUsagePercentage = await GetCpuUsagePercentageAsync();
                 BarCPU.ProgressValue = (int)cpuUsagePercentage;
@@ -463,7 +469,7 @@ namespace WinHubX.Forms.Base
         {
             await Task.Run(async () =>
             {
-                while (true)
+                while (!_monitoringCancellation.IsCancellationRequested)
                 {
                     double gpuUsage = GetGpuLoadPercentage() ?? 0;
                     UpdateGpuUI(gpuUsage);
@@ -522,7 +528,7 @@ namespace WinHubX.Forms.Base
             lastUpdateTime = DateTime.Now;
             lastBytesSent = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesSent);
             lastBytesReceived = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesReceived);
-            while (true)
+            while (!_monitoringCancellation.IsCancellationRequested)
             {
                 await Task.Delay(1000);
 
@@ -791,11 +797,13 @@ namespace WinHubX.Forms.Base
 
         public void CleanupResources()
         {
+            _monitoringCancellation.Cancel();
             _computer?.Close();
             _cpuCounter?.Dispose();
             _monitoringTimer?.Dispose();
             _tempMonitorTimer?.Dispose();
             _notifyIcon?.Dispose();
+            _monitoringCancellation.Dispose();
         }
 
         private void ShowErrorMessage(string message)
