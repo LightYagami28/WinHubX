@@ -6,7 +6,7 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 
 - [x] 1. Consolidare `.editorconfig`, analizzatori .NET e regole di formattazione (policy comuni in `Directory.Build.props`, warning-as-error e code-style enforcement).
 - [x] 2. Mantenere branch separati .NET 10 stabile e .NET 11 preview.
-- [x] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro (`Directory.Packages.props`; audit NuGet 2026-10-08: nessun pacchetto vulnerabile o update stabile diretto dell’app; ApplicationInsights 2.23.0 resta transitivo dal provider MTP, la 3.x richiede upgrade coordinato).
+- [x] 3. Centralizzare versioni NuGet e verificare ogni aggiornamento dal registro (`Directory.Packages.props`; audit NuGet 2026-10-08: nessun pacchetto vulnerabile; il branch .NET 11 usa Newtonsoft.Json 14 beta e pin delle dipendenze .NET 11 RC, soggetti a verifica prima del rilascio. Restano due update transitivi: Mono.Posix.NETStandard 5.20.1-preview (preview pubblicata nel 2020, non adottata senza compatibilità verificata) e ApplicationInsights 3.1.2 (richiede migrazione coordinata del provider MTP, resta 2.23.0).
 - [x] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
 - [ ] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi.
 - [ ] 6. Aggiungere test di regressione per configurazione, lingua e tema.
@@ -36,6 +36,8 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 - [ ] 24. Verificare privilegi minimi e isolare ogni azione che richiede UAC.
 - [ ] 25. Audit completo di script, URL, file binari e risorse esterne.
 - [x] 26. Configurare Dependabot per NuGet e GitHub Actions.
+
+La valutazione tecnica del rischio ispirata a NIS2 e le evidenze richieste sono descritte in [`SECURITY-ENGINEERING.md`](SECURITY-ENGINEERING.md); è una metodologia ingegneristica, non una valutazione legale o attestazione di conformità.
 
 ## UX, distribuzione e documentazione
 
