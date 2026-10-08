@@ -303,13 +303,18 @@ namespace WinHubX.Forms.CreaISO
                 {
                     Log(LanguageManager.GetTranslation("FormCreazioneISO", "conversioneesdwim"));
 
-                    string arguments = $"/export-image /SourceImageFile:\"{esdPath}\" " +
-                                       $"/SourceIndex:{indexValue} " +
-                                       $"/DestinationImageFile:\"{wimPath}\" " +
-                                       $"/Compress:max /CheckIntegrity";
+                    string[] arguments =
+                    [
+                        "/export-image",
+                        $"/SourceImageFile:{esdPath}",
+                        $"/SourceIndex:{indexValue}",
+                        $"/DestinationImageFile:{wimPath}",
+                        "/Compress:max",
+                        "/CheckIntegrity"
+                    ];
 
                     token.ThrowIfCancellationRequested();
-                    bool success = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                    bool success = await EseguiDISM(arguments, progress, token);
 
                     if (success && File.Exists(wimPath))
                     {
@@ -321,13 +326,18 @@ namespace WinHubX.Forms.CreaISO
                 {
                     Log(LanguageManager.GetTranslation("FormCreazioneISO", "trovatoinstallwim"));
 
-                    string arguments = $"/export-image /SourceImageFile:\"{wimPath}\" " +
-                                       $"/SourceIndex:{indexValue} " +
-                                       $"/DestinationImageFile:\"{wimProPath}\" " +
-                                       $"/Compress:max /CheckIntegrity";
+                    string[] arguments =
+                    [
+                        "/export-image",
+                        $"/SourceImageFile:{wimPath}",
+                        $"/SourceIndex:{indexValue}",
+                        $"/DestinationImageFile:{wimProPath}",
+                        "/Compress:max",
+                        "/CheckIntegrity"
+                    ];
 
                     token.ThrowIfCancellationRequested();
-                    bool success = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                    bool success = await EseguiDISM(arguments, progress, token);
 
                     if (success && File.Exists(wimProPath))
                     {
@@ -355,24 +365,32 @@ namespace WinHubX.Forms.CreaISO
             }
         }
 
-        private async Task<bool> EseguiDISM(string arguments, IProgress<int> progress, CancellationToken token)
+        private static ProcessStartInfo CreateDismStartInfo(IEnumerable<string> arguments)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "dism.exe"),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            foreach (string argument in arguments)
+                startInfo.ArgumentList.Add(argument);
+
+            return startInfo;
+        }
+
+        private async Task<bool> EseguiDISM(IReadOnlyList<string> arguments, IProgress<int> progress, CancellationToken token)
         {
             try
             {
-                progressBar2.Value = 0;
-                progressBar2.MaxValue = 100;
+                token.ThrowIfCancellationRequested();
+                UpdateProgressBar(0, 100);
 
                 using var dismProcess = new Process
                 {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "dism.exe",
-                        Arguments = arguments,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true
-                    }
+                    StartInfo = CreateDismStartInfo(arguments)
                 };
 
                 dismProcess.OutputDataReceived += (sender, args) =>
@@ -391,17 +409,30 @@ namespace WinHubX.Forms.CreaISO
                         Log($"Error: {args.Data}");
                 };
 
-                dismProcess.Start();
+                _ = dismProcess.Start();
                 dismProcess.BeginOutputReadLine();
                 dismProcess.BeginErrorReadLine();
 
-                while (!dismProcess.HasExited)
+                try
                 {
-                    token.ThrowIfCancellationRequested();
-                    await Task.Delay(100, token);
+                    await dismProcess.WaitForExitAsync(token);
+                }
+                catch (OperationCanceledException)
+                {
+                    try
+                    {
+                        if (!dismProcess.HasExited)
+                            dismProcess.Kill(entireProcessTree: true);
+                    }
+                    catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+                    {
+                        Debug.WriteLine($"Impossibile terminare DISM dopo l’annullamento: {ex.Message}");
+                    }
+
+                    await dismProcess.WaitForExitAsync(CancellationToken.None);
+                    throw;
                 }
 
-                dismProcess.WaitForExit();
                 progress?.Report(100);
                 return dismProcess.ExitCode == 0;
             }
@@ -415,6 +446,54 @@ namespace WinHubX.Forms.CreaISO
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreoperazione")}: {ex.Message}");
                 return false;
             }
+        }
+
+        private void UpdateProgressBar(int value, int? maximum = null)
+        {
+            if (progressBar2.InvokeRequired)
+            {
+                progressBar2.Invoke(new Action(() => UpdateProgressBar(value, maximum)));
+                return;
+            }
+
+            if (maximum.HasValue)
+                progressBar2.MaxValue = maximum.Value;
+            progressBar2.Value = Math.Clamp(value, 0, progressBar2.MaxValue);
+        }
+
+        private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunDismCapturingOutputAsync(
+            IReadOnlyList<string> arguments,
+            CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            using Process process = Process.Start(CreateDismStartInfo(arguments))
+                ?? throw new InvalidOperationException("Impossibile avviare DISM.");
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
+            try
+            {
+                await process.WaitForExitAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+                {
+                    Debug.WriteLine($"Impossibile terminare DISM dopo l’annullamento: {ex.Message}");
+                }
+
+                await process.WaitForExitAsync(CancellationToken.None);
+                _ = await Task.WhenAll(outputTask, errorTask);
+                throw;
+            }
+
+            await Task.WhenAll(outputTask, errorTask);
+            return (process.ExitCode, outputTask.Result, errorTask.Result);
         }
 
         private int? ParseProgress(string output)
@@ -453,9 +532,9 @@ namespace WinHubX.Forms.CreaISO
                     }
                 });
 
-                string arguments = $"/mount-image /imagefile:\"{wimPath}\" /index:1 /mountdir:\"{mountDir}\"";
+                string[] arguments = ["/mount-image", $"/imagefile:{wimPath}", "/index:1", $"/mountdir:{mountDir}"];
 
-                bool success = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                bool success = await EseguiDISM(arguments, progress, token);
 
                 if (success)
                 {
@@ -602,11 +681,11 @@ namespace WinHubX.Forms.CreaISO
                             Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "montaggioboot"));
                             var progress = new Progress<int>(value =>
                             {
-                                progressBar2.Value = value;
+                                UpdateProgressBar(value);
                             });
 
-                            string arguments = $"/mount-image /imagefile:\"{bootWimPath}\" /index:2 /mountdir:\"{bootMountDir}\"";
-                            bool success = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                            string[] arguments = ["/mount-image", $"/imagefile:{bootWimPath}", "/index:2", $"/mountdir:{bootMountDir}"];
+                            bool success = await EseguiDISM(arguments, progress, token);
 
                             if (success)
                             {
@@ -643,8 +722,8 @@ namespace WinHubX.Forms.CreaISO
                                     retry++;
                                 }
                                 Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "smontaggioboot"));
-                                string unmountArguments = $"/unmount-image /mountdir:\"{bootMountDir}\" /commit";
-                                bool unmountSuccess = await Task.Run(() => EseguiDISM(unmountArguments, progress, token), token);
+                                string[] unmountArguments = ["/unmount-image", $"/mountdir:{bootMountDir}", "/commit"];
+                                bool unmountSuccess = await EseguiDISM(unmountArguments, progress, token);
 
                                 if (unmountSuccess)
                                     Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "smontaggiobootsuccesso"));
@@ -1047,24 +1126,13 @@ namespace WinHubX.Forms.CreaISO
 
                                 if (!string.IsNullOrEmpty(driverFolder))
                                 {
-                                    using var process = Process.Start(new ProcessStartInfo
-                                    {
-                                        FileName = "dism.exe",
-                                        Arguments = $"/Image:\"C:\\Mount\\mount\" /Add-Driver /Driver:\"{driverFolder}\" /Recurse",
-                                        UseShellExecute = false,
-                                        RedirectStandardOutput = true,
-                                        RedirectStandardError = true,
-                                        CreateNoWindow = true
-                                    }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'integrazione driver.");
+                                    var driverResult = await RunDismCapturingOutputAsync(
+                                        ["/Image:C:\\Mount\\mount", "/Add-Driver", $"/Driver:{driverFolder}", "/Recurse"], token);
 
-                                    string output = await process.StandardOutput.ReadToEndAsync();
-                                    string error = await process.StandardError.ReadToEndAsync();
-                                    await process.WaitForExitAsync(token);
-
-                                    if (process.ExitCode == 0)
+                                    if (driverResult.ExitCode == 0)
                                         Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "driverintegratocartella")}: {driverFolder}");
                                     else
-                                        Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreintegracartella")} {error}");
+                                        Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreintegracartella")} {driverResult.StandardError}");
                                 }
 
                                 IncrementProgress();
@@ -1074,48 +1142,33 @@ namespace WinHubX.Forms.CreaISO
                                 string tempDriverDir = Path.Combine(Path.GetTempPath(), "DriverBackup_" + Guid.NewGuid().ToString("N"));
                                 Directory.CreateDirectory(tempDriverDir);
 
-                                using var export = Process.Start(new ProcessStartInfo
+                                try
                                 {
-                                    FileName = "dism.exe",
-                                    Arguments = $"/Online /Export-Driver /Destination:\"{tempDriverDir}\"",
-                                    UseShellExecute = false,
-                                    RedirectStandardOutput = true,
-                                    RedirectStandardError = true,
-                                    CreateNoWindow = true
-                                }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'esportazione driver.");
+                                    var exportResult = await RunDismCapturingOutputAsync(
+                                        ["/Online", "/Export-Driver", $"/Destination:{tempDriverDir}"], token);
 
-                                string expOut = await export.StandardOutput.ReadToEndAsync();
-                                string expErr = await export.StandardError.ReadToEndAsync();
-                                await export.WaitForExitAsync(token);
-
-                                if (export.ExitCode == 0)
-                                    Log(LanguageManager.GetTranslation("FormCreazioneISO", "driversuccessoesportazione"));
-                                else
-                                    Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreesportazionedriver")} {expErr}");
-
-                                if (export.ExitCode == 0)
-                                {
-                                    using var add = Process.Start(new ProcessStartInfo
-                                    {
-                                        FileName = "dism.exe",
-                                        Arguments = $"/Image:\"C:\\Mount\\mount\" /Add-Driver /Driver:\"{tempDriverDir}\" /Recurse",
-                                        UseShellExecute = false,
-                                        RedirectStandardOutput = true,
-                                        RedirectStandardError = true,
-                                        CreateNoWindow = true
-                                    }) ?? throw new InvalidOperationException("Impossibile avviare DISM per l'integrazione driver.");
-
-                                    string addOut = await add.StandardOutput.ReadToEndAsync();
-                                    string addErr = await add.StandardError.ReadToEndAsync();
-                                    await add.WaitForExitAsync(token);
-
-                                    if (add.ExitCode == 0)
-                                        Log(LanguageManager.GetTranslation("FormCreazioneISO", "driverintegrazionesistema"));
+                                    if (exportResult.ExitCode == 0)
+                                        Log(LanguageManager.GetTranslation("FormCreazioneISO", "driversuccessoesportazione"));
                                     else
-                                        Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreintegrasistema")} {addErr}");
+                                        Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreesportazionedriver")} {exportResult.StandardError}");
+
+                                    if (exportResult.ExitCode == 0)
+                                    {
+                                        var addResult = await RunDismCapturingOutputAsync(
+                                            ["/Image:C:\\Mount\\mount", "/Add-Driver", $"/Driver:{tempDriverDir}", "/Recurse"], token);
+
+                                        if (addResult.ExitCode == 0)
+                                            Log(LanguageManager.GetTranslation("FormCreazioneISO", "driverintegrazionesistema"));
+                                        else
+                                            Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreintegrasistema")} {addResult.StandardError}");
+                                    }
+                                }
+                                finally
+                                {
+                                    if (Directory.Exists(tempDriverDir))
+                                        Directory.Delete(tempDriverDir, recursive: true);
                                 }
 
-                                Directory.Delete(tempDriverDir, true);
                                 IncrementProgress();
                             }
                         }
@@ -1325,9 +1378,9 @@ namespace WinHubX.Forms.CreaISO
                         progressBar2.Value = value;
                 });
 
-                string arguments = $"/unmount-image /mountdir:\"{mountDir}\" /commit";
+                string[] arguments = ["/unmount-image", $"/mountdir:{mountDir}", "/commit"];
 
-                bool success = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                bool success = await EseguiDISM(arguments, progress, token);
 
                 if (token.IsCancellationRequested)
                 {
@@ -1383,31 +1436,51 @@ namespace WinHubX.Forms.CreaISO
                 {
                     try
                     {
-                        string oscdimgArguments =
-                            $"-m -o -u2 -bootdata:2#p0,e,b{sourcePath}\\boot\\etfsboot.com#pEF,e,b{sourcePath}\\efi\\microsoft\\boot\\efisys.bin {sourcePath} \"{isoOutputPath}\"";
+                        string[] oscdimgArguments =
+                        [
+                            "-m",
+                            "-o",
+                            "-u2",
+                            $"-bootdata:2#p0,e,b{Path.Combine(sourcePath, "boot", "etfsboot.com")}#pEF,e,b{Path.Combine(sourcePath, "efi", "microsoft", "boot", "efisys.bin")}",
+                            sourcePath,
+                            isoOutputPath
+                        ];
 
                         ProcessStartInfo oscdimgProcess = new ProcessStartInfo
                         {
                             FileName = oscdimgPath,
-                            Arguments = oscdimgArguments,
-                            RedirectStandardOutput = true,
                             UseShellExecute = false,
                             CreateNoWindow = true
                         };
+                        foreach (string argument in oscdimgArguments)
+                            oscdimgProcess.ArgumentList.Add(argument);
 
                         using (Process oscdimgProc = Process.Start(oscdimgProcess)
                             ?? throw new InvalidOperationException("Impossibile avviare oscdimg."))
                         {
-                            while (!oscdimgProc.HasExited)
+                            try
                             {
-                                if (token.IsCancellationRequested)
-                                {
-                                    oscdimgProc.Kill();
-                                    Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata"));
-                                    return;
-                                }
-                                await Task.Delay(100, token);
+                                await oscdimgProc.WaitForExitAsync(token);
                             }
+                            catch (OperationCanceledException)
+                            {
+                                try
+                                {
+                                    if (!oscdimgProc.HasExited)
+                                        oscdimgProc.Kill(entireProcessTree: true);
+                                }
+                                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+                                {
+                                    Debug.WriteLine($"Impossibile terminare oscdimg dopo l’annullamento: {ex.Message}");
+                                }
+
+                                await oscdimgProc.WaitForExitAsync(CancellationToken.None);
+                                Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata"));
+                                return;
+                            }
+
+                            if (oscdimgProc.ExitCode != 0)
+                                throw new InvalidOperationException($"oscdimg è terminato con codice {oscdimgProc.ExitCode}.");
                         }
 
                         AggiornaProgress(1);
