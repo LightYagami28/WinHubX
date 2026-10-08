@@ -518,23 +518,31 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem");
-                foreach (var os in searcher.Get())
+                using var searcher = new ManagementObjectSearcher("SELECT ProductType FROM Win32_OperatingSystem");
+                using ManagementObjectCollection operatingSystems = searcher.Get();
+                foreach (ManagementObject os in operatingSystems)
                 {
-                    var productType = Convert.ToInt32(os["ProductType"]);
-                    return productType != 1;
+                    using (os)
+                        return Convert.ToInt32(os["ProductType"]) != 1;
                 }
+                Debug.WriteLine("WMI non ha restituito Win32_OperatingSystem; DefendNot viene bloccato per sicurezza.");
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Rilevamento Windows Server non riuscito; DefendNot viene bloccato: {ex}");
+                return true;
             }
-            return false;
         }
 
         private async Task DisattivaWindowsDefender(HardwareInfo hardwareInfo)
         {
-            if (IsWindowsServer())
+            if (await Task.Run(IsWindowsServer))
+            {
+                MessageBox.Show("La funzione DefendNot non viene eseguita su Windows Server.", "WinHubX",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
+            }
 
             if (MessageBox.Show(
                     "DefendNot registra un provider di sicurezza alternativo tramite Windows Security Center e può disattivare Microsoft Defender. Continuare?",
@@ -565,9 +573,7 @@ namespace WinHubX.Forms.Base
                 };
 
                 if (string.IsNullOrEmpty(downloadUrl))
-                {
-                    return;
-                }
+                    throw new InvalidDataException("URL DefendNot non presente nella configurazione remota.");
 
                 if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out Uri? resourceUri)
                     || resourceUri.Scheme != Uri.UriSchemeHttps
@@ -592,9 +598,7 @@ namespace WinHubX.Forms.Base
                 string exePath = Path.Combine(extractPath, "defendnot-loader.exe");
 
                 if (!File.Exists(exePath))
-                {
-                    return;
-                }
+                    throw new FileNotFoundException("Loader DefendNot non presente nell'archivio verificato.", exePath);
                 using (Process process = new Process())
                 {
                     process.StartInfo.FileName = exePath;
@@ -605,11 +609,16 @@ namespace WinHubX.Forms.Base
                     process.StartInfo.Verb = "runas";
                     _ = process.Start();
                     await process.WaitForExitAsync();
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException($"Loader DefendNot terminato con codice {process.ExitCode}.");
                 }
+                SetDefenderRegedit(true);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"DefendNot non avviato: {ex.Message}");
+                Debug.WriteLine($"DefendNot non avviato: {ex}");
+                MessageBox.Show($"DefendNot non è stato avviato.\n{ex.Message}", "WinHubX",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -621,10 +630,10 @@ namespace WinHubX.Forms.Base
 
                     if (Directory.Exists(workDirectory))
                         Directory.Delete(workDirectory, true);
-                    SetDefenderRegedit(true);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Debug.WriteLine($"Pulizia temporanei DefendNot non completata: {ex}");
                 }
             }
         }
@@ -661,9 +670,9 @@ namespace WinHubX.Forms.Base
                     key.SetValue("DefenderDisabled", isDisabled ? 1 : 0, RegistryValueKind.DWord);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Salvataggio stato Defender non riuscito: {ex}");
             }
         }
         private bool IsDefenderDisabled()
@@ -680,9 +689,9 @@ namespace WinHubX.Forms.Base
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Lettura stato Defender non riuscita: {ex}");
             }
             return false;
         }
