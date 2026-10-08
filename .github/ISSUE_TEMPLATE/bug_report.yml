@@ -1,0 +1,46 @@
+name: Bug report
+description: Segnala un problema riproducibile
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Rimuovi token, password, percorsi personali e dati sensibili."
+  - type: input
+    id: version
+    attributes:
+      label: Versione WinHubX
+      placeholder: "es. 2.5.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Versione Windows
+      placeholder: "es. Windows 11 25H2 x64"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passaggi per riprodurre
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Risultato atteso
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Risultato ottenuto
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log ridotti o screenshot
+      description: "Allega solo materiale ripulito da segreti e dati personali."

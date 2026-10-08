@@ -1,0 +1,15 @@
+name: Security report
+description: Segnala un problema di sicurezza senza divulgare dettagli sfruttabili
+title: "[Security] Richiesta di contatto privato"
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: "Per vulnerabilità complete usa il canale privato di GitHub Security. Non inserire exploit, segreti o dati personali qui."
+  - type: textarea
+    id: summary
+    attributes:
+      label: Riassunto non sensibile
+      description: "Descrivi solo componente e impatto generale."
+    validations:
+      required: true
