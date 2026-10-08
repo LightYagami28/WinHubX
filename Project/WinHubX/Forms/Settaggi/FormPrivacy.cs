@@ -10,6 +10,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormPrivacy : Form
     {
+        private sealed record PrivacySelection(HashSet<string> Disable, HashSet<string> Enable);
+
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private int tIndex = -1;
@@ -264,16 +266,23 @@ namespace WinHubX.Forms.Settaggi
 
         private void btnAvviaSelezionati_Click(object sender, EventArgs e)
         {
-            totalSteps = 0;
-            totalSteps = DisabilitaPrivacy.CheckedItems.Count + AbilitaPrivacy.CheckedItems.Count;
-            if (totalSteps == 0) totalSteps = 1;
+            if (backgroundWorker1.IsBusy)
+            {
+                return;
+            }
+
+            var selection = new PrivacySelection(
+                DisabilitaPrivacy.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal),
+                AbilitaPrivacy.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal));
+            totalSteps = selection.Disable.Count + selection.Enable.Count;
+            if (totalSteps == 0)
+            {
+                return;
+            }
 
             progressBar1.MaxValue = totalSteps;
             progressBar1.Value = 0;
-            if (!backgroundWorker1.IsBusy)
-            {
-                backgroundWorker1.RunWorkerAsync();
-            }
+            backgroundWorker1.RunWorkerAsync(selection);
         }
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -294,8 +303,13 @@ namespace WinHubX.Forms.Settaggi
         }
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
+            if (e.Argument is not PrivacySelection selection)
+            {
+                throw new InvalidOperationException("Selezione delle impostazioni privacy non valida.");
+            }
+
             int currentStep = 0;
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Opzioni Lingua"))
+            if (selection.Disable.Contains("Disabilita Opzioni Lingua"))
             {
                 SetCheckboxState("DisabilitaOpzioniLingua", true);
                 currentStep++;
@@ -322,7 +336,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaOpzioniLingua", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Suggerimenti App"))
+            if (selection.Disable.Contains("Disabilita Suggerimenti App"))
             {
                 SetCheckboxState("DisabilitaSuggerimentiApp", true);
                 currentStep++;
@@ -388,7 +402,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaSuggerimentiApp", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Telemetria"))
+            if (selection.Disable.Contains("Disabilita Telemetria"))
             {
                 SetCheckboxState("DisabilitaTelemetria", true);
                 currentStep++;
@@ -508,7 +522,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTelemetria", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Tracking"))
+            if (selection.Disable.Contains("Disabilita Tracking"))
             {
                 SetCheckboxState("DisabilitaTracking", true);
                 currentStep++;
@@ -557,7 +571,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTracking", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Segnalazione Errori"))
+            if (selection.Disable.Contains("Disabilita Segnalazione Errori"))
             {
                 SetCheckboxState("DisabilitaSegnalazioneErrori", true);
                 currentStep++;
@@ -592,7 +606,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaSegnalazioneErrori", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Tracking Diagnostica"))
+            if (selection.Disable.Contains("Disabilita Tracking Diagnostica"))
             {
                 SetCheckboxState("DisabilitaTrackingDiagnostica", true);
                 currentStep++;
@@ -626,7 +640,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTrackingDiagnostica", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita WAP Push Service"))
+            if (selection.Disable.Contains("Disabilita WAP Push Service"))
             {
                 SetCheckboxState("DisabilitaWAPPushService", true);
                 currentStep++;
@@ -660,7 +674,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWAPPushService", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Home Group"))
+            if (selection.Disable.Contains("Disabilita Home Group"))
             {
                 SetCheckboxState("DisabilitaHomeGroup", true);
                 currentStep++;
@@ -702,7 +716,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisbailitaHomeGroup", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Assistenza Remota"))
+            if (selection.Disable.Contains("Disabilita Assistenza Remota"))
             {
                 SetCheckboxState("DisabilitaAssistenzaRemota", true);
                 currentStep++;
@@ -729,7 +743,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaAssistenzaRemota", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Schedul Defrag"))
+            if (selection.Disable.Contains("Disabilita Schedul Defrag"))
             {
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
@@ -740,7 +754,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisbailitaSchedulDefrag", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Xbox Features"))
+            if (selection.Disable.Contains("Disabilita Xbox Features"))
             {
                 SetCheckboxState("DisabilitaXboxFeatures", true);
                 currentStep++;
@@ -775,7 +789,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaXboxFeatures", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Auto Manteinance"))
+            if (selection.Disable.Contains("Disabilita Auto Manteinance"))
             {
                 SetCheckboxState("DisabilitaAutoManteinance", true);
                 currentStep++;
@@ -802,7 +816,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaAutoManteinance", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Spazio Riservato"))
+            if (selection.Disable.Contains("Disabilita Spazio Riservato"))
             {
                 SetCheckboxState("DisabilitaSpazioRiservato", true);
                 currentStep++;
@@ -830,7 +844,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaSpazioRiservato", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Tweaks Game DVR"))
+            if (selection.Disable.Contains("Disabilita Tweaks Game DVR"))
             {
                 SetCheckboxState("DisabilitaTweaksGameDVR", true);
                 currentStep++;
@@ -882,7 +896,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTweaksGameDVR", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Storia Attivita"))
+            if (selection.Disable.Contains("Disabilita Storia Attivita"))
             {
                 SetCheckboxState("DisabilitaStoriaAttivita", true);
                 currentStep++;
@@ -919,7 +933,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaStoriaAttivita", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Wifi-Sense"))
+            if (selection.Disable.Contains("Disabilita Wifi-Sense"))
             {
                 SetCheckboxState("DisabilitaWifiSense", true);
                 currentStep++;
@@ -990,7 +1004,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaWifiSense", false);
             }
-            if (DisabilitaPrivacy.CheckedItems.Contains("Disabilita Notifiche Tray/Calendario"))
+            if (selection.Disable.Contains("Disabilita Notifiche Tray/Calendario"))
             {
                 SetCheckboxState("DisabilitaNotificheTrayCalendario", true);
                 currentStep++;
@@ -1028,7 +1042,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaNotificheTrayCalendario", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Opzioni Lingua"))
+            if (selection.Enable.Contains("Abilita Opzioni Lingua"))
             {
                 SetCheckboxState("AbilitaOpzioniLingua", true);
                 currentStep++;
@@ -1049,7 +1063,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaOpzioniLingua", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Suggerimenti App"))
+            if (selection.Enable.Contains("Abilita Suggerimenti App"))
             {
                 SetCheckboxState("AbilitaSuggerimentiApp", true);
                 currentStep++;
@@ -1088,7 +1102,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaSuggerimentiApp", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Telemetria"))
+            if (selection.Enable.Contains("Abilita Telemetria"))
             {
                 SetCheckboxState("AbilitaTelemetria", true);
                 currentStep++;
@@ -1124,7 +1138,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTelemetria", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Tracking"))
+            if (selection.Enable.Contains("Abilita Tracking"))
             {
                 SetCheckboxState("AbilitaTracking", true);
                 currentStep++;
@@ -1156,7 +1170,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTracking", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Segnalazione Errori"))
+            if (selection.Enable.Contains("Abilita Segnalazione Errori"))
             {
                 SetCheckboxState("AbilitaSegnalazioneErrori", true);
                 currentStep++;
@@ -1195,7 +1209,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaSegnalazioneErrori", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Tracking Diagnostica"))
+            if (selection.Enable.Contains("Abilita Tracking Diagnostica"))
             {
                 SetCheckboxState("AbilitaTrackingDiagnostica", true);
                 currentStep++;
@@ -1227,7 +1241,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTrackingDiagnostica", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita WAP Push Service"))
+            if (selection.Enable.Contains("Abilita WAP Push Service"))
             {
                 SetCheckboxState("AbilitaWAPPushService", true);
                 currentStep++;
@@ -1259,7 +1273,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaWAPPushService", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Home Group"))
+            if (selection.Enable.Contains("Abilita Home Group"))
             {
                 SetCheckboxState("AbilitaHomeGroup", true);
                 currentStep++;
@@ -1287,7 +1301,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaHomeGroup", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Assistenza Remota"))
+            if (selection.Enable.Contains("Abilita Assistenza Remota"))
             {
                 SetCheckboxState("AbilitaAssistenzaRemota", true);
                 currentStep++;
@@ -1318,7 +1332,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaAssistenzaRemota", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Schedul Defrag"))
+            if (selection.Enable.Contains("Abilita Schedul Defrag"))
             {
                 SetCheckboxState("AbilitaSchedulDefrag", true);
                 currentStep++;
@@ -1354,7 +1368,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaSchedulDefrag", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Xbox Features"))
+            if (selection.Enable.Contains("Abilita Xbox Features"))
             {
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
@@ -1371,7 +1385,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaXboxFeatures", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Auto Manteinance"))
+            if (selection.Enable.Contains("Abilita Auto Manteinance"))
             {
                 SetCheckboxState("AbilitaAutoManteinance", true);
                 currentStep++;
@@ -1414,7 +1428,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaAutoManteinance", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Spazio Riservato"))
+            if (selection.Enable.Contains("Abilita Spazio Riservato"))
             {
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
@@ -1427,7 +1441,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 SetCheckboxState("AbilitaSpazioRiservato", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Tweaks Game DVR"))
+            if (selection.Enable.Contains("Abilita Tweaks Game DVR"))
             {
                 SetCheckboxState("AbilitaTweaksGameDVR", true);
                 currentStep++;
@@ -1476,7 +1490,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTweaksGameDVR", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Storie Attivita"))
+            if (selection.Enable.Contains("Abilita Storie Attivita"))
             {
                 SetCheckboxState("AbilitaStoriaAttivita", true);
                 currentStep++;
@@ -1523,7 +1537,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaStoriaAttivita", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Wifi-Sense"))
+            if (selection.Enable.Contains("Abilita Wifi-Sense"))
             {
                 SetCheckboxState("AbilitaWifiSense", true);
                 currentStep++;
@@ -1598,7 +1612,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaStoriaAttivita", false);
             }
-            if (AbilitaPrivacy.CheckedItems.Contains("Abilita Notifiche Tray/Calendario"))
+            if (selection.Enable.Contains("Abilita Notifiche Tray/Calendario"))
             {
                 SetCheckboxState("AbilitaNotificheTrayCalendario", true);
                 currentStep++;
