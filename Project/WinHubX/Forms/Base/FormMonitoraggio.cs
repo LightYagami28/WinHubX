@@ -39,6 +39,7 @@ namespace WinHubX.Forms.Base
         private Computer _computer = new();
         private System.Windows.Forms.Timer? _ramMonitorTimer;
         private PerformanceCounter? _cpuCounter;
+        private PerformanceCounter? _diskUsageCounter;
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private readonly CancellationToken _monitoringToken;
         private Task[] _monitoringTasks = Array.Empty<Task>();
@@ -536,14 +537,8 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                using (var diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total"))
-                {
-                    diskCounter.NextValue();
-                    await Task.Delay(1000, _monitoringToken);
-                    float diskUsage = diskCounter.NextValue();
-
-                    return Math.Min(diskUsage, 100);
-                }
+                _diskUsageCounter ??= new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total");
+                return await SampleDiskCounterAsync(_diskUsageCounter);
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
@@ -551,26 +546,34 @@ namespace WinHubX.Forms.Base
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Aggiornamento UI utilizzo disco non riuscito: {ex}");
+                Debug.WriteLine($"Contatore PhysicalDisk non disponibile: {ex.Message}");
+                _diskUsageCounter?.Dispose();
+                _diskUsageCounter = null;
+
                 try
                 {
-                    using (var diskCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total"))
-                    {
-                        diskCounter.NextValue();
-                        await Task.Delay(1000, _monitoringToken);
-                        float diskUsage = diskCounter.NextValue();
-                        return Math.Min(diskUsage, 100);
-                    }
+                    _diskUsageCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total");
+                    return await SampleDiskCounterAsync(_diskUsageCounter);
                 }
                 catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
                 {
                     throw;
                 }
-                catch
+                catch (Exception fallbackException)
                 {
+                    Debug.WriteLine($"Contatore LogicalDisk non disponibile: {fallbackException.Message}");
+                    _diskUsageCounter?.Dispose();
+                    _diskUsageCounter = null;
                     return 0;
                 }
             }
+        }
+
+        private async Task<double> SampleDiskCounterAsync(PerformanceCounter counter)
+        {
+            _ = counter.NextValue();
+            await Task.Delay(1000, _monitoringToken);
+            return Math.Clamp(counter.NextValue(), 0, 100);
         }
 
         private void UpdateDiscoUI(double discoUsage)
@@ -1029,6 +1032,7 @@ namespace WinHubX.Forms.Base
             }
 
             _cpuCounter?.Dispose();
+            _diskUsageCounter?.Dispose();
             _ramMonitorTimer?.Dispose();
             _notifyIcon?.Dispose();
             _monitoringCancellation.Dispose();
