@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using System.Globalization;
+using System.Diagnostics;
 using WinHubX.Impostazioni;
 
 namespace WinHubX
@@ -88,7 +89,10 @@ namespace WinHubX
                         return v == 0; // 0 = dark, 1 = light
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura del tema Windows non riuscita; verrà usato il tema predefinito: {ex}");
+            }
             return false;
         }
     }

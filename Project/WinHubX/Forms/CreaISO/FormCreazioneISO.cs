@@ -360,7 +360,11 @@ namespace WinHubX.Forms.CreaISO
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreoperazione")}: {ex.Message}");
                 if (File.Exists(wimProPath))
                 {
-                    try { File.Delete(wimProPath); } catch { }
+                    try { File.Delete(wimProPath); }
+                    catch (Exception cleanupException)
+                    {
+                        Debug.WriteLine($"Impossibile rimuovere il WIM temporaneo '{wimProPath}': {cleanupException}");
+                    }
                 }
             }
         }
