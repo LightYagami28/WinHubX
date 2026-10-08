@@ -52,7 +52,27 @@ public sealed class ElevatedRegistryMutationBatchTests
         batch.SetValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\WinHubX", "Enabled", 1,
             RegistryValueKind.DWord, RegistryView.Registry64);
 
-        string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(batch.BuildCommand()));
+        AssertValidPowerShellSyntax(batch.BuildCommand());
+    }
+
+    [Fact]
+    public void BuildCommand_WithElevatedDismTail_IsValidPowerShellSyntax()
+    {
+        ElevatedRegistryMutationBatch batch = new();
+        batch.SetValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot",
+            "TurnOffWindowsCopilot", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+        string script = string.Join(Environment.NewLine,
+            batch.BuildCommand(),
+            "$dism = Join-Path $env:SystemRoot 'System32\\dism.exe'",
+            "& $dism /online /remove-package /package-name:Microsoft.Windows.Copilot",
+            "exit $LASTEXITCODE");
+
+        AssertValidPowerShellSyntax(script);
+    }
+
+    private static void AssertValidPowerShellSyntax(string script)
+    {
+        string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         string parserCommand = "$encoded='" + encodedScript + "'; $script=[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($encoded)); $errors=$null; [System.Management.Automation.Language.Parser]::ParseInput($script, [ref]$null, [ref]$errors) > $null; if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }";
         string powershellPath = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
         ProcessStartInfo startInfo = new(powershellPath)

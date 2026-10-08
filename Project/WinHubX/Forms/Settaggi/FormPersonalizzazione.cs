@@ -136,11 +136,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey localMachineKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
-                using (RegistryKey windowsCopilotLM = localMachineKey.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"))
-                {
-                    windowsCopilotLM?.SetValue("TurnOffWindowsCopilot", 1, RegistryValueKind.DWord);
-                }
+                UpdateCopilotMachinePolicyAndPackage(disableCopilot: true);
 
                 using (RegistryKey currentUserKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
                 {
@@ -154,7 +150,6 @@ namespace WinHubX.Forms.Settaggi
                         explorerAdvanced?.SetValue("ShowCopilotButton", 0, RegistryValueKind.DWord);
                     }
                 }
-                StartElevatedDism("/online", "/remove-package", "/package-name:Microsoft.Windows.Copilot");
             }
             catch (Exception ex)
             {
@@ -167,11 +162,7 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                using (RegistryKey localMachineKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
-                using (RegistryKey windowsCopilotLM = localMachineKey.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"))
-                {
-                    windowsCopilotLM?.SetValue("TurnOffWindowsCopilot", 0, RegistryValueKind.DWord);
-                }
+                UpdateCopilotMachinePolicyAndPackage(disableCopilot: false);
                 using (RegistryKey currentUserKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
                 {
                     using (RegistryKey windowsCopilotCU = currentUserKey.CreateSubKey(@"Software\Policies\Microsoft\Windows\WindowsCopilot"))
@@ -184,7 +175,6 @@ namespace WinHubX.Forms.Settaggi
                         explorerAdvanced?.SetValue("ShowCopilotButton", 1, RegistryValueKind.DWord);
                     }
                 }
-                StartElevatedDism("/online", "/add-package", "/package-name:Microsoft.Windows.Copilot");
             }
             catch (Exception ex)
             {
@@ -236,6 +226,44 @@ namespace WinHubX.Forms.Settaggi
             process.WaitForExit();
             if (process.ExitCode != 0)
                 throw new InvalidOperationException($"DISM è terminato con codice {process.ExitCode}.");
+        }
+
+        private static void UpdateCopilotMachinePolicyAndPackage(bool disableCopilot)
+        {
+            var mutations = new ElevatedRegistryMutationBatch();
+            mutations.SetValue(
+                RegistryHive.LocalMachine,
+                @"SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot",
+                "TurnOffWindowsCopilot",
+                disableCopilot ? 1 : 0,
+                RegistryValueKind.DWord,
+                RegistryView.Registry32);
+
+            string packageCommand = disableCopilot
+                ? "& $dism /online /remove-package /package-name:Microsoft.Windows.Copilot"
+                : "& $dism /online /add-package /package-name:Microsoft.Windows.Copilot";
+            string script = string.Join(Environment.NewLine,
+                mutations.BuildCommand(),
+                "$dism = Join-Path $env:SystemRoot 'System32\\dism.exe'",
+                packageCommand,
+                "exit $LASTEXITCODE");
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+            processInfo.ArgumentList.Add("-NoProfile");
+            processInfo.ArgumentList.Add("-NonInteractive");
+            processInfo.ArgumentList.Add("-EncodedCommand");
+            processInfo.ArgumentList.Add(Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script)));
+
+            using Process process = Process.Start(processInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare la modifica Copilot con privilegi elevati.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"La modifica del pacchetto Copilot è terminata con codice {process.ExitCode}.");
         }
 
         private void AvviaProcessoOttimizzaRicerca()
