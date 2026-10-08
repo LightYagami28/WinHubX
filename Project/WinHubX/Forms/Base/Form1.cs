@@ -305,10 +305,13 @@ if ($existingRestorePoints.Count -eq 0) {
                     ProcessStartInfo regExport = new ProcessStartInfo()
                     {
                         FileName = "reg.exe",
-                        Arguments = $"export HKLM \"{regBackupPath}\" /y",
                         UseShellExecute = true,
                         Verb = "runas"
                     };
+                    regExport.ArgumentList.Add("export");
+                    regExport.ArgumentList.Add("HKLM");
+                    regExport.ArgumentList.Add(regBackupPath);
+                    regExport.ArgumentList.Add("/y");
 
                     Process.Start(regExport)?.WaitForExit();
                 }
