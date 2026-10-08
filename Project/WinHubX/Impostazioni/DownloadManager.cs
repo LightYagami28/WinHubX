@@ -12,6 +12,7 @@
 
         // 🔥 AGGIUNGI: CancellationTokenSource statico per gestire la cancellazione globale
         private static CancellationTokenSource? _globalCts;
+        private static readonly object _stateLock = new();
 
         // 🔥 AGGIUNGI: Metodo per forzare l'interruzione
         public static void ForceStopDownload()
@@ -23,15 +24,26 @@
 
         public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4)
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
-                (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
-                throw new ArgumentException("È consentito solo scaricare da URL HTTP/HTTPS.", nameof(url));
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                throw new ArgumentException("È consentito scaricare solo da URL HTTPS.", nameof(url));
             if (string.IsNullOrWhiteSpace(savePath))
                 throw new ArgumentException("Il percorso di destinazione è obbligatorio.", nameof(savePath));
             maxChunks = Math.Clamp(maxChunks, 2, 8);
-            // 🔥 CREA UN LINKED TOKEN SOURCE per combinare token esterno e globale
-            _globalCts = new CancellationTokenSource();
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, _globalCts.Token);
+            string? directory = Path.GetDirectoryName(Path.GetFullPath(savePath));
+            if (directory is not null)
+                Directory.CreateDirectory(directory);
+
+            string temporaryPath = $"{savePath}.{Guid.NewGuid():N}.download";
+            // Il token globale serve solo al comando di annullamento dell'interfaccia; ogni
+            // download riceve comunque una propria sorgente e non condivide lo stato dei file.
+            using var globalCts = new CancellationTokenSource();
+            lock (_stateLock)
+            {
+                _globalCts?.Cancel();
+                _globalCts?.Dispose();
+                _globalCts = globalCts;
+            }
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
             var linkedToken = linkedCts.Token;
 
             IsDownloading = true;
@@ -48,31 +60,48 @@
                     bool useParallel = await SupportsParallelDownload(url, linkedToken);
                     if (useParallel)
                     {
-                        await DownloadParallelAutoAsync(url, savePath, linkedToken, maxChunks);
+                        await DownloadParallelAutoAsync(url, temporaryPath, linkedToken, maxChunks);
+                        File.Move(temporaryPath, savePath, true);
                         return;
                     }
                 }
 
-                await DownloadSequentialAsync(url, savePath, linkedToken);
+                await DownloadSequentialAsync(url, temporaryPath, linkedToken);
+                File.Move(temporaryPath, savePath, true);
             }
             catch (OperationCanceledException)
             {
-                if (File.Exists(savePath))
-                    File.Delete(savePath);
+                DeleteTemporaryFile(temporaryPath);
                 throw;
             }
             catch (Exception)
             {
-                if (File.Exists(savePath))
-                    File.Delete(savePath);
+                DeleteTemporaryFile(temporaryPath);
                 throw;
             }
             finally
             {
                 IsDownloading = false;
                 DownloadStateChanged?.Invoke(false);
-                _globalCts?.Dispose();
-                _globalCts = null;
+                lock (_stateLock)
+                {
+                    if (ReferenceEquals(_globalCts, globalCts))
+                        _globalCts = null;
+                }
+            }
+        }
+
+        private static void DeleteTemporaryFile(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch (IOException)
+            {
+                // Il file temporaneo non è mai esposto come output valido; il cleanup può
+                // essere completato dal sistema operativo al successivo avvio.
             }
         }
 
