@@ -1664,6 +1664,31 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_RunWorkerCompleted(object? sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
+            if (e.Error is not null)
+            {
+                string errorMessage = LanguageManager.GetTranslation("Global", "erroreoperazione");
+                string details = e.Error.GetBaseException().Message;
+
+                _ = MessageBox.Show(
+                    $"{errorMessage}{Environment.NewLine}{details}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                return;
+            }
+
+            if (e.Cancelled)
+            {
+                _ = MessageBox.Show(
+                    LanguageManager.GetTranslation("Global", "operazioneannullatatoken"),
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+                return;
+            }
+
             RestartExplorer();
             string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
 
