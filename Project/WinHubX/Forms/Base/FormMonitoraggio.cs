@@ -26,9 +26,10 @@ namespace WinHubX.Forms.Base
         private const uint PROCESS_QUERY_INFORMATION = 0x0400;
 
         private NetworkInterface[] networkInterfaces = Array.Empty<NetworkInterface>();
+        private string[] networkInterfaceIds = Array.Empty<string>();
         private readonly object _hardwareSync = new();
         private HardwareSnapshot _latestHardwareSnapshot = HardwareSnapshot.Empty;
-        private DateTime lastUpdateTime;
+        private long lastUpdateTimestamp;
         private long lastBytesSent;
         private long lastBytesReceived;
         private double networkCapacityKB;
@@ -717,22 +718,14 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-                    .Where(n => n.OperationalStatus == OperationalStatus.Up &&
-                               n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                    .ToArray();
-                // NetworkInterface.Speed è espresso in bit/s; convertiamo la capacità aggregata in KB/s.
-                networkCapacityKB = networkInterfaces
-                    .Where(n => n.Speed > 0)
-                    .Sum(n => (double)n.Speed) / 8d / 1024d;
+                RefreshNetworkInterfaces();
 
                 if (networkInterfaces.Length == 0)
                 {
                     labelReteUtilizzo.Text = "Nessuna interfaccia attiva";
                     labelVelocitaRete.Text = "0 KB/s";
-                    return;
                 }
-                lastUpdateTime = DateTime.Now;
+                lastUpdateTimestamp = Stopwatch.GetTimestamp();
                 lastBytesSent = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesSent);
                 lastBytesReceived = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesReceived);
                 while (!_monitoringCancellation.IsCancellationRequested)
@@ -760,30 +753,60 @@ namespace WinHubX.Forms.Base
 
         private async Task UpdateNetworkStats()
         {
-            var currentTime = DateTime.Now;
-            var timeDiff = (currentTime - lastUpdateTime).TotalSeconds;
-
-            if (timeDiff <= 0) return;
+            string[] previousInterfaceIds = networkInterfaceIds;
+            RefreshNetworkInterfaces();
             long currentBytesSent = 0;
             long currentBytesReceived = 0;
-            long totalBytes = 0;
 
             foreach (var netInterface in networkInterfaces)
             {
                 var stats = netInterface.GetIPv4Statistics();
                 currentBytesSent += stats.BytesSent;
                 currentBytesReceived += stats.BytesReceived;
-                totalBytes += stats.BytesSent + stats.BytesReceived;
             }
 
-            double sentKB = (currentBytesSent - lastBytesSent) / timeDiff / 1024;
-            double receivedKB = (currentBytesReceived - lastBytesReceived) / timeDiff / 1024;
+            long currentTimestamp = Stopwatch.GetTimestamp();
+            bool topologyChanged = !previousInterfaceIds.SequenceEqual(networkInterfaceIds, StringComparer.Ordinal);
+            bool countersReset = currentBytesSent < lastBytesSent || currentBytesReceived < lastBytesReceived;
+            if (topologyChanged || countersReset)
+            {
+                lastBytesSent = currentBytesSent;
+                lastBytesReceived = currentBytesReceived;
+                lastUpdateTimestamp = currentTimestamp;
+                await UpdateUI(0, 0, 0, 0);
+                return;
+            }
+
+            double timeDiff = Stopwatch.GetElapsedTime(lastUpdateTimestamp, currentTimestamp).TotalSeconds;
+            if (timeDiff <= 0)
+            {
+                return;
+            }
+
+            double sentKB = (currentBytesSent - lastBytesSent) / timeDiff / 1024d;
+            double receivedKB = (currentBytesReceived - lastBytesReceived) / timeDiff / 1024d;
             double totalSpeedKB = sentKB + receivedKB;
             double networkUsage = CalculateNetworkUsage(totalSpeedKB);
             await UpdateUI(sentKB, receivedKB, totalSpeedKB, networkUsage);
             lastBytesSent = currentBytesSent;
             lastBytesReceived = currentBytesReceived;
-            lastUpdateTime = currentTime;
+            lastUpdateTimestamp = currentTimestamp;
+        }
+
+        private void RefreshNetworkInterfaces()
+        {
+            networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up &&
+                            n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .ToArray();
+            networkInterfaceIds = networkInterfaces
+                .Select(n => n.Id)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray();
+            // NetworkInterface.Speed è espresso in bit/s; convertiamo la capacità aggregata in KB/s.
+            networkCapacityKB = networkInterfaces
+                .Where(n => n.Speed > 0)
+                .Sum(n => (double)n.Speed) / 8d / 1024d;
         }
 
         private double CalculateNetworkUsage(double currentSpeedKB)
@@ -821,7 +844,9 @@ namespace WinHubX.Forms.Base
                     totalSpeedKB.ToString("0.00")
                 );
 
-                labelReteUtilizzo.Text = networkCapacityKB > 0 ? $"{networkUsage:0.0}%" : "—";
+                labelReteUtilizzo.Text = networkInterfaces.Length == 0
+                    ? "Nessuna interfaccia attiva"
+                    : networkCapacityKB > 0 ? $"{networkUsage:0.0}%" : "—";
                 progressbarRete.ProgressValue = (int)Math.Round(networkUsage);
             }
             catch (Exception ex)
