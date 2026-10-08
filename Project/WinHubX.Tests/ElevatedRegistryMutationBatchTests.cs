@@ -56,6 +56,24 @@ public sealed class ElevatedRegistryMutationBatchTests
     }
 
     [Fact]
+    public void SetValue_SerializesBinaryValuesAsBase64AndProducesValidPowerShell()
+    {
+        ElevatedRegistryMutationBatch batch = new();
+        byte[] expectedValue = [0, 0, 0, 0];
+        batch.SetValue(RegistryHive.LocalMachine, @"SYSTEM\GameConfigStore", "GameDVR_Enabled",
+            expectedValue, RegistryValueKind.Binary, RegistryView.Registry64);
+
+        string script = batch.BuildCommand();
+        string serializedMutations = script.Split("$payload = '", StringSplitOptions.None)[1].Split('\'')[0];
+        string json = Encoding.UTF8.GetString(Convert.FromBase64String(serializedMutations));
+
+        Assert.Contains(Convert.ToBase64String(expectedValue), json, StringComparison.Ordinal);
+        Assert.Contains("Binary", json, StringComparison.Ordinal);
+        Assert.Contains("FromBase64String", script, StringComparison.Ordinal);
+        AssertValidPowerShellSyntax(script);
+    }
+
+    [Fact]
     public void BuildCommand_WithElevatedDismTail_IsValidPowerShellSyntax()
     {
         ElevatedRegistryMutationBatch batch = new();
