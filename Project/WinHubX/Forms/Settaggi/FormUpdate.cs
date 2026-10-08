@@ -416,27 +416,28 @@ namespace WinHubX.Forms.Settaggi
         }
         private void ModificaNotificheUpdate(bool enable)
         {
+            string windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string musNotification = Path.Combine(windowsDirectory, "System32", "MusNotification.exe");
+            string musNotificationUx = Path.Combine(windowsDirectory, "System32", "MusNotificationUx.exe");
+            string action = enable ? "/allow" : "/deny";
             string cmdArgument = enable
-                ? "/c takeown /F \"%WinDIR%\\System32\\MusNotification.exe\" && icacls \"%WinDIR%\\System32\\MusNotification.exe\" /allow \"%EveryOne%:(X)\" && takeown /F \"%WinDIR%\\System32\\MusNotificationUx.exe\" && icacls \"%WinDIR%\\System32\\MusNotificationUx.exe\" /allow \"%EveryOne%:(X)\""
-                : "/c takeown /F \"%WinDIR%\\System32\\MusNotification.exe\" && icacls \"%WinDIR%\\System32\\MusNotification.exe\" /deny \"%EveryOne%:(X)\" && takeown /F \"%WinDIR%\\System32\\MusNotificationUx.exe\" && icacls \"%WinDIR%\\System32\\MusNotificationUx.exe\" /deny \"%EveryOne%:(X)\"";
+                ? $"/c takeown /F \"{musNotification}\" /A && icacls \"{musNotification}\" {action} Everyone:(X) && takeown /F \"{musNotificationUx}\" /A && icacls \"{musNotificationUx}\" {action} Everyone:(X)"
+                : $"/c takeown /F \"{musNotification}\" /A && icacls \"{musNotification}\" {action} Everyone:(X) && takeown /F \"{musNotificationUx}\" /A && icacls \"{musNotificationUx}\" {action} Everyone:(X)";
 
             var startInfo = new ProcessStartInfo()
             {
                 FileName = "cmd.exe",
-                Arguments = cmdArgument,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
             };
+            startInfo.ArgumentList.Add("/c");
+            startInfo.ArgumentList.Add(cmdArgument[3..]);
 
             using (var process = Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Impossibile avviare il processo di sistema."))
             {
                 process.WaitForExit();
-                var output = process.StandardOutput.ReadToEnd();
-                var error = process.StandardError.ReadToEnd();
             }
         }
 
