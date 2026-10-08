@@ -497,7 +497,9 @@ namespace WinHubX.Forms.CreaISO
             }
 
             await Task.WhenAll(outputTask, errorTask);
-            return (process.ExitCode, outputTask.Result, errorTask.Result);
+            string standardOutput = await outputTask;
+            string standardError = await errorTask;
+            return (process.ExitCode, standardOutput, standardError);
         }
 
         private int? ParseProgress(string output)
