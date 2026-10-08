@@ -27,6 +27,7 @@ namespace WinHubX
         {
             var handler = new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 MaxConnectionsPerServer = 4,
                 AutomaticDecompression = System.Net.DecompressionMethods.None,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
@@ -167,8 +168,8 @@ namespace WinHubX
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                using HttpResponseMessage result = await ResourceClient.GetAsync(
-                    "https://www.google.com", HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+                using HttpResponseMessage result = await TrustedHttpsClient.GetAsync(
+                    ResourceClient, "https://www.microsoft.com/", timeout.Token);
                 return result.IsSuccessStatusCode;
             }
             catch (Exception ex)
@@ -182,7 +183,7 @@ namespace WinHubX
 
         private async Task<string> OttieniURL(string jsonUrl)
         {
-            var response = await ResourceClient.GetStringAsync(jsonUrl);
+            var response = await TrustedHttpsClient.GetStringAsync(ResourceClient, jsonUrl);
             var json = JObject.Parse(response);
             string url = json["FormOffice"]?["scrubber"]?.Value<string>()
                 ?? throw new InvalidOperationException("URL scrubber non presente nella configurazione.");
@@ -369,7 +370,7 @@ namespace WinHubX
             List<OfficeVersion> officeVersions = new List<OfficeVersion>();
 
             {
-                string jsonResponse = await ResourceClient.GetStringAsync(jsonUrl);
+                string jsonResponse = await TrustedHttpsClient.GetStringAsync(ResourceClient, jsonUrl);
                 var jsonObject = JObject.Parse(jsonResponse);
                 foreach (var prop in jsonObject.Properties().Where(p => p.Name.StartsWith("Office")))
                 {

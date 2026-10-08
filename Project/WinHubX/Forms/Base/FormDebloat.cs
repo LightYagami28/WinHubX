@@ -26,6 +26,7 @@ namespace WinHubX.Forms.Base
         {
             var handler = new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 MaxConnectionsPerServer = 4,
                 AutomaticDecompression = System.Net.DecompressionMethods.None,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
@@ -102,7 +103,7 @@ namespace WinHubX.Forms.Base
             try
             {
                 {
-                    string json = await ResourceClient.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
+                    string json = await TrustedHttpsClient.GetStringAsync(ResourceClient, "https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
                     var immaginiList = System.Text.Json.JsonSerializer.Deserialize<List<ImmagineData>>(json);
 
                     if (immaginiList != null)
@@ -129,7 +130,7 @@ namespace WinHubX.Forms.Base
             try
             {
                 {
-                    string json = await ResourceClient.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
+                    string json = await TrustedHttpsClient.GetStringAsync(ResourceClient, "https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
                     appNameMappings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
                         ?? new Dictionary<string, string>();
                 }
@@ -561,7 +562,7 @@ namespace WinHubX.Forms.Base
             try
             {
                 Directory.CreateDirectory(workDirectory);
-                string json = await ResourceClient.GetStringAsync(url);
+                string json = await TrustedHttpsClient.GetStringAsync(ResourceClient, url);
                 JObject data = JObject.Parse(json);
 
                 string? downloadUrl = arch switch

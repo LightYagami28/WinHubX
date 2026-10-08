@@ -29,6 +29,7 @@ namespace WinHubX.Forms.ImpostazioniApp
         {
             var handler = new SocketsHttpHandler
             {
+                AllowAutoRedirect = false,
                 MaxConnectionsPerServer = 4,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5),
                 AutomaticDecompression = System.Net.DecompressionMethods.None
@@ -414,10 +415,7 @@ namespace WinHubX.Forms.ImpostazioniApp
         private async Task<string> GetTrustedResponseStringAsync(string url, string description)
         {
             UpdateManifestValidator.EnsureTrustedHttpsUrl(url, description);
-            using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
-            response.EnsureSuccessStatusCode();
-            UpdateManifestValidator.EnsureTrustedHttpsUrl(response.RequestMessage?.RequestUri?.ToString(), $"reindirizzamento {description}");
-            return await response.Content.ReadAsStringAsync();
+            return await TrustedHttpsClient.GetStringAsync(client, url);
         }
 
         private static bool IsNewerVersion(string candidate, string current)
@@ -552,20 +550,21 @@ namespace WinHubX.Forms.ImpostazioniApp
         private async Task DownloadFileWithProgress(string url, string filePath, ProgressForm progressForm)
         {
             UpdateManifestValidator.EnsureTrustedHttpsUrl(url, "pacchetto aggiornamento");
-            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            using var response = await TrustedHttpsClient.GetAsync(client, url, timeout.Token);
             UpdateManifestValidator.EnsureTrustedHttpsUrl(response.RequestMessage?.RequestUri?.ToString(), "reindirizzamento pacchetto aggiornamento");
             _ = response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault();
             if (totalBytes <= 0)
                 throw new InvalidOperationException("Il pacchetto aggiornamento non espone una dimensione valida.");
-            using var contentStream = await response.Content.ReadAsStreamAsync();
+            using var contentStream = await response.Content.ReadAsStreamAsync(timeout.Token);
             using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
             var buffer = new byte[8192];
             long bytesRead = 0;
             int read;
-            while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            while ((read = await contentStream.ReadAsync(buffer, timeout.Token)) > 0)
             {
-                await fileStream.WriteAsync(buffer, 0, read);
+                await fileStream.WriteAsync(buffer.AsMemory(0, read), timeout.Token);
                 bytesRead += read;
                 progressForm.Invoke(new Action(() =>
                     progressForm.SetStatus("Download...", (int)Math.Clamp((bytesRead * 100) / totalBytes, 0, 100))));
