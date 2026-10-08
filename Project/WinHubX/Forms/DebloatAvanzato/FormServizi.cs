@@ -8,11 +8,6 @@ namespace WinHubX.Forms.DebloatAvanzato
 public partial class FormServizi : Form
 {
         private static readonly HttpClient HttpClient = CreateHttpClient();
-        private static readonly HashSet<string> AllowedStartupTypes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Automatic", "Manual", "Disabled"
-        };
-
         private static HttpClient CreateHttpClient()
         {
             var handler = new SocketsHttpHandler
@@ -25,7 +20,7 @@ public partial class FormServizi : Form
         }
 
         private const string ServicesUrl =
-            "https://raw.githubusercontent.com/AMStore-na/WinHubX-Resource/refs/heads/main/Servizi.json";
+            "https://raw.githubusercontent.com/LightYagami28/WinHubX-Resource/refs/heads/main/servizi.json";
 
         public FormServizi()
         {
@@ -41,11 +36,11 @@ public partial class FormServizi : Form
                     string json = await HttpClient.GetStringAsync(ServicesUrl);
                     ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
                         ?? throw new InvalidOperationException("Configurazione servizi non valida.");
+                    ServiceConfigurationValidator.ValidateCatalog(serviziRoot);
 
                     for (int i = 0; i < serviziRoot.service.Count; i++)
                     {
                         var servizio = serviziRoot.service[i];
-                        ValidateService(servizio);
                         _ = DisabilitaServizi.Items.Add(servizio.Name);
                         DisabilitaServizi.SetItemChecked(i, true);
                     }
@@ -91,6 +86,7 @@ public partial class FormServizi : Form
                     string json = await HttpClient.GetStringAsync(ServicesUrl);
                     ServiziRoot serviziRoot = JsonConvert.DeserializeObject<ServiziRoot>(json)
                         ?? throw new InvalidOperationException("Configurazione servizi non valida.");
+                    ServiceConfigurationValidator.ValidateCatalog(serviziRoot);
 
                     int currentStep = 0;
 
@@ -100,7 +96,7 @@ public partial class FormServizi : Form
 
                         if (servizio != null)
                         {
-                            ValidateService(servizio);
+                            ServiceConfigurationValidator.ValidateService(servizio);
 
                             string stato = await Task.Run(() =>
                             {
@@ -160,34 +156,8 @@ public partial class FormServizi : Form
             }
         }
 
-        private static void ValidateService(Servizio servizio)
-        {
-            if (string.IsNullOrWhiteSpace(servizio.Name) ||
-                servizio.Name.Any(char.IsControl) ||
-                servizio.Name.Contains('\'', StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException("Nome servizio non valido nella configurazione remota.");
-            }
-
-            if (!AllowedStartupTypes.Contains(servizio.StartupType))
-            {
-                throw new InvalidOperationException($"StartupType non consentito per {servizio.Name}.");
-            }
-        }
-
         private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
     }
 
-    public class Servizio
-    {
-        public required string Name { get; set; }
-        public required string StartupType { get; set; }
-        public required string OriginalType { get; set; }
-    }
-
-    public class ServiziRoot
-    {
-        public required List<Servizio> service { get; set; }
-    }
 }

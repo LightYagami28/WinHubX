@@ -19,5 +19,6 @@
 
   <ItemGroup>
     <Compile Include="..\WinHubX\Impostazioni\RegistryPresetFileValidator.cs" Link="Impostazioni\RegistryPresetFileValidator.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationValidator.cs" Link="Impostazioni\ServiceConfigurationValidator.cs" />
   </ItemGroup>
 </Project>
