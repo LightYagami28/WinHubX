@@ -12,6 +12,7 @@ namespace WinHubX.Forms.Settaggi
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private readonly ConcurrentQueue<string> operationFailures = new();
+        private ElevatedRegistryMutationBatch? elevatedRegistryMutations;
         private int tIndex = -1;
         private int totalSteps = 0;
         private sealed record UtilitySelection(HashSet<string> Disable, HashSet<string> Enable);
@@ -376,25 +377,77 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetRegistryValue(string path, string name, object? value, RegistryView view = RegistryView.Default)
         {
+            (RegistryHive hive, string subKeyPath) = ParseSystemRegistryPath(path);
             if (value is null)
-                return;
-
-            RegistryKey baseKey = view == RegistryView.Registry64 ? RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view) : Registry.LocalMachine;
-
-            using (var key = baseKey.OpenSubKey(path, true))
             {
-                key?.SetValue(name, value, RegistryValueKind.DWord);
+                QueueRegistryDeletion(hive, subKeyPath, name, view);
+                return;
             }
+
+            RegistryValueKind kind = value is string ? RegistryValueKind.String : RegistryValueKind.DWord;
+            QueueRegistryValue(hive, subKeyPath, name, value, kind, view);
         }
 
         private void DeleteRegistryKey(string path, string name, RegistryView view = RegistryView.Default)
         {
-            RegistryKey baseKey = view == RegistryView.Registry64 ? RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view) : Registry.LocalMachine;
+            (RegistryHive hive, string subKeyPath) = ParseSystemRegistryPath(path);
+            QueueRegistryDeletion(hive, subKeyPath, name, view);
+        }
 
-            using (var key = baseKey.OpenSubKey(path, true))
+        private void QueueRegistryValue(
+            RegistryHive hive,
+            string path,
+            string name,
+            object value,
+            RegistryValueKind kind,
+            RegistryView view)
+        {
+            (elevatedRegistryMutations
+                ?? throw new InvalidOperationException("Batch Registro elevato non inizializzato."))
+                .SetValue(hive, path, name, value, kind, view);
+        }
+
+        private void QueueRegistryDeletion(RegistryHive hive, string path, string name, RegistryView view)
+        {
+            (elevatedRegistryMutations
+                ?? throw new InvalidOperationException("Batch Registro elevato non inizializzato."))
+                .DeleteValue(hive, path, name, view);
+        }
+
+        private static (RegistryHive Hive, string Path) ParseSystemRegistryPath(string path)
+        {
+            const string usersPrefix = "HKEY_USERS\\";
+            if (path.StartsWith(usersPrefix, StringComparison.OrdinalIgnoreCase))
+                return (RegistryHive.Users, path[usersPrefix.Length..]);
+
+            return (RegistryHive.LocalMachine, path);
+        }
+
+        private void ApplyElevatedRegistryMutations()
+        {
+            ElevatedRegistryMutationBatch? batch = elevatedRegistryMutations;
+            elevatedRegistryMutations = null;
+            if (batch is null || batch.Count == 0)
+                return;
+
+            var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                key?.DeleteValue(name, false);
-            }
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                Verb = "runas"
+            };
+            startInfo.ArgumentList.Add("-NoLogo");
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(batch.BuildCommand());
+
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il batch Registro elevato.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"Il batch Registro elevato è terminato con codice {process.ExitCode}.");
         }
 
         private void RunPowerShellCommands(string[] commands)
@@ -491,6 +544,7 @@ namespace WinHubX.Forms.Settaggi
 
             HashSet<string> selectedToDisable = selection.Disable;
             HashSet<string> selectedToEnable = selection.Enable;
+            elevatedRegistryMutations = new ElevatedRegistryMutationBatch();
             int currentStep = 0;
             if (selectedToDisable.Contains("Disabilita Background App"))
             {
@@ -549,14 +603,10 @@ namespace WinHubX.Forms.Settaggi
                     {
                         key64?.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey? key32LM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true))
-                    {
-                        key32LM?.SetValue("DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key64LM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true))
-                    {
-                        key64LM?.SetValue("DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                        "DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                        "DoNotShowFeedbackNotifications", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                     DisableScheduledTask(@"Microsoft\Windows\Feedback\Siuf\DmClient");
                     DisableScheduledTask(@"Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload");
                 }
@@ -576,15 +626,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
-                    {
-                        key32?.SetValue("DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
-                    {
-                        key64?.SetValue("DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
+                        "DisabledByGroupPolicy", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
+                        "DisabledByGroupPolicy", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -602,24 +647,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key32System = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
-                    {
-                        key32System?.SetValue("EnableSmartScreen", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64System = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
-                    {
-                        key64System?.SetValue("EnableSmartScreen", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32Edge = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
-                    {
-                        key32Edge?.SetValue("EnabledV9", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64Edge = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
-                    {
-                        key64Edge?.SetValue("EnabledV9", 0, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\System",
+                        "EnableSmartScreen", 0, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\System",
+                        "EnableSmartScreen", 0, RegistryValueKind.DWord, RegistryView.Registry64);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
+                        "EnabledV9", 0, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
+                        "EnabledV9", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -637,25 +672,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key32TSConnections = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Terminal Server", true))
-                    {
-                        key32TSConnections?.SetValue("fDenyTSConnections", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64TSConnections = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Terminal Server", true))
-                    {
-                        key64TSConnections?.SetValue("fDenyTSConnections", 1, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key32UserAuth = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", true))
-                    {
-                        key32UserAuth?.SetValue("UserAuthentication", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey? key64UserAuth = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", true))
-                    {
-                        key64UserAuth?.SetValue("UserAuthentication", 1, RegistryValueKind.DWord);
-                    }
-
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Terminal Server",
+                        "fDenyTSConnections", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Terminal Server",
+                        "fDenyTSConnections", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp",
+                        "UserAuthentication", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp",
+                        "UserAuthentication", 1, RegistryValueKind.DWord, RegistryView.Registry64);
 
                 }
                 catch (Exception ex)
@@ -674,14 +698,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry32).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
-                    {
-                        key32?.SetValue("InitialKeyboardIndicators", 2147483648, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.Users, RegistryView.Registry64).OpenSubKey(@".DEFAULT\Control Panel\Keyboard", true))
-                    {
-                        key64?.SetValue("InitialKeyboardIndicators", 2147483648, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.Users, @".DEFAULT\Control Panel\Keyboard", "InitialKeyboardIndicators",
+                        2147483648U, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.Users, @".DEFAULT\Control Panel\Keyboard", "InitialKeyboardIndicators",
+                        2147483648U, RegistryValueKind.DWord, RegistryView.Registry64);
                     if (Control.IsKeyLocked(Keys.NumLock))
                     {
                         SendKeys.SendWait("{NUMLOCK}");
@@ -733,15 +753,10 @@ namespace WinHubX.Forms.Settaggi
                         key64?.SetValue("ShellFeedsTaskbarViewMode", 2, RegistryValueKind.DWord);
                         key64?.SetValue("IsFeedsAvailable", 0, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey keyLM32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"))
-                    {
-                        keyLM32?.SetValue("EnableFeeds", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey keyLM64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"))
-                    {
-                        keyLM64?.SetValue("EnableFeeds", 0, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
+                        "EnableFeeds", 0, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
+                        "EnableFeeds", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -831,14 +846,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey key32 = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Maps"))
-                    {
-                        key32?.SetValue("AutoUpdateEnabled", 0, RegistryValueKind.DWord);
-                    }
-                    using (RegistryKey key64 = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Maps"))
-                    {
-                        key64?.SetValue("AutoUpdateEnabled", 0, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Maps",
+                        "AutoUpdateEnabled", 0, RegistryValueKind.DWord, RegistryView.Registry64);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Maps",
+                        "AutoUpdateEnabled", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -859,41 +870,27 @@ namespace WinHubX.Forms.Settaggi
                     Version osVersion = Environment.OSVersion.Version;
                     if (osVersion.Build >= 17763)
                     {
-                        using (RegistryKey appPrivacyKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"))
-                        {
-                            if (appPrivacyKey != null)
-                            {
-                                appPrivacyKey.SetValue("LetAppsRunInBackground", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsActivateWithVoice", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsActivateWithVoiceAboveLock", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessNotifications", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessAccountInfo", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessContacts", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessCalendar", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessPhone", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessCallHistory", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessEmail", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessTasks", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessMessaging", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsAccessRadios", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsSyncWithDevices", 2, RegistryValueKind.DWord);
-                                appPrivacyKey.SetValue("LetAppsGetDiagnosticInfo", 2, RegistryValueKind.DWord);
-                            }
-                        }
-                        using (RegistryKey capabilityAccessKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore"))
-                        {
-                            if (capabilityAccessKey != null)
-                            {
-                                capabilityAccessKey.CreateSubKey("documentsLibrary")?.SetValue("Value", "Deny", RegistryValueKind.String);
-                                capabilityAccessKey.CreateSubKey("picturesLibrary")?.SetValue("Value", "Deny", RegistryValueKind.String);
-                                capabilityAccessKey.CreateSubKey("videosLibrary")?.SetValue("Value", "Deny", RegistryValueKind.String);
-                                capabilityAccessKey.CreateSubKey("broadFileSystemAccess")?.SetValue("Value", "Deny", RegistryValueKind.String);
-                            }
-                        }
-                        using (RegistryKey memoryManagementKey = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"))
-                        {
-                            memoryManagementKey?.SetValue("SwapfileControl", 0, RegistryValueKind.DWord);
-                        }
+                        string appPrivacyPath = @"SOFTWARE\Policies\Microsoft\Windows\AppPrivacy";
+                        string[] restrictedCapabilities =
+                        [
+                            "LetAppsRunInBackground", "LetAppsActivateWithVoice", "LetAppsActivateWithVoiceAboveLock",
+                            "LetAppsAccessNotifications", "LetAppsAccessAccountInfo", "LetAppsAccessContacts",
+                            "LetAppsAccessCalendar", "LetAppsAccessPhone", "LetAppsAccessCallHistory",
+                            "LetAppsAccessEmail", "LetAppsAccessTasks", "LetAppsAccessMessaging",
+                            "LetAppsAccessRadios", "LetAppsSyncWithDevices", "LetAppsGetDiagnosticInfo"
+                        ];
+                        foreach (string property in restrictedCapabilities)
+                            QueueRegistryValue(RegistryHive.LocalMachine, appPrivacyPath, property, 2,
+                                RegistryValueKind.DWord, RegistryView.Registry64);
+
+                        string consentStorePath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore";
+                        foreach (string capability in new[] { "documentsLibrary", "picturesLibrary", "videosLibrary", "broadFileSystemAccess" })
+                            QueueRegistryValue(RegistryHive.LocalMachine, $"{consentStorePath}\\{capability}", "Value", "Deny",
+                                RegistryValueKind.String, RegistryView.Registry64);
+
+                        QueueRegistryValue(RegistryHive.LocalMachine,
+                            @"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+                            "SwapfileControl", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                     }
                     else
                     {
@@ -934,21 +931,12 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (var systemKey64 = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System"))
+                    foreach (string name in new[] { "EnableCdp", "EnableMmx" })
                     {
-                        if (systemKey64 != null)
-                        {
-                            systemKey64.SetValue("EnableCdp", 0, RegistryValueKind.DWord);
-                            systemKey64.SetValue("EnableMmx", 0, RegistryValueKind.DWord);
-                        }
-                    }
-                    using (var systemKey32 = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\WOW6432Node\Policies\Microsoft\Windows\System"))
-                    {
-                        if (systemKey32 != null)
-                        {
-                            systemKey32.SetValue("EnableCdp", 0, RegistryValueKind.DWord);
-                            systemKey32.SetValue("EnableMmx", 0, RegistryValueKind.DWord);
-                        }
+                        QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\System",
+                            name, 0, RegistryValueKind.DWord, RegistryView.Registry64);
+                        QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\Policies\Microsoft\Windows\System",
+                            name, 0, RegistryValueKind.DWord, RegistryView.Registry64);
                     }
                     using (var cloudContentKey64 = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent"))
                     {
@@ -1343,14 +1331,8 @@ namespace WinHubX.Forms.Settaggi
                             rulesKey32.DeleteValue("NumberOfSIUFInPeriod", false);
                         }
                     }
-                    using (RegistryKey? dataCollectionKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                        .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true))
-                    {
-                        if (dataCollectionKey64 != null && dataCollectionKey64.GetValue("DoNotShowFeedbackNotifications") != null)
-                        {
-                            dataCollectionKey64.DeleteValue("DoNotShowFeedbackNotifications", false);
-                        }
-                    }
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+                        "DoNotShowFeedbackNotifications", RegistryView.Registry64);
                     EnableScheduledTask("Microsoft\\Windows\\Feedback\\Siuf\\DmClient");
                     EnableScheduledTask("Microsoft\\Windows\\Feedback\\Siuf\\DmClientOnScenarioDownload");
                 }
@@ -1370,28 +1352,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? advertisingKey32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32)
-                        .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
-                    {
-                        if (advertisingKey32 != null)
-                        {
-                            if (advertisingKey32.GetValue("DisabledByGroupPolicy") != null)
-                            {
-                                advertisingKey32.DeleteValue("DisabledByGroupPolicy", false);
-                            }
-                        }
-                    }
-                    using (RegistryKey? advertisingKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                        .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true))
-                    {
-                        if (advertisingKey64 != null)
-                        {
-                            if (advertisingKey64.GetValue("DisabledByGroupPolicy") != null)
-                            {
-                                advertisingKey64.DeleteValue("DisabledByGroupPolicy", false);
-                            }
-                        }
-                    }
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
+                        "DisabledByGroupPolicy", RegistryView.Registry32);
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
+                        "DisabledByGroupPolicy", RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -1409,26 +1373,14 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (RegistryKey? systemKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
-                    {
-                        systemKey32?.DeleteValue("EnableSmartScreen", false);
-                    }
-
-                    using (RegistryKey? edgeKey32 = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
-                    {
-                        edgeKey32?.DeleteValue("EnabledV9", false);
-                    }
-                    using (RegistryKey? systemKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                        .OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System", true))
-                    {
-                        systemKey64?.DeleteValue("EnableSmartScreen", false);
-                    }
-
-                    using (RegistryKey? edgeKey64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                        .OpenSubKey(@"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter", true))
-                    {
-                        edgeKey64?.DeleteValue("EnabledV9", false);
-                    }
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\System",
+                        "EnableSmartScreen", RegistryView.Registry32);
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
+                        "EnabledV9", RegistryView.Registry32);
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\System",
+                        "EnableSmartScreen", RegistryView.Registry64);
+                    QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
+                        "EnabledV9", RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -1524,15 +1476,10 @@ namespace WinHubX.Forms.Settaggi
                         key64?.SetValue("ShellFeedsTaskbarViewMode", 1, RegistryValueKind.DWord);
                         key64?.SetValue("IsFeedsAvailable", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey keyLM32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"))
-                    {
-                        keyLM32?.SetValue("EnableFeeds", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey keyLM64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"))
-                    {
-                        keyLM64?.SetValue("EnableFeeds", 1, RegistryValueKind.DWord);
-                    }
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
+                        "EnableFeeds", 1, RegistryValueKind.DWord, RegistryView.Registry32);
+                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
+                        "EnableFeeds", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
                 catch (Exception ex)
                 {
@@ -1726,6 +1673,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaEsperienzePersonalizzateMicrosoft", false);
             }
+
+            ApplyElevatedRegistryMutations();
         }
 
         private void backgroundWorker1_ProgressChanged(object? sender, System.ComponentModel.ProgressChangedEventArgs e)
