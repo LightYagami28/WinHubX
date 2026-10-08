@@ -1121,9 +1121,12 @@ namespace WinHubX.Forms.CreaISO
                 {
                     var process = new Process();
                     process.StartInfo.FileName = "reg.exe";
-                    process.StartInfo.Arguments = $"export \"{keyToExport}\" \"{exportPath}\" /y";
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.ArgumentList.Add("export");
+                    process.StartInfo.ArgumentList.Add(keyToExport);
+                    process.StartInfo.ArgumentList.Add(exportPath);
+                    process.StartInfo.ArgumentList.Add("/y");
                     _ = process.Start();
                     process.WaitForExit();
 
