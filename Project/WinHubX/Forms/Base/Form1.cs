@@ -215,63 +215,8 @@ namespace WinHubX
         private void btnmonitoraggio_Click(object sender, EventArgs e) =>
             LoadForm(new FormMonitoraggio(this), btnmonitoraggio, LanguageManager.GetTranslation("FormMain", "Monitoraggio"));
 
-        private void btnSettaggi_Click(object sender, EventArgs e)
-        {
-            using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
-            {
-                if (key != null)
-                {
-                    object? value = key.GetValue("SettaggiRiavviati");
-                    if (value != null && value.ToString() == "1")
-                    {
-                        puntodiripristino();
-                        return;
-                    }
-                }
-            }
-            string titolo = LanguageManager.GetTranslation("Form1", "reboot_title");
-            string messaggio = LanguageManager.GetTranslation("Form1", "reboot_message");
-
-            var result = MessageBox.Show(
-                messaggio,
-                titolo,
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result == DialogResult.Yes)
-            {
-                _ = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = "/c \"sc config UCPD start= disabled && schtasks /change /Enable /TN \"\\Microsoft\\Windows\\AppxDeploymentClient\\UCPD velocity\" && shutdown /r /t 0\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                });
-
-                using (RegistryKey? regKey = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
-                {
-                    regKey?.SetValue("SettaggiRiavviati", 1);
-                }
-                Application.Exit();
-            }
-            else
-            {
-                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
-                {
-                    if (key != null)
-                    {
-                        object? value = key.GetValue("SettaggiRiavviati");
-                        if (value != null && value.ToString() == "0")
-                        {
-                            _ = MessageBox.Show("I need registry access to access this menu");
-                        }
-                    }
-                }
-            }
-        }
+        private void btnSettaggi_Click(object sender, EventArgs e) =>
+            LoadForm(new FormSettaggi(this), btnSettaggi, LanguageManager.GetTranslation("FormMain", "Tweaks"));
 
         private void puntodiripristino()
         {
