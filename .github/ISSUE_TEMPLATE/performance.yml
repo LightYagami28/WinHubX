@@ -1,0 +1,24 @@
+name: Performance report
+description: Segnala lentezza, consumo elevato o blocchi
+title: "[Performance] "
+labels: ["performance"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versione e ambiente
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario e passaggi
+    validations:
+      required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Misurazioni
+      description: "Indica tempi, CPU, memoria o dati del profiler senza includere dati personali."
+    validations:
+      required: true

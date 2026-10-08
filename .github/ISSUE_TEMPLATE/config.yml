@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Domande e supporto
+    url: https://github.com/LightYagami28/WinHubX/blob/main/SUPPORT.md
+    about: Consulta la guida al supporto prima di aprire una issue.
+  - name: Vulnerabilità
+    url: https://github.com/LightYagami28/WinHubX/security/policy
+    about: Non pubblicare vulnerabilità nei ticket ordinari.

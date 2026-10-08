@@ -1,0 +1,30 @@
+name: Feature request
+description: Proponi un miglioramento
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema da risolvere
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Soluzione proposta
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative considerate
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impatto considerato
+      options:
+        - label: Compatibilità Windows
+        - label: Sicurezza e privilegi
+        - label: Prestazioni e memoria
+        - label: Documentazione e localizzazione

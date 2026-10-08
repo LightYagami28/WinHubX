@@ -1,0 +1,21 @@
+name: Documentation
+description: Segnala documentazione incompleta o errata
+title: "[Docs] "
+labels: ["documentation"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: File o pagina interessata
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Cosa va corretto?
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Testo o miglioramento proposto
