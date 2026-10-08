@@ -5,6 +5,8 @@
 **/bin/
 **/obj/
 publish/
+# Local Visual Studio temporary signing certificate (never commit private keys)
+Project/WinHubX/WinHubX_TemporaryKey.pfx
 *.log
 *.diagsession
 *.nettrace

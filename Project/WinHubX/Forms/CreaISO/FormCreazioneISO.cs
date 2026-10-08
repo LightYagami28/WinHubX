@@ -644,7 +644,7 @@ namespace WinHubX.Forms.CreaISO
                                 }
                                 Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "smontaggioboot"));
                                 string unmountArguments = $"/unmount-image /mountdir:\"{bootMountDir}\" /commit";
-                                bool unmountSuccess = await Task.Run(() => EseguiDISM(arguments, progress, token), token);
+                                bool unmountSuccess = await Task.Run(() => EseguiDISM(unmountArguments, progress, token), token);
 
                                 if (unmountSuccess)
                                     Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "smontaggiobootsuccesso"));
@@ -670,22 +670,24 @@ namespace WinHubX.Forms.CreaISO
                 }
                 else if (windowsVersion == "10" && ParametriISO.TryGetValue("Architettura", out var arch))
                 {
-                    _ = ExecuteCommand($"reg load HKLM\\TK_SOFTWARE \"{mountDir}\\Windows\\System32\\config\\SOFTWARE\"", token);
+                    await ExecuteCommand($"reg load HKLM\\TK_SOFTWARE \"{mountDir}\\Windows\\System32\\config\\SOFTWARE\"", token);
                     var regCommands = new List<string>
                 {
                     @"reg add ""HKLM\TK_SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE"" /v ""BypassNRO"" /t REG_DWORD /d 1 /f"
                 };
-                    foreach (var cmd in regCommands) _ = ExecuteCommand(cmd, token);
-                    await Task.Delay(5000);
-                    _ = ExecuteCommand("reg unload HKLM\\TK_SOFTWARE", token);
+                    foreach (var cmd in regCommands)
+                        await ExecuteCommand(cmd, token);
+
+                    await Task.Delay(5000, token);
+                    await ExecuteCommand("reg unload HKLM\\TK_SOFTWARE", token);
                     int maxRetry = 5;
                     for (int i = 0; i < maxRetry; i++)
                     {
                         if (!RegistryKeyExists(@"HKEY_LOCAL_MACHINE\TK_SOFTWARE"))
                             break;
 
-                        await Task.Delay(3000);
-                        _ = ExecuteCommand("reg unload HKLM\\TK_SOFTWARE", token);
+                        await Task.Delay(3000, token);
+                        await ExecuteCommand("reg unload HKLM\\TK_SOFTWARE", token);
                     }
                     if (arch == "x64" && File.Exists(sourceUnattend10))
                     {
@@ -1388,27 +1390,46 @@ namespace WinHubX.Forms.CreaISO
         }
         private void Log(string message)
         {
-            if (InvokeRequired)
-                Invoke(new Action(() => AppendToTextBox(message)));
-            else
-                AppendToTextBox(message);
+            if (richTextBox1.IsDisposed || richTextBox1.Disposing || !richTextBox1.IsHandleCreated)
+                return;
+
+            if (richTextBox1.InvokeRequired)
+            {
+                try
+                {
+                    _ = richTextBox1.BeginInvoke(new Action(() => AppendToTextBox(message)));
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Debug.WriteLine($"WinHubX log dispatch failed: {ex.Message}");
+                }
+
+                return;
+            }
+
+            AppendToTextBox(message);
         }
 
         private void AppendToTextBox(string message)
         {
+            if (richTextBox1.IsDisposed || richTextBox1.Disposing || !richTextBox1.IsHandleCreated)
+                return;
+
             richTextBox1.SelectionStart = richTextBox1.TextLength;
             richTextBox1.SelectionLength = 0;
             richTextBox1.SelectionColor = Color.White;
-            richTextBox1.SelectionFont = new Font("Segoe UI", 9, FontStyle.Regular);
-            Log($"{DateTime.Now:HH:mm:ss} ");
+            richTextBox1.SelectionFont = richTextBox1.Font;
+            richTextBox1.AppendText($"{DateTime.Now:HH:mm:ss} ");
+
             richTextBox1.SelectionColor = Color.FromArgb(70, 130, 180);
-            richTextBox1.SelectionFont = new Font("Segoe UI", 9, FontStyle.Bold);
-            Log("➤ ");
+            richTextBox1.AppendText("➤ ");
+
             richTextBox1.SelectionColor = Color.White;
-            richTextBox1.SelectionFont = new Font("Segoe UI", 9.5f, FontStyle.Regular);
-            Log($"{message}");
-            richTextBox1.SelectionColor = Color.FromArgb(240, 240, 240); 
-            Log("\n────────────────────────────────────────────\n");
+            richTextBox1.AppendText(message);
+
+            richTextBox1.SelectionColor = Color.FromArgb(240, 240, 240);
+            richTextBox1.AppendText("\n────────────────────────────────────────────\n");
+
             richTextBox1.SelectionStart = richTextBox1.TextLength;
             richTextBox1.ScrollToCaret();
             richTextBox1.SelectionColor = richTextBox1.ForeColor;
