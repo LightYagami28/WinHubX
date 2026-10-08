@@ -11,6 +11,17 @@ namespace WinHubX
     public partial class FormWin : Form
     {
         private Form1 form1;
+        private static readonly HttpClient ResourceClient = new(CreateResourceHandler())
+        {
+            Timeout = TimeSpan.FromMinutes(2)
+        };
+
+        private static SocketsHttpHandler CreateResourceHandler() => new()
+        {
+            MaxConnectionsPerServer = 4,
+            AutomaticDecompression = System.Net.DecompressionMethods.None,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        };
         public FormWin(Form1 form1)
         {
             LanguageManager.LoadLanguageFromSettings();
@@ -51,46 +62,51 @@ namespace WinHubX
 
         private async void btnCambioEdizione_Click(object sender, EventArgs e)
         {
-            string tempScript = Path.Combine(Path.GetTempPath(), "tempScript.bat");
-            string logFile = Path.Combine(Path.GetTempPath(), "ScriptExecution.log");
-            string primaryURL = string.Empty;
+            if (MessageBox.Show(
+                    "Questa funzione scarica ed esegue lo script ufficiale Microsoft-Activation-Scripts per cambiare l'edizione di Windows. Continuare?",
+                    "Avviso script esterno", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                return;
 
-            if (File.Exists(tempScript))
-            {
-                File.Delete(tempScript);
-            }
-
+            string tempScript = Path.Combine(Path.GetTempPath(), $"WinHubX-ChangeEdition-{Guid.NewGuid():N}.cmd");
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    var jsonResponse = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
-                    var jsonObject = JObject.Parse(jsonResponse);
-                    primaryURL = jsonObject["FormWin"]?["cambiowin"]?.ToString() ?? string.Empty;
-                }
-                if (string.IsNullOrWhiteSpace(primaryURL))
-                {
-                    File.AppendAllText(logFile, "primaryURL non trovato nel JSON.");
-                    return;
-                }
-                using (HttpClient client = new HttpClient())
-                {
-                    byte[] fileBytes = await client.GetByteArrayAsync(primaryURL);
-                    await File.WriteAllBytesAsync(tempScript, fileBytes);
-                }
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{tempScript}\"",
-                    UseShellExecute = true,
-                    CreateNoWindow = false
-                };
+                string jsonResponse = await ResourceClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
+                var jsonObject = JObject.Parse(jsonResponse);
+                string primaryUrl = jsonObject["FormWin"]?["cambiowin"]?.ToString()
+                    ?? throw new InvalidOperationException("URL script non presente nella configurazione.");
+                if (!Uri.TryCreate(primaryUrl, UriKind.Absolute, out Uri? scriptUri)
+                    || scriptUri.Scheme != Uri.UriSchemeHttps
+                    || !scriptUri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
+                    || !scriptUri.AbsolutePath.StartsWith("/massgravel/Microsoft-Activation-Scripts/", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Lo script deve provenire dal repository ufficiale Massgrave tramite HTTPS.");
 
-                Process.Start(startInfo);
+                await DownloadManager.DownloadFileAsync(scriptUri.ToString(), tempScript,
+                    CancellationToken.None, autoParallel: false);
+                using var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        CreateNoWindow = false
+                    }
+                };
+                process.StartInfo.ArgumentList.Add("/c");
+                process.StartInfo.ArgumentList.Add(tempScript);
+                _ = process.Start();
+                await process.WaitForExitAsync();
             }
             catch (Exception ex)
             {
-                File.AppendAllText(logFile, ex.Message);
+                _ = MessageBox.Show($"Impossibile eseguire il cambio edizione: {ex.Message}",
+                    "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                try { if (File.Exists(tempScript)) File.Delete(tempScript); }
+                catch (IOException) { }
             }
         }
 
