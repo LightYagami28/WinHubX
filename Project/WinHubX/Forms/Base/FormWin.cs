@@ -10,18 +10,6 @@ namespace WinHubX
 {
     public partial class FormWin : Form
     {
-        private Form1 form1;
-        private static readonly HttpClient ResourceClient = new(CreateResourceHandler())
-        {
-            Timeout = TimeSpan.FromMinutes(2)
-        };
-
-        private static SocketsHttpHandler CreateResourceHandler() => new()
-        {
-            MaxConnectionsPerServer = 4,
-            AutomaticDecompression = System.Net.DecompressionMethods.None,
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-        };
         public FormWin(Form1 form1)
         {
             LanguageManager.LoadLanguageFromSettings();
@@ -44,7 +32,6 @@ namespace WinHubX
                 "en" => "  Create ISO",
                 _ => btnCreaIsoPrinci.Content
             };
-            this.form1 = form1;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
 
@@ -60,54 +47,23 @@ namespace WinHubX
             }
         }
 
-        private async void btnCambioEdizione_Click(object sender, EventArgs e)
+        private void btnCambioEdizione_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
-                    "Questa funzione scarica ed esegue lo script ufficiale Microsoft-Activation-Scripts per cambiare l'edizione di Windows. Continuare?",
-                    "Avviso script esterno", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                    "WinHubX aprirà il sito ufficiale massgrave.dev nel browser predefinito. L'app non scaricherà né eseguirà script di attivazione. Continuare?",
+                    "Apri Massgrave", MessageBoxButtons.YesNo, MessageBoxIcon.Information,
                     MessageBoxDefaultButton.Button2) != DialogResult.Yes)
                 return;
 
-            string tempScript = Path.Combine(Path.GetTempPath(), $"WinHubX-ChangeEdition-{Guid.NewGuid():N}.cmd");
             try
             {
-                string jsonResponse = await ResourceClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
-                var jsonObject = JObject.Parse(jsonResponse);
-                string primaryUrl = jsonObject["FormWin"]?["cambiowin"]?.ToString()
-                    ?? throw new InvalidOperationException("URL script non presente nella configurazione.");
-                if (!Uri.TryCreate(primaryUrl, UriKind.Absolute, out Uri? scriptUri)
-                    || scriptUri.Scheme != Uri.UriSchemeHttps
-                    || !scriptUri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
-                    || !scriptUri.AbsolutePath.StartsWith("/massgravel/Microsoft-Activation-Scripts/", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Lo script deve provenire dal repository ufficiale Massgrave tramite HTTPS.");
-
-                await DownloadManager.DownloadFileAsync(scriptUri.ToString(), tempScript,
-                    CancellationToken.None, autoParallel: false);
-                using var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
-                        UseShellExecute = true,
-                        Verb = "runas",
-                        CreateNoWindow = false
-                    }
-                };
-                process.StartInfo.ArgumentList.Add("/d");
-                process.StartInfo.ArgumentList.Add("/c");
-                process.StartInfo.ArgumentList.Add(tempScript);
-                _ = process.Start();
-                await process.WaitForExitAsync();
+                _ = Process.Start(new ProcessStartInfo("https://massgrave.dev/") { UseShellExecute = true })
+                    ?? throw new InvalidOperationException("Il browser predefinito non è stato avviato.");
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"Impossibile eseguire il cambio edizione: {ex.Message}",
+                _ = MessageBox.Show($"Impossibile aprire massgrave.dev: {ex.Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                try { if (File.Exists(tempScript)) File.Delete(tempScript); }
-                catch (IOException) { }
             }
         }
 
