@@ -32,6 +32,7 @@ namespace WinHubX
         private const int HTBOTTOMRIGHT = 17;
         private const int WM_NCHITTEST = 0x84;
         private Form? previousForm;
+        private Form? activeForm;
 
         protected override void WndProc(ref Message m)
         {
@@ -180,22 +181,29 @@ namespace WinHubX
             {
                 previousForm = null;
             }
-            LoadFormIntoPanel(form);
+            LoadFormIntoPanel(form, showBackArrow ? previousForm : null);
             EnableDragging(this);
             ThemeManager.ApplyThemeToControl(form, dark);
         }
 
 
-        private void LoadFormIntoPanel(Form form)
+        private void LoadFormIntoPanel(Form form, Form? preservedForm = null)
         {
+            if (activeForm is not null && activeForm != preservedForm && !activeForm.IsDisposed)
+            {
+                PnlFormLoader.Controls.Remove(activeForm);
+                activeForm.Close();
+                activeForm.Dispose();
+            }
+
             PnlFormLoader.Controls.Clear();
 
             form.Dock = DockStyle.Fill;
             form.TopLevel = false;
-            form.TopMost = true;
             form.FormBorderStyle = FormBorderStyle.None;
 
             PnlFormLoader.Controls.Add(form);
+            activeForm = form;
             form.Show();
         }
 
