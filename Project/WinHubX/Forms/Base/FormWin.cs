@@ -87,12 +87,13 @@ namespace WinHubX
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "cmd.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
                         UseShellExecute = true,
                         Verb = "runas",
                         CreateNoWindow = false
                     }
                 };
+                process.StartInfo.ArgumentList.Add("/d");
                 process.StartInfo.ArgumentList.Add("/c");
                 process.StartInfo.ArgumentList.Add(tempScript);
                 _ = process.Start();
