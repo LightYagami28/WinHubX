@@ -7,7 +7,7 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
 {
-    public partial class FormUtility : Form
+    public partial class FormUtility : Form, IImportedSettingsForm
     {
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
@@ -328,7 +328,8 @@ namespace WinHubX.Forms.Settaggi
                 SnapshotCheckedItems(AbilitaUtility)
             );
             totalSteps = selection.Disable.Count + selection.Enable.Count;
-            if (totalSteps == 0) totalSteps = 1;
+            if (totalSteps == 0)
+                return;
             progressBar1.MaxValue = totalSteps;
             progressBar1.Value = 0;
 
@@ -341,6 +342,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.RunWorkerAsync(selection);
             }
         }
+
+        Task IImportedSettingsForm.ApplyImportedSettingsAsync() =>
+            ImportedSettingsWorker.RunAsync(
+                backgroundWorker1,
+                () => btnAvviaSelezionatiUti_Click(btnAvviaSelezionatiVerdi, EventArgs.Empty));
 
         private static void RestartExplorer()
         {

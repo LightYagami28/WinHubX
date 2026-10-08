@@ -374,8 +374,6 @@ namespace WinHubX.Forms.Base
             cuiFileDropper1White.UploadContent = "Clicca o trascina qui il file";
             cuiFileDropper1White.UploadWithClick = true;
             cuiFileDropper1White.FileDropped += cuiFileDropper1_FileDropped;
-            cuiFileDropper1White.Click += btnImportaSettaggi_Click;
-            cuiFileDropper1White.MouseDown += cuiFileDropper1_MouseDown;
             // 
             // panel68
             // 
@@ -413,8 +411,8 @@ namespace WinHubX.Forms.Base
             cuiFileDropper2White.PanelColor = Color.FromArgb(16, 255, 255, 255);
             cuiFileDropper2White.Rounding = new Padding(8);
             cuiFileDropper2White.UploadContent = "Clicca qui per estrarre il file";
-            cuiFileDropper2White.UploadWithClick = true;
-            cuiFileDropper2White.MouseDown += cuiFileDropper2_MouseDown;
+            cuiFileDropper2White.UploadWithClick = false;
+            cuiFileDropper2White.Click += cuiFileDropper2_Click;
             // 
             // FormSettaggi
             // 

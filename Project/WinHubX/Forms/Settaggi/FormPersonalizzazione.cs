@@ -9,7 +9,7 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
 {
-    public partial class FormPersonalizzazione : Form
+    public partial class FormPersonalizzazione : Form, IImportedSettingsForm
     {
         private readonly Form1 form1;
         private FormSettaggi formSettaggi;
@@ -81,6 +81,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.RunWorkerAsync(selectedOptions);
             }
         }
+
+        Task IImportedSettingsForm.ApplyImportedSettingsAsync() =>
+            ImportedSettingsWorker.RunAsync(
+                backgroundWorker1,
+                () => btnAvviaSelezionati_Click(cuiButton1Verdi, EventArgs.Empty));
 
         private static IEnumerable<Control> EnumerateControls(Control parent)
         {

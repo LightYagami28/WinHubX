@@ -1,5 +1,6 @@
 using HartUI.Controls;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using WinHubX.Forms.Settaggi;
@@ -287,107 +288,158 @@ namespace WinHubX.Forms.Base
 
 
 
-        private void btnImportaSettaggi_Click(object sender, EventArgs e)
+        public async Task ImportaSettaggiDaPercorsoAsync(string filePath)
         {
-            using (var dlg = new OpenFileDialog())
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
-                dlg.Title = "Seleziona file di registro da importare";
-                dlg.Filter = "Dat file (*.dat)|*.dat|Tutti i file (*.*)|*.*";
-                dlg.InitialDirectory = Application.StartupPath;
-
-                if (dlg.ShowDialog() == DialogResult.OK)
-                {
-                    string filePath = dlg.FileName;
-
-                    var process = new Process();
-                    process.StartInfo.FileName = "reg.exe";
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.ArgumentList.Add("import");
-                    process.StartInfo.ArgumentList.Add(filePath);
-
-                    try
-                    {
-                        _ = process.Start();
-                        process.WaitForExit();
-
-                        if (process.ExitCode == 0)
-                        {
-                            _ = MessageBox.Show("Settaggi importati correttamente dal file .dat.",
-                                "Importazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            IstanziaEAvviaFormSelezionati();
-                        }
-                        else
-                        {
-                            _ = MessageBox.Show($"Errore durante l'importazione. Codice uscita: {process.ExitCode}",
-                                "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _ = MessageBox.Show($"Si è verificato un errore:\n{ex.Message}",
-                            "Eccezione", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
+                _ = MessageBox.Show("Il file di configurazione selezionato non esiste.",
+                    "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
-        }
-        public void ImportaSettaggiDaPercorso(string filePath)
-        {
-            var process = new Process();
-            process.StartInfo.FileName = "reg.exe";
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.ArgumentList.Add("import");
-            process.StartInfo.ArgumentList.Add(filePath);
 
             try
             {
-                _ = process.Start();
-                process.WaitForExit();
+                ValidateSettingsFile(filePath);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                _ = MessageBox.Show($"Impossibile leggere il file di configurazione: {ex.GetBaseException().Message}",
+                    "File non valido", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
-                if (process.ExitCode == 0)
+            DialogResult confirmation = MessageBox.Show(
+                "L'importazione ripristina le selezioni e applica i tweak salvati; alcune modifiche interessano il sistema e potrebbero richiedere privilegi amministrativi. Continuare?",
+                "Conferma importazione e applicazione",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+            if (confirmation != DialogResult.Yes)
+                return;
+
+            try
+            {
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                string registryEditorPath = Path.Combine(systemDirectory, "reg.exe");
+                if (!File.Exists(registryEditorPath))
+                    throw new FileNotFoundException("reg.exe non è disponibile nella cartella di sistema.", registryEditorPath);
+
+                ProcessStartInfo startInfo = new(registryEditorPath)
                 {
-                    Console.WriteLine("Settaggi importati correttamente dal file .dat.");
-                    IstanziaEAvviaFormSelezionati();
-                }
-                else
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                startInfo.ArgumentList.Add("import");
+                startInfo.ArgumentList.Add(Path.GetFullPath(filePath));
+
+                using Process process = new() { StartInfo = startInfo };
+                if (!process.Start())
+                    throw new InvalidOperationException("Impossibile avviare reg.exe per importare la configurazione.");
+
+                Task<string> standardOutputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> standardErrorTask = process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                string processOutput = await standardOutputTask;
+                string processError = await standardErrorTask;
+                if (process.ExitCode != 0)
                 {
-                    Console.WriteLine($"Errore durante l'importazione. Codice uscita: {process.ExitCode}");
+                    string details = string.Join(Environment.NewLine,
+                        new[] { processError, processOutput }.Where(static text => !string.IsNullOrWhiteSpace(text)).Select(static text => text.Trim()));
+                    string message = $"Errore durante l'importazione. Codice uscita: {process.ExitCode}";
+                    if (!string.IsNullOrWhiteSpace(details))
+                        message += Environment.NewLine + details;
+                    _ = MessageBox.Show(message,
+                        "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
+
+                await ApplicaFormSelezionatiAsync();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Si è verificato un errore:\n{ex.Message}");
+                _ = MessageBox.Show($"Importazione o applicazione non completata:\n{ex.GetBaseException().Message}",
+                    "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void IstanziaEAvviaFormSelezionati()
+        private static void ValidateSettingsFile(string filePath)
         {
-            var formList = new List<Form>
-    {
-        new FormPrivacy(this, form1),
-        new FormUtility(this, form1),
-        new FormDefender(this, form1),
-        new FormUpdate(this, form1),
-        new FormPersonalizzazione(this, form1)
-    };
+            string[] lines = File.ReadAllLines(filePath);
+            bool hasSupportedHeader = lines.Any(static line =>
+                line.Trim().Equals("Windows Registry Editor Version 5.00", StringComparison.OrdinalIgnoreCase)
+                || line.Trim().Equals("REGEDIT4", StringComparison.OrdinalIgnoreCase));
+            if (!hasSupportedHeader)
+                throw new InvalidDataException("Il file non è un'esportazione valida del Registro di Windows.");
 
-            foreach (Form form in formList)
+            const string allowedKey = @"HKEY_CURRENT_USER\Software\WinHubX";
+            bool hasSettingsKey = false;
+            foreach (string line in lines)
             {
-                form.TopLevel = false;
-                form.TopMost = true;
-                form.FormBorderStyle = FormBorderStyle.None;
-                form.Dock = DockStyle.Fill;
-                form.CreateControl();
-                form.Show();
-                var metodo = form.GetType().GetMethod("btnAvviaSelezionati_Click", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var bottone = form.Controls.Find("btnAvviaSelezionati", true).FirstOrDefault();
+                string section = line.Trim();
+                if (section.Length < 2 || section[0] != '[' || section[^1] != ']')
+                    continue;
 
-                if (metodo != null && bottone != null)
+                string registryKey = section[1..^1];
+                if (registryKey.Length > 0 && registryKey[0] == '-')
+                    registryKey = registryKey[1..];
+
+                if (!registryKey.Equals(allowedKey, StringComparison.OrdinalIgnoreCase)
+                    && !registryKey.StartsWith(allowedKey + "\\", StringComparison.OrdinalIgnoreCase))
                 {
-                    _ = metodo.Invoke(form, new object[] { bottone, EventArgs.Empty });
+                    throw new InvalidDataException("Il file può contenere solo le impostazioni sotto HKCU\\Software\\WinHubX.");
                 }
-                form.Close();
+
+                hasSettingsKey = true;
+            }
+
+            if (!hasSettingsKey)
+                throw new InvalidDataException("Il file non contiene impostazioni WinHubX da importare.");
+        }
+
+        private async Task ApplicaFormSelezionatiAsync()
+        {
+            panel70.Controls.Clear();
+            Func<IImportedSettingsForm>[] createForms =
+            [
+                () => new FormPrivacy(this, form1),
+                () => new FormUtility(this, form1),
+                () => new FormDefender(this, form1),
+                () => new FormUpdate(this, form1),
+                () => new FormPersonalizzazione(this, form1)
+            ];
+
+            try
+            {
+                foreach (Func<IImportedSettingsForm> createForm in createForms)
+                {
+                    IImportedSettingsForm importedForm = createForm();
+                    Form form = (Form)importedForm;
+                    form.TopLevel = false;
+                    form.FormBorderStyle = FormBorderStyle.None;
+                    form.Dock = DockStyle.Fill;
+                    panel70.Controls.Add(form);
+                    form.Show();
+
+                    try
+                    {
+                        await importedForm.ApplyImportedSettingsAsync();
+                    }
+                    finally
+                    {
+                        panel70.Controls.Remove(form);
+                        form.Close();
+                        form.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (!form1.IsDisposed)
+                {
+                    form1.pictureBox3.Visible = false;
+                    form1.LoadForm(new FormSettaggi(form1), form1.btnSettaggi, "Tweaks");
+                }
             }
         }
 
@@ -396,158 +448,130 @@ namespace WinHubX.Forms.Base
 
         }
 
-        private void cuiFileDropper2_FileDropped(object sender, HartUI.Controls.FileDroppedEventArgs e)
+        private async void cuiFileDropper1_FileDropped(object sender, HartUI.Controls.FileDroppedEventArgs e)
         {
-
+            string? filePath = e.FileNames?.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(filePath))
+                await ImportaSettaggiDaPercorsoAsync(filePath);
         }
 
-        private void cuiFileDropper1_FileDropped(object sender, HartUI.Controls.FileDroppedEventArgs e)
+        private async void cuiFileDropper2_Click(object sender, EventArgs e)
         {
-            DoImport();
-        }
-
-        private void DoImport()
-        {
-            using (var dlg = new SaveFileDialog())
+            using SaveFileDialog dialog = new()
             {
-                dlg.Title = LanguageManager.GetTranslation("FormSettaggi", "exporttitle");
-                dlg.Filter = "Dat file (*.dat)|*.dat|Tutti i file (*.*)|*.*";
-                dlg.FileName = "config.dat";
-                dlg.InitialDirectory = Application.StartupPath;
+                Title = LanguageManager.GetTranslation("FormSettaggi", "exporttitle"),
+                Filter = "Dat file (*.dat)|*.dat|Tutti i file (*.*)|*.*",
+                FileName = "config.dat",
+                InitialDirectory = Application.StartupPath
+            };
 
-                if (dlg.ShowDialog() == DialogResult.OK)
+            if (dialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            try
+            {
+                string registryEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe");
+                if (!File.Exists(registryEditorPath))
+                    throw new FileNotFoundException("reg.exe non è disponibile nella cartella di sistema.", registryEditorPath);
+
+                ProcessStartInfo startInfo = new(registryEditorPath)
                 {
-                    string exportPath = dlg.FileName;
-                    string keyToExport = @"HKEY_CURRENT_USER\Software\WinHubX";
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                startInfo.ArgumentList.Add("export");
+                startInfo.ArgumentList.Add(@"HKEY_CURRENT_USER\Software\WinHubX");
+                startInfo.ArgumentList.Add(Path.GetFullPath(dialog.FileName));
+                startInfo.ArgumentList.Add("/y");
 
-                    var process = new Process();
-                    process.StartInfo.FileName = "reg.exe";
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.ArgumentList.Add("export");
-                    process.StartInfo.ArgumentList.Add(keyToExport);
-                    process.StartInfo.ArgumentList.Add(exportPath);
-                    process.StartInfo.ArgumentList.Add("/y");
+                using Process process = new() { StartInfo = startInfo };
+                if (!process.Start())
+                    throw new InvalidOperationException("Impossibile avviare reg.exe per esportare la configurazione.");
 
-                    try
-                    {
-                        _ = process.Start();
-                        process.WaitForExit();
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                string output = await outputTask;
+                string error = await errorTask;
 
-                        if (process.ExitCode == 0)
-                        {
-                            _ = MessageBox.Show(
-                                string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportsuccess"), exportPath),
-                                LanguageManager.GetTranslation("FormSettaggi", "exportdone"),
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information
-                            );
-                        }
-                        else
-                        {
-                            _ = MessageBox.Show(
-                                string.Format(LanguageManager.GetTranslation("FormSettaggi", "exporterrorcode"), process.ExitCode),
-                                LanguageManager.GetTranslation("FormSettaggi", "error"),
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error
-                            );
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _ = MessageBox.Show(
-                            string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportexception"), ex.Message),
-                            LanguageManager.GetTranslation("FormSettaggi", "exception"),
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
-                    }
-                }
-            }
-        }
-
-        private void FormSettaggi_Load(object sender, EventArgs e)
-        {
-            cuiFileDropper2White.Click += (s, e) => MessageBox.Show("Click di cuiFileDropper2");
-            cuiFileDropper2White.MouseDown += (s, e) => MessageBox.Show("MouseDown");
-            cuiFileDropper2White.MouseUp += (s, e) => MessageBox.Show("MouseUp");
-            cuiFileDropper2White.DoubleClick += (s, e) => Console.WriteLine("DoubleClick");
-        }
-        private void DoExport()
-        {
-            using (var dlg = new SaveFileDialog())
-            {
-                dlg.Title = LanguageManager.GetTranslation("FormSettaggi", "exporttitle");
-                dlg.Filter = "Dat file (*.dat)|*.dat|Tutti i file (*.*)|*.*";
-                dlg.FileName = "config.dat";
-                dlg.InitialDirectory = Application.StartupPath;
-
-                if (dlg.ShowDialog() != DialogResult.OK)
+                if (process.ExitCode == 0)
+                {
+                    _ = MessageBox.Show(
+                        string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportsuccess"), dialog.FileName),
+                        LanguageManager.GetTranslation("FormSettaggi", "exportdone"),
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                     return;
-
-                string exportPath = dlg.FileName;
-                string keyToExport = @"HKEY_CURRENT_USER\Software\WinHubX";
-
-                using (var process = new Process())
-                {
-                    process.StartInfo.FileName = "reg.exe";
-                    process.StartInfo.CreateNoWindow = true;
-                    process.StartInfo.UseShellExecute = false;
-                    process.StartInfo.ArgumentList.Add("export");
-                    process.StartInfo.ArgumentList.Add(keyToExport);
-                    process.StartInfo.ArgumentList.Add(exportPath);
-                    process.StartInfo.ArgumentList.Add("/y");
-
-                    try
-                    {
-                        process.Start();
-                        process.WaitForExit();
-
-                        if (process.ExitCode == 0)
-                        {
-                            MessageBox.Show(
-                                string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportsuccess"), exportPath),
-                                LanguageManager.GetTranslation("FormSettaggi", "exportdone"),
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information
-                            );
-                        }
-                        else
-                        {
-                            MessageBox.Show(
-                                string.Format(LanguageManager.GetTranslation("FormSettaggi", "exporterrorcode"), process.ExitCode),
-                                LanguageManager.GetTranslation("FormSettaggi", "error"),
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error
-                            );
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(
-                            string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportexception"), ex.Message),
-                            LanguageManager.GetTranslation("FormSettaggi", "exception"),
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
-                        );
-                    }
                 }
+
+                string details = string.Join(Environment.NewLine,
+                    new[] { error, output }.Where(static text => !string.IsNullOrWhiteSpace(text)).Select(static text => text.Trim()));
+                string message = string.Format(LanguageManager.GetTranslation("FormSettaggi", "exporterrorcode"), process.ExitCode);
+                if (!string.IsNullOrWhiteSpace(details))
+                    message += Environment.NewLine + details;
+                _ = MessageBox.Show(message, LanguageManager.GetTranslation("FormSettaggi", "error"),
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                _ = MessageBox.Show(
+                    string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportexception"), ex.GetBaseException().Message),
+                    LanguageManager.GetTranslation("FormSettaggi", "exception"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
-        private void cuiFileDropper2_MouseDown(object sender, MouseEventArgs e)
+    }
+}
+
+namespace WinHubX.Forms.Base
+{
+    internal interface IImportedSettingsForm
+    {
+        Task ApplyImportedSettingsAsync();
+    }
+
+    internal static class ImportedSettingsWorker
+    {
+        internal static Task RunAsync(BackgroundWorker worker, Action start)
         {
-            if (e.Button == MouseButtons.Left)
+            if (worker.IsBusy)
+                throw new InvalidOperationException("È già in corso un'operazione su questa schermata.");
+
+            TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            RunWorkerCompletedEventHandler handler = (_, _) => completion.TrySetResult();
+            worker.RunWorkerCompleted += handler;
+
+            try
             {
-                DoExport();
+                start();
+                if (!worker.IsBusy)
+                    completion.TrySetResult();
             }
+            catch
+            {
+                worker.RunWorkerCompleted -= handler;
+                throw;
+            }
+
+            return AwaitAndDetachAsync(worker, handler, completion.Task);
         }
 
-        private void cuiFileDropper1_MouseDown(object sender, MouseEventArgs e)
+        private static async Task AwaitAndDetachAsync(
+            BackgroundWorker worker,
+            RunWorkerCompletedEventHandler handler,
+            Task completion)
         {
-            if (e.Button == MouseButtons.Left)
+            try
             {
-                DoImport();
+                await completion;
+            }
+            finally
+            {
+                worker.RunWorkerCompleted -= handler;
             }
         }
     }

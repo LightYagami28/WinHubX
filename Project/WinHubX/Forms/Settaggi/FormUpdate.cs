@@ -6,7 +6,7 @@ using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
 {
-    public partial class FormUpdate : Form
+    public partial class FormUpdate : Form, IImportedSettingsForm
     {
         private sealed record UpdateSelection(HashSet<string> Disable, HashSet<string> Enable);
 
@@ -168,6 +168,11 @@ namespace WinHubX.Forms.Settaggi
             progressBar2.Value = 0;
             backgroundWorker1.RunWorkerAsync(selection);
         }
+
+        Task IImportedSettingsForm.ApplyImportedSettingsAsync() =>
+            ImportedSettingsWorker.RunAsync(
+                backgroundWorker1,
+                () => btnAvviaSelezionatiUpda_Click(btnAvviaSelezionatiVerdi, EventArgs.Empty));
 
         private void btnUpdateEssential_Click(object sender, EventArgs e)
         {
