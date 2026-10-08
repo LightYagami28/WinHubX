@@ -7,6 +7,8 @@
 - I driver vengono aperti dalla pagina ufficiale del produttore; non vengono estratti o avviati automaticamente.
 - Le funzioni di attivazione aprono esclusivamente le impostazioni/account ufficiali Microsoft.
 - Nessuna esclusione di Microsoft Defender viene richiesta o configurata dall’applicazione.
+- Per strumenti di attivazione di terze parti non esiste integrazione automatica. L'eventuale documentazione esterna deve rimandare esclusivamente al sito ufficiale `https://massgrave.dev`; il download, l'esecuzione e la verifica restano manuali e sotto responsabilità dell'utente.
+- Quando una funzione scarica un archivio operativo consentito, deve mostrare consenso esplicito, usare una fonte allowlistata e verificare lo SHA-256 pubblicato prima di estrarre o avviare qualsiasi file.
 
 ## Script legacy conservati nel sorgente
 

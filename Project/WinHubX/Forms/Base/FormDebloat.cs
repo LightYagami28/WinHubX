@@ -92,7 +92,7 @@ namespace WinHubX.Forms.Base
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/MrNico98/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
+                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/ImmaginiDebloat.json");
                     var immaginiList = System.Text.Json.JsonSerializer.Deserialize<List<ImmagineData>>(json);
 
                     if (immaginiList != null)
@@ -120,7 +120,7 @@ namespace WinHubX.Forms.Base
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/MrNico98/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
+                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/LightYagami28/ImageDebloat/refs/heads/main/AssociazioniDebloat.json");
                     appNameMappings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
                         ?? new Dictionary<string, string>();
                 }
