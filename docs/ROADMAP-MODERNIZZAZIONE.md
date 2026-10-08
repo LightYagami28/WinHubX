@@ -2,6 +2,12 @@
 
 Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/.NET. Ogni task va chiuso con build `-warnaserror`, test pertinenti, audit dipendenze e commit GPG.
 
+## Criteri finiti di completamento
+
+Lo scope è limitato ai 30 task numerati qui sotto: al checkpoint 2026-10-08 ne risultano chiusi 7 e restano 23. Non si aggiungono refactoring cosmetici fuori da bug riproducibili, rischio di sicurezza, regressioni o requisiti espliciti.
+
+Il lavoro si considera consegnabile quando ogni task è verificato con evidenze oppure ha un'eccezione motivata e un'alternativa sicura; `main` compila su .NET 10 stabile e il branch separato compila sul target .NET 11 disponibile, con tutti i warning trattati senza soppressioni; test, CI, CodeQL e audit dipendenze sono verdi; avvio e flussi UI pertinenti sono verificati su Windows; ogni dipendenza diretta è alla più recente versione stabile e le transitive sono aggiornate al massimo compatibile, con major incompatibili migrate insieme o sostituite. Restano esplicitamente fuori una certificazione legale NIS2 e la firma Authenticode finché non è disponibile un certificato. Raggiunti questi criteri, si ferma la modernizzazione e si consegna lo stato, non si riapre il ciclo per perfezionismi.
+
 ## Fondamenta e toolchain
 
 - [x] 1. Consolidare `.editorconfig`, analizzatori .NET e regole di formattazione (policy comuni in `Directory.Build.props`, warning-as-error e code-style enforcement).
@@ -10,8 +16,8 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 - [x] 4. Configurare CI per restore, build, audit vulnerabilità e `git diff --check`.
 - [x] 5. Aggiungere test di smoke dell’avvio e dei servizi condivisi (CI Windows avvia il publish, verifica la finestra principale e termina il processo senza applicare tweak).
 - [x] 6. Aggiungere test di regressione per configurazione, lingua e tema (round-trip impostazioni tema/lingua, parità chiavi/cataloghi IT-EN, proprietà JSON duplicate e placeholder).
-- [ ] 7. Documentare SDK, runtime, RID e processo di rilascio riproducibile.
-- [ ] 8. Verificare trimming, single-file e self-contained con report di pubblicazione.
+- [x] 7. Documentare SDK, runtime, RID e processo di rilascio riproducibile in [`RELEASE.md`](RELEASE.md).
+- [x] 8. Verificare trimming, single-file e self-contained con report in [`RELEASE.md`](RELEASE.md): framework-dependent single-file e self-contained `win-x64` passano su .NET 11 RC con 0 warning; trimming viene correttamente rifiutato dall'SDK (`NETSDK1175`) per WinForms e resta disabilitato, senza soppressioni.
 
 ## Architettura e performance
 
