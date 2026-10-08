@@ -8,6 +8,7 @@ using System.Management;
 using System.Security.Policy;
 using System.Text;
 using System.Net;
+using System.Security.Cryptography;
 using WinHubX.Forms.Base;
 using WinHubX.Impostazioni;
 
@@ -21,6 +22,7 @@ namespace WinHubX.Forms.ImpostazioniApp
         private string? latestVersion;
         private string? latestUpdateUrl;
         private string? latestReleaseNotes;
+        private string? latestUpdateSha256;
         public bool UpdateDetectedAtStartup { get; private set; } = false;
         public FormImpostazioniApp()
         {
@@ -248,7 +250,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                     "en" => "  Update",
                     _ => btnAggiornamento.Content
                 };
-                await DownloadAndUpdate(latestUpdateUrl, latestVersion);
+                await DownloadAndUpdate(latestUpdateUrl, latestVersion, latestUpdateSha256);
                 return;
             }
             var result = await CheckForUpdatesAsync();
@@ -258,6 +260,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                 latestVersion = result.LatestVersion;
                 latestUpdateUrl = result.UpdateUrl;
                 latestReleaseNotes = result.ReleaseNotes;
+                latestUpdateSha256 = result.Sha256;
                 btnAggiornamento.Content = LanguageManager.CurrentLanguage switch
                 {
                     "it" => "  Aggiorna",
@@ -340,6 +343,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                 latestVersion = result.LatestVersion;
                 latestUpdateUrl = result.UpdateUrl;
                 latestReleaseNotes = result.ReleaseNotes;
+                latestUpdateSha256 = result.Sha256;
 
                 UpdateDetectedAtStartup = true;
             }
@@ -374,6 +378,10 @@ namespace WinHubX.Forms.ImpostazioniApp
                 string updateUrl = updateInfo["updateUrl"]?.Value<string>()
                     ?? throw new InvalidOperationException("URL aggiornamento non presente.");
                 EnsureTrustedHttpsUrl(updateUrl, "pacchetto aggiornamento");
+                string? sha256 = updateInfo["sha256"]?.Value<string>();
+                if (!string.IsNullOrWhiteSpace(sha256)
+                    && (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit)))
+                    throw new InvalidOperationException("SHA-256 non valido nel manifest aggiornamenti.");
 
                 string userLang = Thread.CurrentThread.CurrentUICulture
                     .TwoLetterISOLanguageName.ToUpper();
@@ -385,7 +393,8 @@ namespace WinHubX.Forms.ImpostazioniApp
                     UpdateAvailable = IsNewerVersion(latestVersion, currentVersion),
                     LatestVersion = latestVersion,
                     UpdateUrl = updateUrl,
-                    ReleaseNotes = releaseNotes
+                    ReleaseNotes = releaseNotes,
+                    Sha256 = sha256
                 };
             }
             catch (Exception ex)
@@ -443,7 +452,7 @@ namespace WinHubX.Forms.ImpostazioniApp
             }
         }
 
-        private async Task DownloadAndUpdate(string updateUrl, string version)
+        private async Task DownloadAndUpdate(string updateUrl, string version, string? expectedSha256)
         {
             string updateFilePath = Path.Combine(Path.GetTempPath(), $"WinHubX-{version}-{Guid.NewGuid():N}.exe");
             using (var progressForm = new ProgressForm())
@@ -453,6 +462,14 @@ namespace WinHubX.Forms.ImpostazioniApp
                 try
                 {
                     await DownloadFileWithProgress(updateUrl, updateFilePath, progressForm);
+                    if (!string.IsNullOrWhiteSpace(expectedSha256))
+                    {
+                        await using FileStream downloadedFile = File.OpenRead(updateFilePath);
+                        byte[] actualHash = await SHA256.HashDataAsync(downloadedFile);
+                        string actualSha256 = Convert.ToHexString(actualHash);
+                        if (!actualSha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException("Il controllo SHA-256 del pacchetto aggiornamento non è riuscito.");
+                    }
                     string currentExecutablePath = Application.ExecutablePath;
                     File.Move(currentExecutablePath, Path.ChangeExtension(currentExecutablePath, ".old"), true);
                     File.Move(updateFilePath, currentExecutablePath);
@@ -498,6 +515,7 @@ namespace WinHubX.Forms.ImpostazioniApp
             public string LatestVersion { get; set; } = string.Empty;
             public string UpdateUrl { get; set; } = string.Empty;
             public string ReleaseNotes { get; set; } = string.Empty;
+            public string? Sha256 { get; set; }
         }
 
         private async void FormImpostazioniApp_Load(object sender, EventArgs e)
