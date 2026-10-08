@@ -19,6 +19,18 @@ namespace WinHubX
         private string selectedInstallationType = string.Empty;
         private string percorsoCompleto = string.Empty;
         private CancellationTokenSource? _cts;
+        private static readonly HttpClient ResourceClient = CreateResourceClient();
+
+        private static HttpClient CreateResourceClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 4,
+                AutomaticDecompression = System.Net.DecompressionMethods.None,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+            };
+            return new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2) };
+        }
 
         public FormOffice(Form1 form1)
         {
@@ -108,8 +120,9 @@ namespace WinHubX
         {
             try
             {
-                using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(5) };
-                using HttpResponseMessage result = await client.GetAsync("https://www.google.com", HttpCompletionOption.ResponseHeadersRead);
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using HttpResponseMessage result = await ResourceClient.GetAsync(
+                    "https://www.google.com", HttpCompletionOption.ResponseHeadersRead, timeout.Token);
                 return result.IsSuccessStatusCode;
             }
             catch
@@ -122,13 +135,13 @@ namespace WinHubX
 
         private async Task<string> OttieniURL(string jsonUrl)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                var response = await client.GetStringAsync(jsonUrl);
-                var json = JObject.Parse(response);
-                return json["FormOffice"]?["scrubber"]?.Value<string>()
-                    ?? throw new InvalidOperationException("URL scrubber non presente nella configurazione.");
-            }
+            var response = await ResourceClient.GetStringAsync(jsonUrl);
+            var json = JObject.Parse(response);
+            string url = json["FormOffice"]?["scrubber"]?.Value<string>()
+                ?? throw new InvalidOperationException("URL scrubber non presente nella configurazione.");
+            if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
+                throw new InvalidOperationException("URL scrubber non valido: è richiesto HTTPS.");
+            return uri.ToString();
         }
 
         private async void btnScrubber_Click(object? sender, EventArgs e)
@@ -160,12 +173,8 @@ namespace WinHubX
                 if (Directory.Exists(tempFolder))
                     Directory.Delete(tempFolder, true);
                 Directory.CreateDirectory(tempFolder);
-                using (HttpClient client = new HttpClient())
-                using (HttpResponseMessage response = await client.GetAsync(zipFileUrl))
-                using (FileStream fs = new FileStream(tempZipPath, FileMode.Create, FileAccess.Write))
-                {
-                    await response.Content.CopyToAsync(fs);
-                }
+                await DownloadManager.DownloadFileAsync(zipFileUrl, tempZipPath,
+                    _cts?.Token ?? CancellationToken.None, autoParallel: false);
                 ZipFile.ExtractToDirectory(tempZipPath, tempFolder);
                 string cmdPath = Path.Combine(tempFolder, "OfficeScrubber.cmd");
 
@@ -193,7 +202,7 @@ namespace WinHubX
                 };
 
                 process.Start();
-                await Task.Run(() => process.WaitForExit());
+                await process.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
                 await Task.Run(() => AttendiScrubberConTitolo("Office Scrubber v12"));
                 Directory.Delete(tempFolder, true);
             }
@@ -241,9 +250,8 @@ namespace WinHubX
         {
             List<OfficeVersion> officeVersions = new List<OfficeVersion>();
 
-            using (HttpClient client = new HttpClient())
             {
-                string jsonResponse = await client.GetStringAsync(jsonUrl);
+                string jsonResponse = await ResourceClient.GetStringAsync(jsonUrl);
                 var jsonObject = JObject.Parse(jsonResponse);
                 foreach (var prop in jsonObject.Properties().Where(p => p.Name.StartsWith("Office")))
                 {
