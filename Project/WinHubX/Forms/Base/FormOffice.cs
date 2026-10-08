@@ -20,6 +20,8 @@ namespace WinHubX
         private string percorsoCompleto = string.Empty;
         private CancellationTokenSource? _cts;
         private static readonly HttpClient ResourceClient = CreateResourceClient();
+        private readonly Action<int> _downloadProgressHandler;
+        private readonly Action<bool> _downloadStateHandler;
 
         private static HttpClient CreateResourceClient()
         {
@@ -41,6 +43,9 @@ namespace WinHubX
                 Visible = false
             };
             this.form1 = form1;
+            _downloadProgressHandler = HandleDownloadProgressChanged;
+            _downloadStateHandler = HandleDownloadStateChanged;
+            FormClosed += FormOffice_FormClosed;
 
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
@@ -49,20 +54,8 @@ namespace WinHubX
             percorsoCompleto = downloadPath;
             AggiornaPercorsoLabel(downloadPath);
 
-            WinHubX.Impostazioni.DownloadManager.ProgressChanged += progress =>
-            {
-                if (InvokeRequired)
-                    Invoke(new Action(() => UpdateProgress(progress)));
-                else
-                    UpdateProgress(progress);
-            };
-            WinHubX.Impostazioni.DownloadManager.DownloadStateChanged += isDownloading =>
-            {
-                if (InvokeRequired)
-                    Invoke(new Action(() => SetDownloadButtonStyle(isDownloading)));
-                else
-                    SetDownloadButtonStyle(isDownloading);
-            };
+            WinHubX.Impostazioni.DownloadManager.ProgressChanged += _downloadProgressHandler;
+            WinHubX.Impostazioni.DownloadManager.DownloadStateChanged += _downloadStateHandler;
             SetDownloadButtonStyle(WinHubX.Impostazioni.DownloadManager.IsDownloading);
             if (WinHubX.Impostazioni.DownloadManager.IsDownloading)
             {
@@ -94,6 +87,59 @@ namespace WinHubX
                 "en" => "Add/Remove apps",
                 _ => btnAggRimAppOfficePrinci.Content
             };
+        }
+
+        private void HandleDownloadProgressChanged(int progress)
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action(() => UpdateProgress(progress)));
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Debug.WriteLine($"Aggiornamento progresso Office ignorato dopo la chiusura: {ex.Message}");
+                }
+                return;
+            }
+
+            UpdateProgress(progress);
+        }
+
+        private void HandleDownloadStateChanged(bool isDownloading)
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action(() => SetDownloadButtonStyle(isDownloading)));
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Debug.WriteLine($"Aggiornamento stato Office ignorato dopo la chiusura: {ex.Message}");
+                }
+                return;
+            }
+
+            SetDownloadButtonStyle(isDownloading);
+        }
+
+        private void FormOffice_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            WinHubX.Impostazioni.DownloadManager.ProgressChanged -= _downloadProgressHandler;
+            WinHubX.Impostazioni.DownloadManager.DownloadStateChanged -= _downloadStateHandler;
+            notifyIcon.Dispose();
         }
         private void UpdateProgress(int progress)
         {
