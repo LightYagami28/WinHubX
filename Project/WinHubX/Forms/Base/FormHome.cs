@@ -463,8 +463,6 @@ namespace WinHubX
                 }
 
 
-                if (CheckOhookInstalled())
-                    return true;
             }
             catch
             {
@@ -533,63 +531,6 @@ namespace WinHubX
             catch (Exception)
             {
             }
-            return false;
-        }
-
-        private bool CheckOhookInstalled()
-        {
-            try
-            {
-                string?[] programPaths =
-                {
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetEnvironmentVariable("ProgramW6432"),
-            Environment.GetEnvironmentVariable("ProgramFiles(x86)")
-        };
-
-
-                string[] validProgramPaths = programPaths.Where(p => !string.IsNullOrWhiteSpace(p))
-                                           .Select(p => p!)
-                                           .Distinct()
-                                           .ToArray();
-
-
-                int[] officeVersions = { 15, 16 };
-                string[] systemFolders = { "System", "SystemX86" };
-                string[] officeRoots = { "Office 15", "Office" };
-
-
-                foreach (var path in validProgramPaths)
-                {
-                    foreach (var version in officeVersions)
-                    {
-                        string searchPath = Path.Combine(path, $"Microsoft Office\\Office{version}");
-                        if (Directory.Exists(searchPath))
-                        {
-                            if (Directory.EnumerateFiles(searchPath, "sppc*dll", SearchOption.AllDirectories).Any())
-                                return true;
-                        }
-                    }
-
-                    foreach (var sys in systemFolders)
-                    {
-                        foreach (var root in officeRoots)
-                        {
-                            string searchPath = Path.Combine(path, $"Microsoft {root}\\root\\vfs\\{sys}");
-                            if (Directory.Exists(searchPath))
-                            {
-                                if (Directory.EnumerateFiles(searchPath, "sppc*dll", SearchOption.AllDirectories).Any())
-                                    return true;
-                            }
-                        }
-                    }
-                }
-            }
-            catch
-            {
-
-            }
-
             return false;
         }
 

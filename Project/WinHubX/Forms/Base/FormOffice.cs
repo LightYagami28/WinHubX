@@ -91,106 +91,16 @@ namespace WinHubX
             label2.Text = $"{progress}%";
         }
         #region AttivaOffice
-        private async void btnAttivaOffice_Click(object? sender, EventArgs e)
-        {
-            string? primaryURL = null;
-
-            try
-            {
-                if (await IsInternetAvailableAsync())
-                {
-                    try
-                    {
-                        using (HttpClient client = new HttpClient())
-                        {
-                            var jsonResponse = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
-                            var jsonObject = JObject.Parse(jsonResponse);
-                            primaryURL = jsonObject["AttivatoreOffice"]?["primaryURL"]?.Value<string>();
-
-                            if (string.IsNullOrEmpty(primaryURL))
-                                throw new Exception(LanguageManager.GetTranslation("FormOffice", "url_non_trovato_github"));
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex);
-                    }
-                    if (string.IsNullOrWhiteSpace(primaryURL))
-                        throw new InvalidOperationException(LanguageManager.GetTranslation("FormOffice", "url_non_trovato_github"));
-                    await ExecuteScriptFromUrl(primaryURL);
-                }
-                else
-                {
-                    MessageBox.Show(
-                        LanguageManager.GetTranslation("Global", "nointernet"),
-                        LanguageManager.GetTranslation("FormOffice", "errore"),
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning
-                    );
-                    ExtractAndExecuteLocalScript();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"{LanguageManager.GetTranslation("FormOffice", "errore_generico")} {ex.Message}",
-                    LanguageManager.GetTranslation("FormOffice", "errore"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-        }
-
-        public static async Task ExecuteScriptFromUrl(string url)
+        private void btnAttivaOffice_Click(object? sender, EventArgs e)
         {
             try
             {
-                if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? scriptUri) || scriptUri.Scheme != Uri.UriSchemeHttps)
-                    throw new ArgumentException("L'URL dello script deve usare HTTPS.", nameof(url));
-                using (HttpClient client = new HttpClient())
-                {
-                    var scriptContent = await client.GetStringAsync(scriptUri);
-                    string patchedContent = scriptContent
-                        .Replace(
-                            @"echo ""!_batf!"" | find /i ""!_ttemp!"" %nul1% && (
-if /i not ""!_work!""==""!_ttemp!"" (
-%eline%
-echo The script was launched from the temp folder.
-echo You are most likely running the script directly from the archive file.
-echo:
-echo Extract the archive file and launch the script from the extracted folder.
-goto dk_done
-)
-)",
-                            @"rem [BYPASSED BY WinhubX] Complete temp check disabled
-rem echo ""!_batf!"" | find /i ""!_ttemp!"" %nul1% && (
-rem if /i not ""!_work!""==""!_ttemp!"" (
-rem %eline%
-rem echo The script was launched from the temp folder.
-rem echo You are most likely running the script directly from the archive file.
-rem echo:
-rem echo Extract the archive file and launch the script from the extracted folder.
-rem goto dk_done
-rem )
-rem )")
-                        .Replace(
-                            @"set _act=0",
-                            @"set _act=1");
-
-                    string tempFilePath = Path.Combine(Path.GetTempPath(), "Ohook_Activation_AIO.cmd");
-                    File.WriteAllText(tempFilePath, patchedContent);
-
-                    _ = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = tempFilePath,
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    });
-                }
+                Process.Start(new ProcessStartInfo("https://account.microsoft.com/services") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Impossibile aprire la gestione ufficiale dell’abbonamento Office: {ex.Message}",
+                    "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -208,27 +118,6 @@ rem )")
             }
         }
 
-        private void ExtractAndExecuteLocalScript()
-        {
-            try
-            {
-                string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                string scriptPath = Path.Combine(documentsPath, "TSforge_Activation.cmd");
-                byte[] scriptBytes = Properties.Resources.Ohook_Activation_AIO;
-
-                File.WriteAllBytes(scriptPath, scriptBytes);
-                _ = Process.Start(new ProcessStartInfo
-                {
-                    FileName = scriptPath,
-                    UseShellExecute = true,
-                    Verb = "runas"
-                });
-            }
-            catch (Exception ex)
-            {
-                _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
         #endregion
 
         private async Task<string> OttieniURL(string jsonUrl)
