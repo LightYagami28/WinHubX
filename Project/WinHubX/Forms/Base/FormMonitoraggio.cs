@@ -35,7 +35,6 @@ namespace WinHubX.Forms.Base
 
         private readonly Form1 _mainForm;
         private Computer _computer = new();
-        private System.Windows.Forms.Timer? _tempMonitorTimer;
         private System.Windows.Forms.Timer? _ramMonitorTimer;
         private PerformanceCounter? _cpuCounter;
         private readonly CancellationTokenSource _monitoringCancellation = new();
@@ -136,9 +135,6 @@ namespace WinHubX.Forms.Base
 
         private void InitializeTimers()
         {
-            _tempMonitorTimer = new System.Windows.Forms.Timer { Interval = 5000 };
-            _tempMonitorTimer.Tick += TempMonitorTimer_Tick;
-            _tempMonitorTimer.Start();
         }
 
         private void InitializePerformanceCounter()
@@ -541,8 +537,9 @@ namespace WinHubX.Forms.Base
             {
                 throw;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Aggiornamento UI utilizzo disco non riuscito: {ex}");
                 try
                 {
                     using (var diskCounter = new PerformanceCounter("LogicalDisk", "% Disk Time", "_Total"))
@@ -651,7 +648,7 @@ namespace WinHubX.Forms.Base
                     await Task.Delay(1000, _monitoringToken);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
             }
             catch (Exception ex)
@@ -817,9 +814,9 @@ namespace WinHubX.Forms.Base
                 labelReteUtilizzo.Text = $"{networkUsage:0.0}%";
                 progressbarRete.ProgressValue = (int)Math.Round(networkUsage);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Aggiornamento UI statistiche di rete non riuscito: {ex}");
             }
         }
 
@@ -870,86 +867,6 @@ namespace WinHubX.Forms.Base
         private void OptimizeProcess(Process process)
         {
             process.PriorityClass = ProcessPriorityClass.BelowNormal;
-        }
-        #endregion
-
-        #region TEMP Folder Management
-        private void TempMonitorTimer_Tick(object? sender, EventArgs e)
-        {
-            UpdateTempFolderStatus();
-        }
-
-        private void UpdateTempFolderStatus()
-        {
-
-        }
-
-        private long GetFolderSize(DirectoryInfo dir)
-        {
-            long size = 0;
-            try
-            {
-                foreach (FileInfo file in dir.GetFiles())
-                {
-                    size += file.Length;
-                }
-
-                foreach (DirectoryInfo subDir in dir.GetDirectories())
-                {
-                    size += GetFolderSize(subDir);
-                }
-            }
-            catch (Exception)
-            {
-            }
-            return size;
-        }
-
-        private void CleanTempFolder()
-        {
-            string tempPath = Path.GetTempPath();
-
-            try
-            {
-                var di = new DirectoryInfo(tempPath);
-
-                CleanTempFiles(di);
-                CleanTempDirectories(di);
-
-                UpdateTempFolderStatus();
-            }
-            catch (Exception ex)
-            {
-                ShowErrorMessage($"Error cleaning TEMP folder:\n{ex.Message}");
-            }
-        }
-
-        private void CleanTempFiles(DirectoryInfo directory)
-        {
-            foreach (FileInfo file in directory.GetFiles())
-            {
-                try
-                {
-                    file.Delete();
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
-
-        private void CleanTempDirectories(DirectoryInfo directory)
-        {
-            foreach (DirectoryInfo dir in directory.GetDirectories())
-            {
-                try
-                {
-                    dir.Delete(true);
-                }
-                catch (Exception)
-                {
-                }
-            }
         }
         #endregion
 
@@ -1005,10 +922,6 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private void btnPulisciTemp_Click(object sender, EventArgs e)
-        {
-            CleanTempFolder();
-        }
         #endregion
 
         #region Utility Methods
@@ -1069,7 +982,6 @@ namespace WinHubX.Forms.Base
             }
 
             _cpuCounter?.Dispose();
-            _tempMonitorTimer?.Dispose();
             _ramMonitorTimer?.Dispose();
             _notifyIcon?.Dispose();
             _monitoringCancellation.Dispose();
@@ -1140,59 +1052,91 @@ namespace WinHubX.Forms.Base
             MonitorSettings.LimiteRAM = limiteRAM.Value;
         }
 
-        private void btnSvuotaTemp_Click(object sender, EventArgs e)
+        private async void btnSvuotaTemp_Click(object sender, EventArgs e)
         {
-            string tempPath = Path.GetTempPath();
+            btnSvuotaTemp.Enabled = false;
             int deletedFiles = 0;
             int deletedFolders = 0;
+            int failures = 0;
 
             try
             {
-                DirectoryInfo dir = new DirectoryInfo(tempPath);
-                foreach (FileInfo file in dir.GetFiles("*", SearchOption.TopDirectoryOnly))
-                {
-                    try
-                    {
-                        file.Delete();
-                        deletedFiles++;
-                    }
-                    catch
-                    {
+                (deletedFiles, deletedFolders, failures) = await Task.Run(() => CleanTempDirectory(_monitoringToken), _monitoringToken);
 
-                    }
-                }
-
-                foreach (DirectoryInfo folder in dir.GetDirectories())
-                {
-                    try
-                    {
-                        folder.Delete(true);
-                        deletedFolders++;
-                    }
-                    catch
-                    {
-
-                    }
-                }
+                string resultMessage =
+                    $"File eliminati: {deletedFiles}\nCartelle eliminate: {deletedFolders}" +
+                    (failures > 0 ? $"\nElementi non eliminati: {failures}" : string.Empty);
 
                 MessageBox.Show(
-                    $"Pulizia completata!\n\n" +
-                    $"File eliminati: {deletedFiles}\n" +
-                    $"Cartelle eliminate: {deletedFolders}",
-                    "Temp svuotata",
+                    resultMessage,
+                    failures > 0 ? "Pulizia TEMP parziale" : "Pulizia TEMP completata",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
+                    failures > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information
                 );
+            }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Errore durante la pulizia della cartella TEMP:\n" + ex.Message,
-                    "Errore",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                ShowErrorMessage($"Errore durante la pulizia della cartella TEMP:\n{ex.Message}");
             }
+            finally
+            {
+                if (!IsDisposed)
+                {
+                    btnSvuotaTemp.Enabled = true;
+                }
+            }
+        }
+
+        private static (int DeletedFiles, int DeletedFolders, int Failures) CleanTempDirectory(CancellationToken cancellationToken)
+        {
+            int deletedFiles = 0;
+            int deletedFolders = 0;
+            int failures = 0;
+            string tempPath = Path.GetTempPath();
+
+            foreach (string filePath in Directory.EnumerateFiles(tempPath, "*", SearchOption.TopDirectoryOnly))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    File.Delete(filePath);
+                    deletedFiles++;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    failures++;
+                    Debug.WriteLine($"File TEMP non eliminato: {ex.Message}");
+                }
+            }
+
+            foreach (string directoryPath in Directory.EnumerateDirectories(tempPath, "*", SearchOption.TopDirectoryOnly))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                try
+                {
+                    if ((File.GetAttributes(directoryPath) & FileAttributes.ReparsePoint) != 0)
+                    {
+                        failures++;
+                        Debug.WriteLine($"Cartella TEMP di tipo reparse point lasciata intatta: {directoryPath}");
+                        continue;
+                    }
+
+                    Directory.Delete(directoryPath, recursive: true);
+                    deletedFolders++;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    failures++;
+                    Debug.WriteLine($"Cartella TEMP non eliminata: {ex.Message}");
+                }
+            }
+
+            return (deletedFiles, deletedFolders, failures);
         }
 
 
