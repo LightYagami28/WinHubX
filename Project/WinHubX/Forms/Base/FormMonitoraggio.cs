@@ -168,12 +168,11 @@ namespace WinHubX.Forms.Base
             UpdateTemperatureImage(pic_termgpu, gpuTemperature, UpdateGpuTemperatureImage);
         }
 
-        private string GetGpuTemperature()
+        private string? GetGpuTemperature()
         {
             return GetTemperature(HardwareType.GpuNvidia)?.ToString("0")
                    ?? GetTemperature(HardwareType.GpuAmd)?.ToString("0")
-                   ?? GetTemperature(HardwareType.Cpu)?.ToString("0")
-                   ?? "N/A";
+                   ?? GetTemperature(HardwareType.GpuIntel)?.ToString("0");
         }
 
         private float? GetTemperature(HardwareType hardwareType)
@@ -323,7 +322,8 @@ namespace WinHubX.Forms.Base
             {
                 try
                 {
-                    long totalBytes = GetDirectorySize(tempPath);
+                    // La scansione ricorsiva può attraversare migliaia di file: mai eseguirla sul thread UI.
+                    long totalBytes = await Task.Run(() => GetDirectorySize(tempPath));
 
                     double usedGB = Math.Round(totalBytes / 1024.0 / 1024.0 / 1024.0, 2);
                     double limitGB = GetSelectedGB();
@@ -338,7 +338,7 @@ namespace WinHubX.Forms.Base
                 {
                 }
 
-                await Task.Delay(2000);
+                await Task.Delay(10000);
             }
         }
         private int GetSelectedGB()
@@ -437,8 +437,6 @@ namespace WinHubX.Forms.Base
                 {
                     BarDISCOtext.Text = $"{discoUsage:0}%";
                 }
-                BarDISCO?.Refresh();
-                BarDISCOtext?.Refresh();
             }
             catch (Exception)
             {
