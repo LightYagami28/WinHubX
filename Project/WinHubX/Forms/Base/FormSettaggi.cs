@@ -9,6 +9,15 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormSettaggi : Form
     {
+        private static readonly HttpClient HttpClient = new(new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        })
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+
         private readonly Form1 form1;
         private string? wsa11x64;
         private string? wsa11arm64;
@@ -175,15 +184,12 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    string json = await client.GetStringAsync(Dipendenze.GitHubConfigUrl);
+                    string json = await HttpClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
                     JObject data = JObject.Parse(json);
 
                     wsa11x64 = data["WSA"]?["win11x64"]?.ToString();
                     wsa11arm64 = data["WSA"]?["win11arm64"]?.ToString();
                     wsa10x64 = data["WSA"]?["win10x64"]?.ToString();
-                }
             }
             catch (Exception ex)
             {
@@ -193,18 +199,35 @@ namespace WinHubX.Forms.Base
 
         private void btnAttivaWSL_Click(object sender, EventArgs e)
         {
+            if (MessageBox.Show(
+                    "WinHubX eseguirà lo script WSL incorporato con privilegi amministrativi. Continuare?",
+                    "Conferma attivazione WSL",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning) != DialogResult.Yes)
+            {
+                return;
+            }
+
+            string? scriptPath = null;
             try
             {
                 string assemblyName1 = Assembly.GetExecutingAssembly().GetName().Name
                     ?? throw new InvalidOperationException("Nome assembly non disponibile.");
                 string resourcePath1 = $"{assemblyName1}.Resources.WinHubXWSL.ps1";
                 byte[] exeBytes1 = LoadEmbeddedResource1(resourcePath1);
-                string ps1FilePath1 = Path.Combine(Path.GetTempPath(), "WinHubXWSL.ps1");
-                File.WriteAllBytes(ps1FilePath1, exeBytes1);
+                scriptPath = Path.Combine(Path.GetTempPath(), $"WinHubXWSL-{Guid.NewGuid():N}.ps1");
+                File.WriteAllBytes(scriptPath, exeBytes1);
 
-                StartPowerShell1(ps1FilePath1);
+                StartPowerShell1(scriptPath);
             }
-            finally { }
+            finally
+            {
+                if (scriptPath is not null)
+                {
+                    try { File.Delete(scriptPath); } catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                }
+            }
         }
 
         private byte[] LoadEmbeddedResource1(string resourcePath)
@@ -226,16 +249,28 @@ namespace WinHubX.Forms.Base
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-ExecutionPolicy Bypass -File \"{scriptFilePath}\"",
-                UseShellExecute = false,
+                Verb = "runas",
+                UseShellExecute = true,
                 CreateNoWindow = true,
-                RedirectStandardOutput = true
+                WindowStyle = ProcessWindowStyle.Hidden
             };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-File");
+            startInfo.ArgumentList.Add(scriptFilePath);
 
             using (Process process = new Process { StartInfo = startInfo })
             {
-                _ = process.Start();
-                string output = process.StandardOutput.ReadToEnd();
+                if (!process.Start())
+                {
+                    throw new InvalidOperationException("Impossibile avviare lo script WSL.");
+                }
+
+                process.WaitForExit();
+                if (process.ExitCode != 0)
+                {
+                    throw new InvalidOperationException($"Lo script WSL è terminato con codice {process.ExitCode}.");
+                }
             }
         }
 
