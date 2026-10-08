@@ -11,6 +11,7 @@ namespace WinHubX
     {
         private static readonly TimeSpan HardwareSnapshotLifetime = TimeSpan.FromHours(1);
         private readonly string jsonPath;
+        private bool verificationStarted;
 
         public FormHome()
         {
@@ -48,13 +49,31 @@ namespace WinHubX
 
             ApplicaTraduzioniUI();
 
+            Shown += FormHome_Shown;
+        }
+
+        private async void FormHome_Shown(object? sender, EventArgs e)
+        {
+            if (verificationStarted)
+                return;
+
+            verificationStarted = true;
             if (IsSnapshotFresh())
             {
                 ShowResultsUI();
                 AggiornaRiassunto();
             }
             else
-                _ = VerificaSistemaAsync();
+            {
+                try
+                {
+                    await VerificaSistemaAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Verifica hardware non riuscita: {ex}");
+                }
+            }
         }
 
         private bool IsSnapshotFresh()
