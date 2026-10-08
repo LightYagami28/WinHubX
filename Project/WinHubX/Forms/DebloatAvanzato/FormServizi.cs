@@ -59,17 +59,32 @@ public partial class FormServizi : Form
 
         private async void ModificaServiziButton_Click(object? sender, EventArgs e)
         {
-            int totalSteps = DisabilitaServizi.CheckedItems.Count;
-            if (totalSteps == 0) totalSteps = 1;
+            string[] selectedServices = DisabilitaServizi.CheckedItems
+                .Cast<string>()
+                .ToArray();
+            if (selectedServices.Length == 0 || !button1.Enabled)
+            {
+                return;
+            }
 
-            progressBar1.Maximum = totalSteps;
+            progressBar1.Maximum = selectedServices.Length;
             progressBar1.Value = 0;
             richTextBox1.Clear();
+            button1.Enabled = false;
+            DisabilitaServizi.Enabled = false;
 
-            await EseguiModificaServiziAsync();
+            try
+            {
+                await EseguiModificaServiziAsync(selectedServices);
+            }
+            finally
+            {
+                button1.Enabled = true;
+                DisabilitaServizi.Enabled = true;
+            }
         }
 
-        private async Task EseguiModificaServiziAsync()
+        private async Task EseguiModificaServiziAsync(IReadOnlyList<string> selectedServices)
         {
             try
             {
@@ -79,9 +94,8 @@ public partial class FormServizi : Form
 
                     int currentStep = 0;
 
-                    foreach (var checkedItem in DisabilitaServizi.CheckedItems)
+                    foreach (string serviceName in selectedServices)
                     {
-                        string serviceName = checkedItem?.ToString() ?? string.Empty;
                         var servizio = serviziRoot.service.FirstOrDefault(s => s.Name == serviceName);
 
                         if (servizio != null)
@@ -97,15 +111,13 @@ public partial class FormServizi : Form
                                         $"Set-Service -Name '{EscapePowerShellLiteral(servizio.Name)}' -StartupType '{servizio.StartupType}'";
                                     var psi = new ProcessStartInfo
                                     {
-                                        FileName = "powershell.exe",
+                                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                                         Verb = "runas",
                                         UseShellExecute = true,
                                         WindowStyle = ProcessWindowStyle.Hidden
                                     };
                                     psi.ArgumentList.Add("-NoProfile");
                                     psi.ArgumentList.Add("-NonInteractive");
-                                    psi.ArgumentList.Add("-ExecutionPolicy");
-                                    psi.ArgumentList.Add("RemoteSigned");
                                     psi.ArgumentList.Add("-Command");
                                     psi.ArgumentList.Add(script);
 
@@ -139,11 +151,11 @@ public partial class FormServizi : Form
                         }
                     }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 _ = richTextBox1.Invoke((MethodInvoker)(() =>
                 {
-                    richTextBox1.AppendText($"❌ Error");
+                    richTextBox1.AppendText($"❌ {ex.GetBaseException().Message}");
                 }));
             }
         }
