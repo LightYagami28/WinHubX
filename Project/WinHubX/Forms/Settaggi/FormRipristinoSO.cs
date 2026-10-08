@@ -442,21 +442,27 @@ namespace WinHubX.Forms.Settaggi
         }
         private string DiskSpeedTest(string deviceId)
         {
+            string tempFile = Path.Combine(Path.GetTempPath(), $"WinHubX-disk-test-{Guid.NewGuid():N}.tmp");
             try
             {
-                string tempFile = Path.Combine(Path.GetTempPath(), "disk_speed_test.tmp");
-                byte[] data = new byte[1024 * 1024 * 50];
-                new Random().NextBytes(data);
+                const int testSizeMb = 50;
+                byte[] data = GC.AllocateUninitializedArray<byte>(testSizeMb * 1024 * 1024);
+                Random.Shared.NextBytes(data);
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                File.WriteAllBytes(tempFile, data);
+                using (FileStream output = new(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.SequentialScan))
+                {
+                    output.Write(data, 0, data.Length);
+                    output.Flush(flushToDisk: true);
+                }
                 stopwatch.Stop();
-                double writeSpeed = (50.0 / (stopwatch.ElapsedMilliseconds / 1000.0));
+                double writeSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
                 stopwatch.Restart();
-                _ = File.ReadAllBytes(tempFile);
+                using (FileStream input = new(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, FileOptions.SequentialScan))
+                {
+                    _ = input.CopyTo(Stream.Null);
+                }
                 stopwatch.Stop();
-                double readSpeed = (50.0 / (stopwatch.ElapsedMilliseconds / 1000.0));
-
-                File.Delete(tempFile);
+                double readSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
 
                 string speedResult = $"Velocità scrittura: {writeSpeed:F2} MB/s | Velocità lettura: {readSpeed:F2} MB/s";
                 LogMessage(speedResult);
@@ -466,6 +472,16 @@ namespace WinHubX.Forms.Settaggi
             {
                 LogError($"Errore test velocità disco: {ex.Message}");
                 return "Errore test velocità disco";
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempFile))
+                        File.Delete(tempFile);
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
             }
         }
 
