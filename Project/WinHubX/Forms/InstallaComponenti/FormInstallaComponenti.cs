@@ -163,8 +163,12 @@ namespace WinHubX.Forms.InstallaComponenti
         }
         private async Task DefenderOn(HardwareInfo hardwareInfo)
         {
-            if (IsWindowsServer())
+            if (await Task.Run(IsWindowsServer))
+            {
+                MessageBox.Show("La funzione DefendNot non viene eseguita su Windows Server.", "WinHubX",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
+            }
 
             DialogResult consent = MessageBox.Show(
                 "Questa funzione registra temporaneamente DefendNot come provider di sicurezza tramite Windows Security Center e può disattivare la protezione in tempo reale di Microsoft Defender.\n\n" +
@@ -244,22 +248,24 @@ namespace WinHubX.Forms.InstallaComponenti
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"DefendNot non avviato: {ex.Message}");
+                Debug.WriteLine($"DefendNot non avviato: {ex}");
+                MessageBox.Show($"DefendNot non è stato avviato.\n{ex.Message}", "WinHubX",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 try
                 {
-
                     if (File.Exists(tempPath))
                         File.Delete(tempPath);
 
                     if (Directory.Exists(workDirectory))
-                        Directory.Delete(workDirectory, true);
+                        Directory.Delete(workDirectory, recursive: true);
                     SetDefenderRegedit(false);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Debug.WriteLine($"Pulizia temporanei DefendNot non completata: {ex}");
                 }
             }
         }
@@ -298,24 +304,31 @@ namespace WinHubX.Forms.InstallaComponenti
             }
             catch (Exception)
             {
-
+                Debug.WriteLine("Impossibile salvare lo stato della funzionalità Defender nel registro.");
             }
         }
         static bool IsWindowsServer()
         {
             try
             {
-                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem");
-                foreach (var os in searcher.Get())
+                using var searcher = new ManagementObjectSearcher("SELECT ProductType FROM Win32_OperatingSystem");
+                using ManagementObjectCollection operatingSystems = searcher.Get();
+                foreach (ManagementObject os in operatingSystems)
                 {
-                    var productType = Convert.ToInt32(os["ProductType"]);
-                    return productType != 1;
+                    using (os)
+                    {
+                        int productType = Convert.ToInt32(os["ProductType"]);
+                        return productType != 1;
+                    }
                 }
+                Debug.WriteLine("WMI non ha restituito Win32_OperatingSystem; DefendNot viene bloccato per sicurezza.");
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Rilevamento Windows Server non riuscito; DefendNot viene bloccato: {ex}");
+                return true;
             }
-            return false;
         }
     }
 }
