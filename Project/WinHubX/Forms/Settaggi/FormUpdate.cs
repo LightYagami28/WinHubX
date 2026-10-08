@@ -8,6 +8,8 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormUpdate : Form
     {
+        private sealed record UpdateSelection(HashSet<string> Disable, HashSet<string> Enable);
+
         private readonly Form1 form1;
         private FormSettaggi formSettaggi;
         private int totalSteps = 0;
@@ -153,17 +155,18 @@ namespace WinHubX.Forms.Settaggi
 
         private void btnAvviaSelezionatiUpda_Click(object sender, EventArgs e)
         {
-            totalSteps = 0;
+            var selection = new UpdateSelection(
+                DisabilitaUpdate.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal),
+                AbilitaUpdate.CheckedItems.Cast<string>().ToHashSet(StringComparer.Ordinal));
+            totalSteps = selection.Disable.Count + selection.Enable.Count;
+            if (totalSteps == 0 || backgroundWorker1.IsBusy)
+            {
+                return;
+            }
 
-            totalSteps = DisabilitaUpdate.CheckedItems.Count + AbilitaUpdate.CheckedItems.Count;
-            if (totalSteps == 0) totalSteps = 1;
             progressBar2.MaxValue = totalSteps;
             progressBar2.Value = 0;
-
-            if (!backgroundWorker1.IsBusy)
-            {
-                backgroundWorker1.RunWorkerAsync();
-            }
+            backgroundWorker1.RunWorkerAsync(selection);
         }
 
         private void btnUpdateEssential_Click(object sender, EventArgs e)
@@ -462,8 +465,13 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
+            if (e.Argument is not UpdateSelection selection)
+            {
+                throw new InvalidOperationException("Selezione delle impostazioni Windows Update non valida.");
+            }
+
             int currentStep = 0;
-            if (DisabilitaUpdate.CheckedItems.Contains("Disabilita Download Automatico Windows Update"))
+            if (selection.Disable.Contains("Disabilita Download Automatico Windows Update"))
             {
                 SetCheckboxState("DisabilitaDownloadAutomaticoWindowsUpdate", true);
                 currentStep++;
@@ -482,7 +490,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaDownloadAutomaticoWindowsUpdate", false);
             }
-            if (DisabilitaUpdate.CheckedItems.Contains("Disabilita Update Prodotti Microsoft"))
+            if (selection.Disable.Contains("Disabilita Update Prodotti Microsoft"))
             {
                 SetCheckboxState("DisabilitaUpdateProdottiMicrosoft", true);
                 currentStep++;
@@ -518,7 +526,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaUpdateProdottiMicrosoft", false);
             }
-            if (DisabilitaUpdate.CheckedItems.Contains("Disabilita Download Driver Windows Update"))
+            if (selection.Disable.Contains("Disabilita Download Driver Windows Update"))
             {
                 SetCheckboxState("DisabilitaDownloadDriverWindowsUpdate", true);
                 currentStep++;
@@ -537,7 +545,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaDownloadDriverWindowsUpdate", false);
             }
-            if (DisabilitaUpdate.CheckedItems.Contains("Disabilita Riavvio Automatico Windows Update"))
+            if (selection.Disable.Contains("Disabilita Riavvio Automatico Windows Update"))
             {
                 SetCheckboxState("DisabilitaRiavvioAutomaticoWindowsUpdate", true);
                 currentStep++;
@@ -562,7 +570,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaRiavvioAutomaticoWindowsUpdate", false);
             }
-            if (DisabilitaUpdate.CheckedItems.Contains("Disabilita Notifiche Update"))
+            if (selection.Disable.Contains("Disabilita Notifiche Update"))
             {
                 SetCheckboxState("DisabilitaNotificheUpdate", true);
                 currentStep++;
@@ -580,7 +588,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaNotificheUpdate", false);
             }
-            if (AbilitaUpdate.CheckedItems.Contains("Abilita Download Automatico Windows Update"))
+            if (selection.Enable.Contains("Abilita Download Automatico Windows Update"))
             {
                 SetCheckboxState("AbilitaDownloadAutomaticoWindowsUpdate", true);
                 currentStep++;
@@ -598,7 +606,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaDownloadAutomaticoWindowsUpdate", false);
             }
-            if (AbilitaUpdate.CheckedItems.Contains("Abilita Update Prodotti Microsoft"))
+            if (selection.Enable.Contains("Abilita Update Prodotti Microsoft"))
             {
                 SetCheckboxState("AbilitaUpdateProdottiMicrosoft", true);
                 currentStep++;
@@ -633,7 +641,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaUpdateProdottiMicrosoft", false);
             }
-            if (AbilitaUpdate.CheckedItems.Contains("Abilita Download Driver Windows Update"))
+            if (selection.Enable.Contains("Abilita Download Driver Windows Update"))
             {
                 SetCheckboxState("AbilitaDownloadDriverWindowsUpdate", true);
                 currentStep++;
@@ -651,7 +659,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaDownloadDriverWindowsUpdate", false);
             }
-            if (AbilitaUpdate.CheckedItems.Contains("Abilita Riavvio Automatico Windows Update"))
+            if (selection.Enable.Contains("Abilita Riavvio Automatico Windows Update"))
             {
                 SetCheckboxState("AbilitaRiavvioAutomaticoWindowsUpdate", true);
                 currentStep++;
@@ -669,7 +677,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaRiavvioAutomaticoWindowsUpdate", false);
             }
-            if (AbilitaUpdate.CheckedItems.Contains("Abilita Notifiche Update"))
+            if (selection.Enable.Contains("Abilita Notifiche Update"))
             {
                 SetCheckboxState("AbilitaNotificheUpdate", true);
                 currentStep++;
