@@ -357,7 +357,7 @@ namespace WinHubX.Forms.Base
         private async Task LoadWimInfoAsync(string wimPath)
         {
             string output = await RunPowerShellOutputAsync(
-                $"dism /english /Get-WimInfo /WimFile:'{wimPath}'"
+                $"dism /english /Get-WimInfo /WimFile:'{EscapePowerShellLiteral(wimPath)}'"
             );
 
             var matches = Regex.Matches(output, @"Name\s*:\s*(.+)");
@@ -378,15 +378,7 @@ namespace WinHubX.Forms.Base
         {
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-Command \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
+                StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
             await process.WaitForExitAsync();
@@ -397,21 +389,32 @@ namespace WinHubX.Forms.Base
         {
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-Command \"{command}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
+                StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
             string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
             return output;
         }
+
+        private static ProcessStartInfo CreatePowerShellStartInfo(string command)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(command);
+            return startInfo;
+        }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
