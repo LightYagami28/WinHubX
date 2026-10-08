@@ -103,6 +103,27 @@ namespace WinHubX.Forms.Settaggi
                 throw new InvalidOperationException($"Modifica dell'indicizzazione terminata con codice {process.ExitCode}.");
         }
 
+        private static void RunSystemTool(string executableName, params string[] arguments)
+        {
+            string executablePath = Path.Combine(Environment.SystemDirectory, executableName);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = executablePath,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            foreach (string argument in arguments)
+                startInfo.ArgumentList.Add(argument);
+
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException($"Impossibile avviare {executableName}.");
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"{executableName} è terminato con codice {process.ExitCode}.");
+        }
+
         private void SetCheckboxState(string itemName, bool isChecked)
         {
             using (RegistryKey? key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
@@ -952,7 +973,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 0);
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 0);
-                    _ = System.Diagnostics.Process.Start("cmd.exe", "/C powercfg /hibernate off");
+                    RunSystemTool("powercfg.exe", "/hibernate", "off");
                 }
                 catch (Exception)
                 {
@@ -1108,7 +1129,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2, RegistryView.Registry32);
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2, RegistryView.Registry64);
-                    _ = System.Diagnostics.Process.Start("cmd.exe", "/C sc start SysMain");
+                    RunSystemTool("sc.exe", "start", "SysMain");
                 }
                 catch (Exception)
                 {
@@ -1130,7 +1151,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1, RegistryView.Registry64);
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1, RegistryView.Registry32);
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1, RegistryView.Registry64);
-                    _ = System.Diagnostics.Process.Start("cmd.exe", "/C powercfg /hibernate on");
+                    RunSystemTool("powercfg.exe", "/hibernate", "on");
                 }
                 catch (Exception)
                 {
