@@ -52,6 +52,9 @@ jobs:
         run: dotnet list Project/WinHubX/WinHubX.csproj package --vulnerable --include-transitive
       - name: Publish artifact
         run: dotnet publish Project/WinHubX/WinHubX.csproj --configuration Release --no-restore --output artifacts/WinHubX
+      - name: Smoke test published application startup
+        shell: pwsh
+        run: ./.github/scripts/smoke-test-published-app.ps1 -ExecutablePath ./artifacts/WinHubX/WinHubX.exe
       - uses: actions/upload-artifact@v7
         with:
           name: WinHubX
