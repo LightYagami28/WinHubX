@@ -360,7 +360,7 @@ if ($existingRestorePoints.Count -eq 0) {
             {
                 try
                 {
-                    formMonitoraggio.CleanupResources();
+                    await formMonitoraggio.CleanupResourcesAsync();
                 }
                 catch (Exception ex)
                 {
