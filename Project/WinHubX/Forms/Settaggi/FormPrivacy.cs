@@ -465,32 +465,23 @@ namespace WinHubX.Forms.Settaggi
                         @"SYSTEM\CurrentControlSet\Control\Remote Assistance",
                         "fAllowToGetHelp", 0, RegistryValueKind.DWord, RegistryView.Registry64);
 
-                    string scheduledTaskScript = @"
-            $taskNames = @(
-                'Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser',
-                'Microsoft\Windows\Application Experience\ProgramDataUpdater',
-                'Microsoft\Windows\Autochk\Proxy',
-                'Microsoft\Windows\Customer Experience Improvement Program\Consolidator',
-                'Microsoft\Windows\Customer Experience Improvement Program\UsbCeip',
-                'Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector',
-                'Microsoft\Windows\Feedback\Siuf\DmClient',
-                'Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload',
-                'Microsoft\Windows\Windows Error Reporting\QueueReporting',
-                'Microsoft\Windows\Application Experience\MareBackup',
-                'Microsoft\Windows\Application Experience\StartupAppTask',
-                'Microsoft\Windows\Application Experience\PcaPatchDbTask',
-                'Microsoft\Windows\Maps\MapsUpdateTask'
-            )
-            foreach ($taskName in $taskNames) {
-                $separatorIndex = $taskName.LastIndexOf('\')
-                $taskPath = '\' + $taskName.Substring(0, $separatorIndex + 1)
-                $taskLeafName = $taskName.Substring($separatorIndex + 1)
-                $task = Get-ScheduledTask -TaskName $taskLeafName -TaskPath $taskPath -ErrorAction SilentlyContinue
-                if ($null -ne $task -and $task.State -ne 'Disabled') {
-                    Disable-ScheduledTask -TaskName $taskLeafName -TaskPath $taskPath -ErrorAction Stop | Out-Null
-                }
-            }
-            ";
+                    PrivacyScheduledTaskChange[] taskChanges =
+                    [
+                        new(@"Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser", Enable: false),
+                        new(@"Microsoft\Windows\Application Experience\ProgramDataUpdater", Enable: false),
+                        new(@"Microsoft\Windows\Autochk\Proxy", Enable: false),
+                        new(@"Microsoft\Windows\Customer Experience Improvement Program\Consolidator", Enable: false),
+                        new(@"Microsoft\Windows\Customer Experience Improvement Program\UsbCeip", Enable: false),
+                        new(@"Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector", Enable: false),
+                        new(@"Microsoft\Windows\Feedback\Siuf\DmClient", Enable: false),
+                        new(@"Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload", Enable: false),
+                        new(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: false),
+                        new(@"Microsoft\Windows\Application Experience\MareBackup", Enable: false),
+                        new(@"Microsoft\Windows\Application Experience\StartupAppTask", Enable: false),
+                        new(@"Microsoft\Windows\Application Experience\PcaPatchDbTask", Enable: false),
+                        new(@"Microsoft\Windows\Maps\MapsUpdateTask", Enable: false)
+                    ];
+                    string scheduledTaskScript = PrivacyScheduledTaskScriptBuilder.BuildScript(taskChanges);
                     string elevatedScript = registryChanges.BuildCommand() + Environment.NewLine + scheduledTaskScript;
                     RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(elevatedScript)));
 
@@ -592,14 +583,8 @@ namespace WinHubX.Forms.Settaggi
                             @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", 1,
                             RegistryValueKind.DWord, view);
                     }
-                    ApplyElevatedRegistryMutations(registryChanges, @"
-            $taskPath = '\Microsoft\Windows\Windows Error Reporting\'
-            $taskName = 'QueueReporting'
-            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
-            if ($null -ne $task -and $task.State -ne 'Disabled') {
-                Disable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
-            }
-            ");
+                    ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
+                    [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: false)]));
                 }
                 catch (Exception ex)
                 {
@@ -721,14 +706,9 @@ namespace WinHubX.Forms.Settaggi
                 SetCheckboxState("DisbailitaSchedulDefrag", true);
                 try
                 {
-                    ApplyElevatedRegistryMutations(new ElevatedRegistryMutationBatch(), @"
-            $taskPath = '\Microsoft\Windows\Defrag\'
-            $taskName = 'ScheduledDefrag'
-            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
-            if ($null -ne $task -and $task.State -ne 'Disabled') {
-                Disable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
-            }
-            ");
+                    ApplyElevatedRegistryMutations(new ElevatedRegistryMutationBatch(),
+                        PrivacyScheduledTaskScriptBuilder.BuildScript(
+                            [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Defrag\ScheduledDefrag", Enable: false)]));
                 }
                 catch (Exception ex)
                 {
@@ -1102,14 +1082,8 @@ namespace WinHubX.Forms.Settaggi
                         @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry64);
                     registryChanges.DeleteValue(RegistryHive.LocalMachine,
                         @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry32);
-                    ApplyElevatedRegistryMutations(registryChanges, @"
-            $taskPath = '\Microsoft\Windows\Windows Error Reporting\'
-            $taskName = 'QueueReporting'
-            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
-            if ($null -ne $task -and $task.State -eq 'Disabled') {
-                Enable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
-            }
-            ");
+                    ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
+                    [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: true)]));
                 }
                 catch (Exception ex)
                 {
@@ -1235,14 +1209,8 @@ namespace WinHubX.Forms.Settaggi
                     registryChanges.SetValue(RegistryHive.LocalMachine,
                         @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag",
                         "ScheduledDefrag", 1, RegistryValueKind.DWord, RegistryView.Registry32);
-                    ApplyElevatedRegistryMutations(registryChanges, @"
-            $taskPath = '\Microsoft\Windows\Defrag\'
-            $taskName = 'ScheduledDefrag'
-            $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction SilentlyContinue
-            if ($null -ne $task -and $task.State -eq 'Disabled') {
-                Enable-ScheduledTask -TaskName $taskName -TaskPath $taskPath -ErrorAction Stop | Out-Null
-            }
-            ");
+                    ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
+                    [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Defrag\ScheduledDefrag", Enable: true)]));
                 }
                 catch (UnauthorizedAccessException ex)
                 {
