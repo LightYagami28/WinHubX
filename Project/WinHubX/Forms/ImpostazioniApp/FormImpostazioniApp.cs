@@ -18,12 +18,28 @@ namespace WinHubX.Forms.ImpostazioniApp
     {
         private string selectedTheme = "";
         private string lingua = "";
-        private static readonly HttpClient client = new HttpClient();
+        private static readonly HttpClient client = CreateHttpClient();
         private string? latestVersion;
         private string? latestUpdateUrl;
         private string? latestReleaseNotes;
         private string? latestUpdateSha256;
         public bool UpdateDetectedAtStartup { get; private set; } = false;
+
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 4,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                AutomaticDecompression = System.Net.DecompressionMethods.None
+            };
+
+            return new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+        }
+
         public FormImpostazioniApp()
         {
             InitializeComponent();
