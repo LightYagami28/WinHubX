@@ -299,7 +299,7 @@ namespace WinHubX.Forms.Base
 
             try
             {
-                ValidateSettingsFile(filePath);
+                RegistryPresetFileValidator.Validate(filePath);
             }
             catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
             {
@@ -318,6 +318,9 @@ namespace WinHubX.Forms.Base
 
             try
             {
+                using FileStream presetFile = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                RegistryPresetFileValidator.Validate(presetFile);
+
                 string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
                 string registryEditorPath = Path.Combine(systemDirectory, "reg.exe");
                 if (!File.Exists(registryEditorPath))
@@ -361,40 +364,6 @@ namespace WinHubX.Forms.Base
                 _ = MessageBox.Show($"Importazione o applicazione non completata:\n{ex.GetBaseException().Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private static void ValidateSettingsFile(string filePath)
-        {
-            string[] lines = File.ReadAllLines(filePath);
-            bool hasSupportedHeader = lines.Any(static line =>
-                line.Trim().Equals("Windows Registry Editor Version 5.00", StringComparison.OrdinalIgnoreCase)
-                || line.Trim().Equals("REGEDIT4", StringComparison.OrdinalIgnoreCase));
-            if (!hasSupportedHeader)
-                throw new InvalidDataException("Il file non è un'esportazione valida del Registro di Windows.");
-
-            const string allowedKey = @"HKEY_CURRENT_USER\Software\WinHubX";
-            bool hasSettingsKey = false;
-            foreach (string line in lines)
-            {
-                string section = line.Trim();
-                if (section.Length < 2 || section[0] != '[' || section[^1] != ']')
-                    continue;
-
-                string registryKey = section[1..^1];
-                if (registryKey.Length > 0 && registryKey[0] == '-')
-                    registryKey = registryKey[1..];
-
-                if (!registryKey.Equals(allowedKey, StringComparison.OrdinalIgnoreCase)
-                    && !registryKey.StartsWith(allowedKey + "\\", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidDataException("Il file può contenere solo le impostazioni sotto HKCU\\Software\\WinHubX.");
-                }
-
-                hasSettingsKey = true;
-            }
-
-            if (!hasSettingsKey)
-                throw new InvalidDataException("Il file non contiene impostazioni WinHubX da importare.");
         }
 
         private async Task ApplicaFormSelezionatiAsync()
