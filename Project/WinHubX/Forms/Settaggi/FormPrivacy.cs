@@ -287,6 +287,36 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            if (e.Error is not null)
+            {
+                _ = MessageBox.Show(
+                    $"Operazione non completata: {e.Error.GetBaseException().Message}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            if (e.Cancelled)
+            {
+                _ = MessageBox.Show("Operazione annullata.", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (e.Result is List<string> failures && failures.Count > 0)
+            {
+                string details = string.Join(Environment.NewLine, failures.Distinct().Take(5));
+                string remaining = failures.Count > 5
+                    ? $"{Environment.NewLine}Altri errori: {failures.Count - 5}."
+                    : string.Empty;
+                _ = MessageBox.Show(
+                    $"Alcune impostazioni privacy non sono state applicate:{Environment.NewLine}{details}{remaining}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
             string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
 
             _ = MessageBox.Show(
@@ -309,6 +339,7 @@ namespace WinHubX.Forms.Settaggi
             }
 
             int currentStep = 0;
+            var failures = new List<string>();
             if (selection.Disable.Contains("Disabilita Opzioni Lingua"))
             {
                 SetCheckboxState("DisabilitaOpzioniLingua", true);
@@ -327,9 +358,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("HttpAcceptLanguageOptOut", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -393,9 +424,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -513,9 +544,9 @@ namespace WinHubX.Forms.Settaggi
     Disable-ScheduledTask -TaskName ""Microsoft\Windows\Maps\MapsUpdateTask"";
         ");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -562,9 +593,9 @@ namespace WinHubX.Forms.Settaggi
                         key32_3?.SetValue("Status", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -597,9 +628,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -631,9 +662,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("DisableDiagnostics", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -665,9 +696,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("DisableWAPPushService", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -707,9 +738,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("DisableHomeGroup", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -734,9 +765,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -780,9 +811,9 @@ namespace WinHubX.Forms.Settaggi
                         key64?.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -807,9 +838,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("MaintenanceDisabled", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -835,9 +866,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("ReservedStorageState", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -887,9 +918,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -924,9 +955,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -995,9 +1026,9 @@ namespace WinHubX.Forms.Settaggi
                         key64SenseAllowed?.SetValue("WiFISenseAllowed", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1033,9 +1064,9 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("ToastEnabled", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1054,9 +1085,9 @@ namespace WinHubX.Forms.Settaggi
                         key?.SetValue("HttpAcceptLanguageOptOut", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1093,9 +1124,9 @@ namespace WinHubX.Forms.Settaggi
                         policyKey?.DeleteValue("DisableWindowsConsumerFeatures", false);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1129,9 +1160,9 @@ namespace WinHubX.Forms.Settaggi
                     StartService("DiagTrack");
                     StartService("dmwappushservice");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1161,9 +1192,9 @@ namespace WinHubX.Forms.Settaggi
                         key?.SetValue("Status", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1200,9 +1231,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1232,9 +1263,9 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ExecutePowerShellScript(@"Set-Service -Name 'DiagTrack' -StartupType 'Automatic'");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1264,9 +1295,9 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ExecutePowerShellScript(@"Set-Service -Name 'dmwappushservice' -StartupType 'Automatic'");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1292,9 +1323,9 @@ namespace WinHubX.Forms.Settaggi
                 Set-Service -Name 'HomeGroupProvider' -StartupType 'Manual';
             ");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1319,13 +1350,13 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1355,13 +1386,13 @@ namespace WinHubX.Forms.Settaggi
                     ModifyRegistryForDefrag(true);
                     ModifyRegistryForDefrag(false);
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1415,13 +1446,13 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1477,13 +1508,13 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1524,13 +1555,13 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1599,13 +1630,13 @@ namespace WinHubX.Forms.Settaggi
                         key64SenseAllowed?.SetValue("WiFISenseAllowed", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
@@ -1642,19 +1673,21 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("ToastEnabled", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (UnauthorizedAccessException)
+                catch (UnauthorizedAccessException ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add(ex.GetBaseException().Message);
                 }
             }
             else
             {
                 SetCheckboxState("AbilitaNotificheTrayCalendario", false);
             }
+
+            e.Result = failures;
         }
 
         private void StopService(string serviceName)
@@ -1673,56 +1706,32 @@ namespace WinHubX.Forms.Settaggi
 
         private void StartService(string serviceName)
         {
-            try
+            using (var serviceController = new ServiceController(serviceName))
             {
-                using (var serviceController = new ServiceController(serviceName))
+                if (serviceController.Status != ServiceControllerStatus.Running)
                 {
-                    if (serviceController.Status != ServiceControllerStatus.Running)
-                    {
-                        serviceController.Start();
-                        serviceController.WaitForStatus(ServiceControllerStatus.Running);
-                    }
-                    using (RegistryKey? key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}", true))
-                    {
-                        key?.SetValue("Start", 2, RegistryValueKind.DWord);
-                    }
+                    serviceController.Start();
+                    serviceController.WaitForStatus(ServiceControllerStatus.Running);
                 }
-            }
-            catch (Exception)
-            {
-
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{serviceName}", true))
+                {
+                    key?.SetValue("Start", 2, RegistryValueKind.DWord);
+                }
             }
         }
+
         private void ModifyRegistryForDefrag(bool is32Bit)
         {
-            try
+            string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag";
+            RegistryView view = is32Bit ? RegistryView.Registry32 : RegistryView.Registry64;
+            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+            using RegistryKey? registryKey = baseKey.OpenSubKey(registryPath, writable: true);
+            if (registryKey is null)
             {
-                string registryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Defrag";
-                RegistryKey? registryKey;
-
-                if (is32Bit)
-                {
-                    registryKey = Registry.LocalMachine.OpenSubKey(registryPath, true);
-                }
-                else
-                {
-                    registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(registryPath, true);
-                }
-
-                if (registryKey != null)
-                {
-                    registryKey.SetValue("ScheduledDefrag", 1, RegistryValueKind.DWord);
-                    registryKey.Close();
-                }
-                else
-                {
-
-                }
+                return;
             }
-            catch (Exception)
-            {
 
-            }
+            registryKey.SetValue("ScheduledDefrag", 1, RegistryValueKind.DWord);
         }
 
         private void AbilitaPrivacy_ItemCheck(object? sender, ItemCheckEventArgs e)
