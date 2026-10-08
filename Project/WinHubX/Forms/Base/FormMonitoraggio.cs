@@ -1029,16 +1029,35 @@ namespace WinHubX.Forms.Base
                 Debug.WriteLine($"Arresto dei monitor non riuscito: {ex}");
             }
 
-            lock (_hardwareSync)
+            try
             {
-                _computer?.Close();
+                lock (_hardwareSync)
+                {
+                    _computer?.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Chiusura del monitor hardware non riuscita: {ex}");
             }
 
-            _cpuCounter?.Dispose();
-            _diskUsageCounter?.Dispose();
-            _ramMonitorTimer?.Dispose();
-            _notifyIcon?.Dispose();
-            _monitoringCancellation.Dispose();
+            DisposeMonitoringResource(_cpuCounter, "contatore CPU");
+            DisposeMonitoringResource(_diskUsageCounter, "contatore disco");
+            DisposeMonitoringResource(_ramMonitorTimer, "timer RAM");
+            DisposeMonitoringResource(_notifyIcon, "icona notifiche");
+            DisposeMonitoringResource(_monitoringCancellation, "cancellazione monitoraggio");
+        }
+
+        private static void DisposeMonitoringResource(IDisposable? resource, string resourceName)
+        {
+            try
+            {
+                resource?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Rilascio di {resourceName} non riuscito: {ex}");
+            }
         }
 
         private void ShowErrorMessage(string message)
