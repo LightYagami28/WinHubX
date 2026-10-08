@@ -288,7 +288,7 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
-        void TakeOwnership(string keyPath, RegistryView registryView)
+        void GrantRegistryTakeOwnershipRight(string keyPath, RegistryView registryView)
         {
             try
             {
@@ -302,23 +302,12 @@ namespace WinHubX.Forms.Settaggi
                             ?? throw new InvalidOperationException("Impossibile determinare l'identità Windows corrente.");
                         security.AddAccessRule(new RegistryAccessRule(sid, RegistryRights.TakeOwnership, AccessControlType.Allow));
                         key.SetAccessControl(security);
-                        key.SetAccessControl(new RegistrySecurity { });
-                        key.SetAccessControl(new RegistrySecurity());
-
-                    }
-                    else
-                    {
-
                     }
                 }
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception ex)
             {
-
-            }
-            catch (Exception)
-            {
-
+                System.Diagnostics.Debug.WriteLine($"Impossibile aggiornare le ACL di HKLM\\{keyPath}: {ex.Message}");
             }
         }
         private void SetStringRegistryValue(string keyPath, string name, string value, RegistryView view)
@@ -328,25 +317,6 @@ namespace WinHubX.Forms.Settaggi
             {
                 key.SetValue(name, value, RegistryValueKind.ExpandString);
             }
-        }
-
-        private void TakeOwnRegistry(string keyPath)
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Verb = "runas",
-                UseShellExecute = true,
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-            };
-            psi.ArgumentList.Add("/c");
-            psi.ArgumentList.Add("takeown");
-            psi.ArgumentList.Add("/f");
-            psi.ArgumentList.Add($"HKEY_LOCAL_MACHINE\\{keyPath}");
-            psi.ArgumentList.Add("/a");
-            using var process = System.Diagnostics.Process.Start(psi)
-                ?? throw new InvalidOperationException("Impossibile avviare takeown.");
-            process.WaitForExit();
         }
 
         private void SetMpPreference(string preference, bool enabled)
@@ -647,8 +617,8 @@ namespace WinHubX.Forms.Settaggi
 
                     foreach (var path in registryPaths)
                     {
-                        TakeOwnership(path, RegistryView.Registry64);
-                        TakeOwnership(path, RegistryView.Registry32);
+                        GrantRegistryTakeOwnershipRight(path, RegistryView.Registry64);
+                        GrantRegistryTakeOwnershipRight(path, RegistryView.Registry32);
                     }
                 }
                 catch (Exception)
@@ -932,7 +902,6 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    TakeOwnRegistry(@"SYSTEM\CurrentControlSet\Services\WinDefend");
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\WinDefend", "Start", 3, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\WinDefend", "AutorunsDisabled", 4, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\WdNisSvc", "Start", 3, RegistryView.Registry64);
