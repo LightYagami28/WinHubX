@@ -216,7 +216,11 @@ namespace WinHubX.Forms.Base
                 string resourcePath1 = $"{assemblyName1}.Resources.WinHubXWSL.ps1";
                 byte[] exeBytes1 = LoadEmbeddedResource1(resourcePath1);
                 scriptPath = Path.Combine(Path.GetTempPath(), $"WinHubXWSL-{Guid.NewGuid():N}.ps1");
-                File.WriteAllBytes(scriptPath, exeBytes1);
+                using (FileStream scriptFile = new(scriptPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 64 * 1024, FileOptions.SequentialScan))
+                {
+                    scriptFile.Write(exeBytes1, 0, exeBytes1.Length);
+                    scriptFile.Flush(flushToDisk: true);
+                }
 
                 StartPowerShell1(scriptPath);
             }
