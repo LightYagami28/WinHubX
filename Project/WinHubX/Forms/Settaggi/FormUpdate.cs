@@ -201,9 +201,9 @@ namespace WinHubX.Forms.Settaggi
                     MessageBoxIcon.Information
                 );
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                ShowOperationError(ex);
             }
         }
 
@@ -292,9 +292,9 @@ namespace WinHubX.Forms.Settaggi
                     MessageBoxIcon.Information
                 );
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                ShowOperationError(ex);
             }
         }
 
@@ -342,40 +342,36 @@ namespace WinHubX.Forms.Settaggi
 
         private void ModificaChiaveRegistro(RegistryView view)
         {
-            try
+            using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Device Metadata", true))
             {
-                using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Device Metadata", true))
-                {
-                    key?.SetValue("PreventDeviceMetadataFromNetwork", 1, RegistryValueKind.DWord);
-                }
-
-                using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DriverSearching", true))
-                {
-                    key?.SetValue("SearchOrderConfig", 0, RegistryValueKind.DWord);
-                }
-
-                using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", true))
-                {
-                    key?.SetValue("ExcludeWUDriversInQualityUpdate", 1, RegistryValueKind.DWord);
-                }
+                key?.SetValue("PreventDeviceMetadataFromNetwork", 1, RegistryValueKind.DWord);
             }
-            catch (Exception)
-            {
 
+            using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DriverSearching", true))
+            {
+                key?.SetValue("SearchOrderConfig", 0, RegistryValueKind.DWord);
+            }
+
+            using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", true))
+            {
+                key?.SetValue("ExcludeWUDriversInQualityUpdate", 1, RegistryValueKind.DWord);
             }
         }
+
+        private void ShowOperationError(Exception exception)
+        {
+            _ = MessageBox.Show(
+                $"L'operazione non è stata completata. {exception.GetBaseException().Message}",
+                "WinHubX",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+
         private void ModificaDownloadAutomatico(RegistryView view)
         {
-            try
+            using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", true))
             {
-                using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view).CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", true))
-                {
-                    key?.SetValue("AUOptions", 2, RegistryValueKind.DWord);
-                }
-            }
-            catch (Exception)
-            {
-
+                key?.SetValue("AUOptions", 2, RegistryValueKind.DWord);
             }
         }
 
@@ -456,9 +452,11 @@ namespace WinHubX.Forms.Settaggi
             }
 
             int currentStep = 0;
+            var failures = new List<string>();
+            int failuresBeforeCurrentOperation = 0;
             if (selection.Disable.Contains("Disabilita Download Automatico Windows Update"))
             {
-                SetCheckboxState("DisabilitaDownloadAutomaticoWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -468,7 +466,11 @@ namespace WinHubX.Forms.Settaggi
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Modifica download automatico Windows Update non riuscita: {ex.Message}");
+                    failures.Add($"Download automatico: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("DisabilitaDownloadAutomaticoWindowsUpdate", true);
                 }
             }
             else
@@ -477,7 +479,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Disable.Contains("Disabilita Update Prodotti Microsoft"))
             {
-                SetCheckboxState("DisabilitaUpdateProdottiMicrosoft", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -504,7 +506,11 @@ namespace WinHubX.Forms.Settaggi
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Rimozione del servizio Microsoft Update non riuscita: {ex.Message}");
+                    failures.Add($"Microsoft Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("DisabilitaUpdateProdottiMicrosoft", true);
                 }
             }
             else
@@ -513,7 +519,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Disable.Contains("Disabilita Download Driver Windows Update"))
             {
-                SetCheckboxState("DisabilitaDownloadDriverWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -521,9 +527,13 @@ namespace WinHubX.Forms.Settaggi
                     ModificaChiaveRegistro(RegistryView.Registry32);
                     ModificaChiaveRegistro(RegistryView.Registry64);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Driver Windows Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("DisabilitaDownloadDriverWindowsUpdate", true);
                 }
             }
             else
@@ -532,7 +542,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Disable.Contains("Disabilita Riavvio Automatico Windows Update"))
             {
-                SetCheckboxState("DisabilitaRiavvioAutomaticoWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -546,9 +556,13 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Riavvio automatico: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("DisabilitaRiavvioAutomaticoWindowsUpdate", true);
                 }
             }
             else
@@ -557,7 +571,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Disable.Contains("Disabilita Notifiche Update"))
             {
-                SetCheckboxState("DisabilitaNotificheUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -566,7 +580,11 @@ namespace WinHubX.Forms.Settaggi
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Disabilitazione notifiche Windows Update non riuscita: {ex.Message}");
+                    failures.Add($"Notifiche Windows Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("DisabilitaNotificheUpdate", true);
                 }
             }
             else
@@ -575,16 +593,20 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Enable.Contains("Abilita Download Automatico Windows Update"))
             {
-                SetCheckboxState("AbilitaDownloadAutomaticoWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
                     RimuoviAUOptions();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Ripristino download automatico: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("AbilitaDownloadAutomaticoWindowsUpdate", true);
                 }
             }
             else
@@ -593,7 +615,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Enable.Contains("Abilita Update Prodotti Microsoft"))
             {
-                SetCheckboxState("AbilitaUpdateProdottiMicrosoft", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -614,12 +636,19 @@ namespace WinHubX.Forms.Settaggi
                         ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
                     {
                         process.WaitForExit();
-
+                        if (process.ExitCode != 0)
+                        {
+                            throw new InvalidOperationException($"Attivazione del servizio Microsoft Update terminata con codice {process.ExitCode}.");
+                        }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Servizio Microsoft Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("AbilitaUpdateProdottiMicrosoft", true);
                 }
             }
             else
@@ -628,16 +657,20 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Enable.Contains("Abilita Download Driver Windows Update"))
             {
-                SetCheckboxState("AbilitaDownloadDriverWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
                     RimuoviDriverUpdate();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Ripristino driver Windows Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("AbilitaDownloadDriverWindowsUpdate", true);
                 }
             }
             else
@@ -646,16 +679,20 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Enable.Contains("Abilita Riavvio Automatico Windows Update"))
             {
-                SetCheckboxState("AbilitaRiavvioAutomaticoWindowsUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
                     RimuoviRiavvioAutomatico();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    failures.Add($"Ripristino riavvio automatico: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("AbilitaRiavvioAutomaticoWindowsUpdate", true);
                 }
             }
             else
@@ -664,7 +701,7 @@ namespace WinHubX.Forms.Settaggi
             }
             if (selection.Enable.Contains("Abilita Notifiche Update"))
             {
-                SetCheckboxState("AbilitaNotificheUpdate", true);
+                failuresBeforeCurrentOperation = failures.Count;
                 currentStep++;
                 backgroundWorker1.ReportProgress(currentStep);
                 try
@@ -673,13 +710,19 @@ namespace WinHubX.Forms.Settaggi
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Riabilitazione notifiche Windows Update non riuscita: {ex.Message}");
+                    failures.Add($"Ripristino notifiche Windows Update: {ex.GetBaseException().Message}");
+                }
+                if (failures.Count == failuresBeforeCurrentOperation)
+                {
+                    SetCheckboxState("AbilitaNotificheUpdate", true);
                 }
             }
             else
             {
                 SetCheckboxState("AbilitaNotificheUpdate", false);
             }
+
+            e.Result = failures;
         }
 
         private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
@@ -689,6 +732,36 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
+            if (e.Error is not null)
+            {
+                ShowOperationError(e.Error);
+                return;
+            }
+
+            if (e.Cancelled)
+            {
+                _ = MessageBox.Show(
+                    "Operazione annullata.",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (e.Result is List<string> failures && failures.Count > 0)
+            {
+                string details = string.Join(Environment.NewLine, failures.Take(5));
+                string remaining = failures.Count > 5
+                    ? $"{Environment.NewLine}Altri errori: {failures.Count - 5}."
+                    : string.Empty;
+                _ = MessageBox.Show(
+                    $"Alcune impostazioni non sono state applicate:{Environment.NewLine}{details}{remaining}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
             string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
 
             _ = MessageBox.Show(
