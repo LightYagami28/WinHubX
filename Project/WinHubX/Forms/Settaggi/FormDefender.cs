@@ -417,21 +417,20 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = "powershell.exe",
-                        Arguments = "Disable-WindowsOptionalFeature -online -FeatureName \"Windows-Defender-ApplicationGuard\" -NoRestart -WarningAction SilentlyContinue",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
                     };
+                    startInfo.ArgumentList.Add("-NoProfile");
+                    startInfo.ArgumentList.Add("-NonInteractive");
+                    startInfo.ArgumentList.Add("-Command");
+                    startInfo.ArgumentList.Add("Disable-WindowsOptionalFeature -Online -FeatureName 'Windows-Defender-ApplicationGuard' -NoRestart -WarningAction SilentlyContinue");
 
                     using (var process = System.Diagnostics.Process.Start(startInfo)
                         ?? throw new InvalidOperationException("Impossibile avviare la modifica di Windows Defender."))
                     {
                         process.WaitForExit();
 
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
                     }
                 }
                 catch (Exception)
@@ -705,21 +704,20 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = "powershell.exe",
-                        Arguments = "Enable-WindowsOptionalFeature -online -FeatureName \"Windows-Defender-ApplicationGuard\" -NoRestart -WarningAction SilentlyContinue",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
                     };
+                    startInfo.ArgumentList.Add("-NoProfile");
+                    startInfo.ArgumentList.Add("-NonInteractive");
+                    startInfo.ArgumentList.Add("-Command");
+                    startInfo.ArgumentList.Add("Enable-WindowsOptionalFeature -Online -FeatureName 'Windows-Defender-ApplicationGuard' -NoRestart -WarningAction SilentlyContinue");
 
                     using (var process = System.Diagnostics.Process.Start(startInfo)
                         ?? throw new InvalidOperationException("Impossibile avviare la modifica di Windows Defender."))
                     {
                         process.WaitForExit();
 
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
                     }
                 }
                 catch (Exception)
