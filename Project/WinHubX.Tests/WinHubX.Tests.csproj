@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.v3.mtp-v2" Version="4.0.1" />
-    <PackageReference Include="Microsoft.Testing.Extensions.Telemetry" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport.Abstractions" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Testing.Platform" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.1" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.12" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Microsoft.Testing.Extensions.Telemetry" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport.Abstractions" />
+    <PackageReference Include="Microsoft.Testing.Platform" />
+    <PackageReference Include="Microsoft.Testing.Platform.MSBuild" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
   <ItemGroup>
