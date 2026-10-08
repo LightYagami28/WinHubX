@@ -306,9 +306,16 @@ namespace WinHubX
         {
             try
             {
-                using var searcher = new ManagementObjectSearcher("SELECT Name FROM Win32_Processor");
+                using var searcher = new ManagementObjectSearcher(
+                    "SELECT Name, NumberOfLogicalProcessors FROM Win32_Processor");
                 foreach (var item in searcher.Get())
-                    return item["Name"]?.ToString() ?? "Sconosciuto";
+                {
+                    string name = item["Name"]?.ToString()?.Trim() ?? "Sconosciuto";
+                    string threads = item["NumberOfLogicalProcessors"]?.ToString() ?? "";
+                    return string.IsNullOrWhiteSpace(threads)
+                        ? name
+                        : $"{name} ({threads} thread logici)";
+                }
             }
             catch { }
             return "Sconosciuto";
@@ -326,9 +333,8 @@ namespace WinHubX
                 if (obj == null) return "Sconosciuta";
 
                 long totalBytes = Convert.ToInt64(obj["TotalPhysicalMemory"]);
-                int totalGB = (int)Math.Round(totalBytes / (1024.0 * 1024 * 1024));
-
-                return $"{totalGB} GB";
+                double totalGiB = totalBytes / (1024d * 1024 * 1024);
+                return $"{totalGiB:0.0} GB";
             }
             catch
             {
@@ -372,9 +378,11 @@ namespace WinHubX
 
                         if (mediaType.Contains("HDD", StringComparison.OrdinalIgnoreCase) ||
                             mediaType.Contains("Fixed", StringComparison.OrdinalIgnoreCase) ||
-                            interfaceType.Equals("IDE", StringComparison.OrdinalIgnoreCase) ||
-                            interfaceType.Equals("SATA", StringComparison.OrdinalIgnoreCase))
+                            interfaceType.Equals("IDE", StringComparison.OrdinalIgnoreCase))
                             return $"HDD ({model})";
+
+                        if (interfaceType.Equals("SATA", StringComparison.OrdinalIgnoreCase))
+                            return $"Unità SATA ({model})";
 
                         return $"Sconosciuto ({model})";
                     }
