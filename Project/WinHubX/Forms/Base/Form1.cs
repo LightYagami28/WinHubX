@@ -33,6 +33,7 @@ namespace WinHubX
         private const int WM_NCHITTEST = 0x84;
         private Form? previousForm;
         private Form? activeForm;
+        private Button? updateAvailableButton;
 
         protected override void WndProc(ref Message m)
         {
@@ -428,7 +429,7 @@ if ($existingRestorePoints.Count -eq 0) {
 
             if (AppConfig.CheckUpdatesOnStartup)
             {
-                var impostazioni = new FormImpostazioniApp();
+                using var impostazioni = new FormImpostazioniApp();
                 bool updateAvailable = await impostazioni.VerificaAggiornamentiAutomaticiAsync();
                 if (impostazioni.UpdateDetectedAtStartup)
                 {
@@ -488,19 +489,42 @@ if ($existingRestorePoints.Count -eq 0) {
 
         private void cuiPictureBox1_Click(object sender, EventArgs e)
         {
-            FormImpostazioniApp formImpostazioniApp = new FormImpostazioniApp();
-            formImpostazioniApp.Show();
+            ShowSettingsWindow();
+        }
+
+        private void ShowSettingsWindow()
+        {
+            var settings = new FormImpostazioniApp();
+            settings.FormClosed += (_, _) => settings.Dispose();
+            settings.Show(this);
         }
 
 
         private void MostraNotificaAggiornamento()
         {
-            MessageBox.Show(
-                LanguageManager.GetTranslation("Form1", "aggiornamento_disponibile_msg"),
-                LanguageManager.GetTranslation("Form1", "aggiornamento_disponibile_title"),
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+            if (updateAvailableButton is not null || panel3.IsDisposed)
+                return;
+
+            updateAvailableButton = new Button
+            {
+                Name = "updateAvailableButton",
+                Text = LanguageManager.GetTranslation("Form1", "update_available_button"),
+                AccessibleName = LanguageManager.GetTranslation("Form1", "update_available_button"),
+                AccessibleDescription = LanguageManager.GetTranslation("Form1", "update_available_description"),
+                AutoSize = false,
+                Size = new Size(184, 32),
+                Location = new Point(Math.Max(8, picMinimizzaApp.Left - 196), Math.Max(4, (panel3.ClientSize.Height - 32) / 2)),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                BackColor = Color.FromArgb(255, 190, 70),
+                ForeColor = Color.FromArgb(35, 35, 35),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            updateAvailableButton.FlatAppearance.BorderSize = 0;
+            updateAvailableButton.Click += (_, _) => ShowSettingsWindow();
+            panel3.Controls.Add(updateAvailableButton);
+            updateAvailableButton.BringToFront();
         }
     }
 }

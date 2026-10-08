@@ -64,7 +64,9 @@
     "restorepoint_title": "Punto di Ripristino",
     "restorepoint_message": "Vuoi creare un punto di ripristino prima di accedere alle impostazioni?",
     "aggiornamento_disponibile_msg": "È disponibile un aggiornamento!\nVai in Impostazioni per aggiornare",
-    "aggiornamento_disponibile_title": "WinHubX"
+    "aggiornamento_disponibile_title": "WinHubX",
+    "update_available_button": "Aggiornamento disponibile",
+    "update_available_description": "Apri le impostazioni per visualizzare e installare l'aggiornamento"
   },
   "FormMonitoraggio": {
     "monitoron": "Monitoraggio Attivo",

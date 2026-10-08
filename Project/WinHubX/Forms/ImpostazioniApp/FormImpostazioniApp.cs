@@ -352,7 +352,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                 return false;
             }
 
-            var result = await CheckForUpdatesAsync();
+            var result = await CheckForUpdatesAsync(reportErrors: false);
 
             if (result.UpdateAvailable)
             {
@@ -373,31 +373,20 @@ namespace WinHubX.Forms.ImpostazioniApp
         }
 
 
-        private async Task<UpdateInfoResult> CheckForUpdatesAsync()
+        private async Task<UpdateInfoResult> CheckForUpdatesAsync(bool reportErrors = true)
         {
-            string configUrl = "https://raw.githubusercontent.com/LightYagami28/WinHubX-Resource/refs/heads/main/Dipendenze.json";
+            const string updateManifestUrl = "https://raw.githubusercontent.com/LightYagami28/WinHubX/refs/heads/main/update.json";
             string currentVersion = AppConfig.CurrentVersion;
 
             try
             {
-                var configResponse = await client.GetStringAsync(configUrl);
-                JObject configData = JObject.Parse(configResponse);
-                string updateInfoUrl = configData["Form1"]?["updateInfoUrl"]?.Value<string>()
-                    ?? throw new InvalidOperationException("URL aggiornamenti non presente nella configurazione.");
-                EnsureTrustedHttpsUrl(updateInfoUrl, "manifest aggiornamenti");
-
-                var response = await client.GetStringAsync(updateInfoUrl);
+                string response = await GetTrustedResponseStringAsync(updateManifestUrl, "manifest aggiornamenti");
                 JObject updateInfo = JObject.Parse(response);
 
-                string latestVersion = updateInfo["version"]?.Value<string>()
-                    ?? throw new InvalidOperationException("Versione aggiornata non presente.");
-                string updateUrl = updateInfo["updateUrl"]?.Value<string>()
-                    ?? throw new InvalidOperationException("URL aggiornamento non presente.");
-                EnsureTrustedHttpsUrl(updateUrl, "pacchetto aggiornamento");
-                string? sha256 = updateInfo["sha256"]?.Value<string>();
-                if (!string.IsNullOrWhiteSpace(sha256)
-                    && (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit)))
-                    throw new InvalidOperationException("SHA-256 non valido nel manifest aggiornamenti.");
+                ValidatedUpdateManifest manifest = UpdateManifestValidator.Validate(
+                    updateInfo["version"]?.Value<string>(),
+                    updateInfo["updateUrl"]?.Value<string>(),
+                    updateInfo["sha256"]?.Value<string>());
 
                 string userLang = Thread.CurrentThread.CurrentUICulture
                     .TwoLetterISOLanguageName.ToUpper();
@@ -406,18 +395,29 @@ namespace WinHubX.Forms.ImpostazioniApp
 
                 return new UpdateInfoResult
                 {
-                    UpdateAvailable = IsNewerVersion(latestVersion, currentVersion),
-                    LatestVersion = latestVersion,
-                    UpdateUrl = updateUrl,
+                    UpdateAvailable = IsNewerVersion(manifest.Version, currentVersion),
+                    LatestVersion = manifest.Version,
+                    UpdateUrl = manifest.UpdateUrl,
                     ReleaseNotes = releaseNotes,
-                    Sha256 = sha256
+                    Sha256 = manifest.Sha256
                 };
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"Controllo aggiornamenti non riuscito: {ex}");
+                if (reportErrors && !IsDisposed)
+                    MessageBox.Show($"Impossibile controllare gli aggiornamenti: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return new UpdateInfoResult { UpdateAvailable = false };
             }
+        }
+
+        private async Task<string> GetTrustedResponseStringAsync(string url, string description)
+        {
+            UpdateManifestValidator.EnsureTrustedHttpsUrl(url, description);
+            using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseContentRead);
+            response.EnsureSuccessStatusCode();
+            UpdateManifestValidator.EnsureTrustedHttpsUrl(response.RequestMessage?.RequestUri?.ToString(), $"reindirizzamento {description}");
+            return await response.Content.ReadAsStringAsync();
         }
 
         private static bool IsNewerVersion(string candidate, string current)
@@ -425,25 +425,6 @@ namespace WinHubX.Forms.ImpostazioniApp
             return Version.TryParse(candidate, out Version? candidateVersion)
                 && Version.TryParse(current, out Version? currentVersion)
                 && candidateVersion > currentVersion;
-        }
-
-        private static void EnsureTrustedHttpsUrl(string value, string description)
-        {
-            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
-                || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
-                || uri.UserInfo.Length != 0
-                || !IsTrustedUpdateHost(uri.Host))
-            {
-                throw new InvalidOperationException($"URL non attendibile per {description}.");
-            }
-        }
-
-        private static bool IsTrustedUpdateHost(string host)
-        {
-            return host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
-                || host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
-                || host.Equals("objects.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
-                || host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetReleaseNotesByLanguage(JToken? releaseNotesObject, string language)
@@ -477,18 +458,28 @@ namespace WinHubX.Forms.ImpostazioniApp
                 progressForm.SetMarquee();
                 try
                 {
+                    if (!UpdateManifestValidator.IsValidSha256(expectedSha256))
+                        throw new InvalidOperationException("Aggiornamento interrotto: SHA-256 assente o non valido.");
+
                     await DownloadFileWithProgress(updateUrl, updateFilePath, progressForm);
-                    if (!string.IsNullOrWhiteSpace(expectedSha256))
-                    {
-                        await using FileStream downloadedFile = File.OpenRead(updateFilePath);
-                        byte[] actualHash = await SHA256.HashDataAsync(downloadedFile);
-                        string actualSha256 = Convert.ToHexString(actualHash);
-                        if (!actualSha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
-                            throw new InvalidOperationException("Il controllo SHA-256 del pacchetto aggiornamento non è riuscito.");
-                    }
+                    await using FileStream downloadedFile = File.OpenRead(updateFilePath);
+                    byte[] actualHash = await SHA256.HashDataAsync(downloadedFile);
+                    string actualSha256 = Convert.ToHexString(actualHash);
+                    if (!actualSha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("Il controllo SHA-256 del pacchetto aggiornamento non è riuscito.");
                     string currentExecutablePath = Application.ExecutablePath;
-                    File.Move(currentExecutablePath, Path.ChangeExtension(currentExecutablePath, ".old"), true);
-                    File.Move(updateFilePath, currentExecutablePath);
+                    string backupExecutablePath = Path.ChangeExtension(currentExecutablePath, ".old");
+                    File.Move(currentExecutablePath, backupExecutablePath, true);
+                    try
+                    {
+                        File.Move(updateFilePath, currentExecutablePath);
+                    }
+                    catch
+                    {
+                        if (!File.Exists(currentExecutablePath) && File.Exists(backupExecutablePath))
+                            File.Move(backupExecutablePath, currentExecutablePath);
+                        throw;
+                    }
                     _ = Process.Start(currentExecutablePath);
                     Application.Exit();
                 }
@@ -499,14 +490,24 @@ namespace WinHubX.Forms.ImpostazioniApp
                 finally
                 {
                     progressForm.CompleteOperation();
+                    try
+                    {
+                        if (File.Exists(updateFilePath))
+                            File.Delete(updateFilePath);
+                    }
+                    catch (IOException cleanupException)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"File temporaneo aggiornamento non rimosso: {cleanupException.Message}");
+                    }
                 }
             }
         }
 
         private async Task DownloadFileWithProgress(string url, string filePath, ProgressForm progressForm)
         {
-            EnsureTrustedHttpsUrl(url, "pacchetto aggiornamento");
+            UpdateManifestValidator.EnsureTrustedHttpsUrl(url, "pacchetto aggiornamento");
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            UpdateManifestValidator.EnsureTrustedHttpsUrl(response.RequestMessage?.RequestUri?.ToString(), "reindirizzamento pacchetto aggiornamento");
             _ = response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault();
             if (totalBytes <= 0)
