@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +14,9 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport.Abstractions" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.1" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="Newtonsoft.Json" Version="14.0.1-beta2" />
+    <PackageVersion Include="System.IO.Ports" Version="11.0.0-rc.1.26425.128" />
+    <PackageVersion Include="System.Management" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="TaskScheduler" Version="2.12.2" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
