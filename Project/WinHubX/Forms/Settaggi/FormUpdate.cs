@@ -419,27 +419,36 @@ namespace WinHubX.Forms.Settaggi
             string windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
             string musNotification = Path.Combine(windowsDirectory, "System32", "MusNotification.exe");
             string musNotificationUx = Path.Combine(windowsDirectory, "System32", "MusNotificationUx.exe");
-            string action = enable ? "/allow" : "/deny";
-            string cmdArgument = enable
-                ? $"/c takeown /F \"{musNotification}\" /A && icacls \"{musNotification}\" {action} Everyone:(X) && takeown /F \"{musNotificationUx}\" /A && icacls \"{musNotificationUx}\" {action} Everyone:(X)"
-                : $"/c takeown /F \"{musNotification}\" /A && icacls \"{musNotification}\" {action} Everyone:(X) && takeown /F \"{musNotificationUx}\" /A && icacls \"{musNotificationUx}\" {action} Everyone:(X)";
+            string escapedNotification = EscapePowerShellLiteral(musNotification);
+            string escapedNotificationUx = EscapePowerShellLiteral(musNotificationUx);
+            string accessControlCommand = enable
+                ? "& $icacls $target /remove:d Everyone"
+                : "& $icacls $target /deny 'Everyone:(X)'";
+            string script = $"$ErrorActionPreference = 'Stop'; $takeown = Join-Path $env:SystemRoot 'System32\\takeown.exe'; $icacls = Join-Path $env:SystemRoot 'System32\\icacls.exe'; $targets = @('{escapedNotification}', '{escapedNotificationUx}'); foreach ($target in $targets) {{ & $takeown /F $target /A; if ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}; {accessControlCommand}; if ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }} }}";
+            string encodedScript = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
 
             var startInfo = new ProcessStartInfo()
             {
-                FileName = "cmd.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
             };
-            startInfo.ArgumentList.Add("/c");
-            startInfo.ArgumentList.Add(cmdArgument[3..]);
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-EncodedCommand");
+            startInfo.ArgumentList.Add(encodedScript);
 
             using (var process = Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Impossibile avviare il processo di sistema."))
             {
                 process.WaitForExit();
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"La modifica dei permessi delle notifiche Windows Update è terminata con codice {process.ExitCode}.");
             }
         }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
         private void RimuoviAUOptions()
         {
@@ -562,9 +571,9 @@ namespace WinHubX.Forms.Settaggi
                 {
                     ModificaNotificheUpdate(false);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    Debug.WriteLine($"Disabilitazione notifiche Windows Update non riuscita: {ex.Message}");
                 }
             }
             else
@@ -669,9 +678,9 @@ namespace WinHubX.Forms.Settaggi
                 {
                     ModificaNotificheUpdate(true);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    Debug.WriteLine($"Riabilitazione notifiche Windows Update non riuscita: {ex.Message}");
                 }
             }
             else
