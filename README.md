@@ -32,7 +32,7 @@ Scarica il pacchetto dalla [release più recente](https://github.com/LightYagami
 ```powershell
 dotnet restore Project/WinHubX.sln
 dotnet build Project/WinHubX.sln --configuration Release --warnaserror
-dotnet test Project/WinHubX.sln --configuration Release
+dotnet run --project Project/WinHubX.Tests/WinHubX.Tests.csproj --configuration Release
 ```
 
 La suite include test di sicurezza per la validazione dei preset `.reg` importati.
