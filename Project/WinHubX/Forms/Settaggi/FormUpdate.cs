@@ -602,21 +602,20 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = "powershell.exe",
-                        Arguments = "(New-Object -ComObject Microsoft.Update.ServiceManager).AddService2(\"7971f918-a847-4430-9279-4a52d1efe18d\", 7, \"\")",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        Verb = "runus"
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                        Verb = "runas"
                     };
+                    startInfo.ArgumentList.Add("-NoProfile");
+                    startInfo.ArgumentList.Add("-NonInteractive");
+                    startInfo.ArgumentList.Add("-Command");
+                    startInfo.ArgumentList.Add("(New-Object -ComObject Microsoft.Update.ServiceManager).AddService2('7971f918-a847-4430-9279-4a52d1efe18d', 7, '')");
 
                     using (var process = System.Diagnostics.Process.Start(startInfo)
                         ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
                     {
                         process.WaitForExit();
 
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
                     }
                 }
                 catch (Exception)
