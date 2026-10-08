@@ -396,16 +396,21 @@ namespace WinHubX.Forms.Settaggi
                 { @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", new Tuple<string, int>("SubscribedContent-338388Enabled", 0) },
                 { @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", new Tuple<string, int>("SubscribedContent-338389Enabled", 0) }
                 };
-                    foreach (var registryView in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                    ElevatedRegistryMutationBatch registryChanges = new();
+                    RegistryView[] registryViews = [RegistryView.Registry64, RegistryView.Registry32];
+                    foreach (RegistryView registryView in registryViews)
                     {
-                        foreach (var setting in registrySettings)
+                        foreach (var setting in registrySettings.Where(static setting =>
+                                     !setting.Key.StartsWith("Software\\", StringComparison.OrdinalIgnoreCase)))
                         {
-                            using (RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, registryView))
-                            using (RegistryKey subKey = baseKey.CreateSubKey(setting.Key, writable: true))
-                            {
-                                subKey?.SetValue(setting.Value.Item1, setting.Value.Item2, RegistryValueKind.DWord);
-                            }
+                            registryChanges.SetValue(RegistryHive.LocalMachine, setting.Key,
+                                setting.Value.Item1, setting.Value.Item2, RegistryValueKind.DWord, registryView);
                         }
+                    }
+                    ApplyElevatedRegistryMutations(registryChanges);
+
+                    foreach (RegistryView registryView in registryViews)
+                    {
                         using (RegistryKey baseKeyCU = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, registryView))
                         {
                             foreach (var setting in registrySettings.Where(s => s.Key.StartsWith("Software", StringComparison.OrdinalIgnoreCase)))
@@ -994,6 +999,9 @@ namespace WinHubX.Forms.Settaggi
                     ElevatedRegistryMutationBatch registryChanges = new();
                     registryChanges.DeleteValue(RegistryHive.LocalMachine,
                         @"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableWindowsConsumerFeatures",
+                        RegistryView.Registry64);
+                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableThirdPartySuggestions",
                         RegistryView.Registry64);
                     ApplyElevatedRegistryMutations(registryChanges);
 
