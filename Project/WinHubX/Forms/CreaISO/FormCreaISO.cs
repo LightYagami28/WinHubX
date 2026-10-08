@@ -58,33 +58,6 @@ namespace WinHubX.Forms.Base
         string IsoMountLetter = string.Empty;
         string? installwimpath;
 
-        public void ExecuteCommand(string command, bool ShowMessage)
-        {
-            if (!ShowMessage)
-            {
-                var startInfo = new ProcessStartInfo()
-                {
-                    FileName = "powershell.exe",
-                    Arguments = command,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                using (Process? process = Process.Start(startInfo))
-                {
-                    if (process is null) return;
-                    process.WaitForExit();
-
-                    var output = process.StandardOutput.ReadToEnd();
-                    var error = process.StandardError.ReadToEnd();
-                }
-            }
-            else if (ShowMessage)
-            {
-            }
-        }
         private async Task ScaricaFileAsync(string url, string destinazione)
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps)
@@ -209,7 +182,8 @@ namespace WinHubX.Forms.Base
                 return;
             }
 
-            ExecuteCommand("Dismount-DiskImage -ImagePath \"" + selectedFile + "\"", false);
+            _ = await RunPowerShellAsync(
+                $"$ErrorActionPreference = 'Stop'; Dismount-DiskImage -ImagePath '{EscapePowerShellLiteral(selectedFile)}'");
             AppState.IsoMontata = false;
             AppState.IsoPath = null;
 
@@ -381,7 +355,12 @@ namespace WinHubX.Forms.Base
                 StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
+            await Task.WhenAll(outputTask, errorTask);
+            if (!string.IsNullOrWhiteSpace(errorTask.Result))
+                Debug.WriteLine($"PowerShell error: {errorTask.Result.Trim()}");
             return process.ExitCode;
         }
 
@@ -392,9 +371,13 @@ namespace WinHubX.Forms.Base
                 StartInfo = CreatePowerShellStartInfo(command)
             };
             process.Start();
-            string output = await process.StandardOutput.ReadToEndAsync();
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
-            return output;
+            await Task.WhenAll(outputTask, errorTask);
+            if (!string.IsNullOrWhiteSpace(errorTask.Result))
+                Debug.WriteLine($"PowerShell error: {errorTask.Result.Trim()}");
+            return outputTask.Result;
         }
 
         private static ProcessStartInfo CreatePowerShellStartInfo(string command)
