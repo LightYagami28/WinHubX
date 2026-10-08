@@ -365,15 +365,15 @@ namespace WinHubX.Forms.Personalizzazione_office
                 progressBar_office.Value = 30;
                 await Task.Delay(3000);
 
-                string arguments = $"/configure \"{xmlFilePath}\"";
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = binExePath,
-                    Arguments = arguments,
                     WorkingDirectory = tempPath,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                startInfo.ArgumentList.Add("/configure");
+                startInfo.ArgumentList.Add(xmlFilePath);
                 using (Process process = Process.Start(startInfo)
                     ?? throw new InvalidOperationException("Impossibile avviare l'installazione di Office."))
                 {

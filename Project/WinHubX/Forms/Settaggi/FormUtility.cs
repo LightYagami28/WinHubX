@@ -706,14 +706,18 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
 
-                    using (Process process = Process.Start(new ProcessStartInfo
+                    var startInfo = new ProcessStartInfo
                     {
                         FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
-                        Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                    }) ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
+                    };
+                    startInfo.ArgumentList.Add("/IM");
+                    startInfo.ArgumentList.Add("explorer.exe");
+                    startInfo.ArgumentList.Add("/F");
+                    using (Process process = Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
                     {
                         process.WaitForExit();
                     }
@@ -1494,14 +1498,18 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    using (Process process = Process.Start(new ProcessStartInfo
+                    var startInfo = new ProcessStartInfo
                     {
                         FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
-                        Arguments = "/IM explorer.exe /F",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
-                    }) ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
+                    };
+                    startInfo.ArgumentList.Add("/IM");
+                    startInfo.ArgumentList.Add("explorer.exe");
+                    startInfo.ArgumentList.Add("/F");
+                    using (Process process = Process.Start(startInfo)
+                        ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
                     {
                         process.WaitForExit();
                     }
