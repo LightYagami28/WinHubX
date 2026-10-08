@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.ComponentModel;
 using System.Globalization;
 using System.Management;
 using WinHubX.Forms.Base;
@@ -51,6 +52,11 @@ namespace WinHubX.Forms.Settaggi
             {
                 UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "operazioneAnnullata"));
             }
+            catch (Exception ex)
+            {
+                LogMessage($"Errore durante il ripristino: {ex.Message}");
+                _ = MessageBox.Show(this, ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             finally
             {
                 label3.Visible = false;
@@ -59,15 +65,15 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task StartScanAsyncSW(CancellationToken token)
         {
-            var steps = new (string Label, string? Command)[]
+            var steps = new (string Label, string? Executable, string[]? Arguments)[]
             {
-        ("backupRegistro", null),
-        ("controlloFileSistema", "DISM /Online /Cleanup-Image /CheckHealth"),
-        ("scansioneErroriSistema", "DISM /Online /Cleanup-Image /ScanHealth"),
-        ("ripristinoFileSistema", "DISM /Online /Cleanup-Image /RestoreHealth"),
-        ("esecuzioneSfc", "sfc /scannow"),
-        ("puliziaWinSxS", "Dism.exe /online /Cleanup-Image /StartComponentCleanup"),
-        ("pianificazioneChkdsk", "fsutil dirty set C:")
+                ("backupRegistro", null, null),
+                ("controlloFileSistema", "dism.exe", ["/Online", "/Cleanup-Image", "/CheckHealth"]),
+                ("scansioneErroriSistema", "dism.exe", ["/Online", "/Cleanup-Image", "/ScanHealth"]),
+                ("ripristinoFileSistema", "dism.exe", ["/Online", "/Cleanup-Image", "/RestoreHealth"]),
+                ("esecuzioneSfc", "sfc.exe", ["/scannow"]),
+                ("puliziaWinSxS", "dism.exe", ["/online", "/Cleanup-Image", "/StartComponentCleanup"]),
+                ("pianificazioneChkdsk", "fsutil.exe", ["dirty", "set", "C:"])
             };
 
             int total = steps.Length + 1;
@@ -78,8 +84,8 @@ namespace WinHubX.Forms.Settaggi
             foreach (var step in steps.Skip(1))
             {
                 UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", step.Label));
-                if (step.Command != null)
-                    await RunCommandAsync(step.Command, token);
+                if (step.Executable is not null && step.Arguments is not null)
+                    await RunCommandAsync(step.Executable, step.Arguments, token);
 
                 UpdateProgress(++current, total);
             }
@@ -98,8 +104,8 @@ namespace WinHubX.Forms.Settaggi
             string pathHKLM = Path.Combine(desktop, "RegistryBackup_HKLM.reg");
             string pathHKCU = Path.Combine(desktop, "RegistryBackup_HKCU.reg");
 
-            await RunCommandAsync($"reg export HKLM\\SOFTWARE \"{pathHKLM}\" /y", token);
-            await RunCommandAsync($"reg export HKCU \"{pathHKCU}\" /y", token);
+            await RunCommandAsync("reg.exe", ["export", "HKLM\\SOFTWARE", pathHKLM, "/y"], token);
+            await RunCommandAsync("reg.exe", ["export", "HKCU", pathHKCU, "/y"], token);
 
             LogMessage($"Backup registro creato: {pathHKLM} + {pathHKCU}");
         }
@@ -110,32 +116,57 @@ namespace WinHubX.Forms.Settaggi
 
             foreach (string dll in dlls)
             {
-                await RunCommandAsync($"regsvr32 /s {dll}", token);
+                await RunCommandAsync("regsvr32.exe", ["/s", dll], token);
                 LogMessage($"Registrata DLL: {dll}");
             }
         }
 
-        private async Task RunCommandAsync(string command, CancellationToken token)
+        private async Task RunCommandAsync(string executable, IEnumerable<string> arguments, CancellationToken token)
         {
-            var psi = new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c {command}",
+                FileName = Path.Combine(Environment.SystemDirectory, executable),
+                WorkingDirectory = Environment.SystemDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            foreach (string argument in arguments)
+                startInfo.ArgumentList.Add(argument);
 
-            using var process = new Process { StartInfo = psi };
-            process.OutputDataReceived += (_, e) => AppendSafe(e.Data);
-            process.ErrorDataReceived += (_, e) => AppendSafe($"[ERRORE] {e.Data}");
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException($"Impossibile avviare {executable}.");
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+            Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            try
+            {
+                await process.WaitForExitAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+                {
+                    Debug.WriteLine($"Process cancellation failed: {ex.Message}");
+                }
 
-            await process.WaitForExitAsync(token);
+                await process.WaitForExitAsync(CancellationToken.None);
+                _ = await Task.WhenAll(outputTask, errorTask);
+                throw;
+            }
+
+            string output = await outputTask;
+            string error = await errorTask;
+            AppendSafe(output.TrimEnd());
+            AppendSafe(string.IsNullOrWhiteSpace(error) ? string.Empty : $"[ERRORE] {error.TrimEnd()}");
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"{executable} è terminato con codice {process.ExitCode}: {error.Trim()}");
         }
 
         private void AppendSafe(string? text)
