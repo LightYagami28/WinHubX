@@ -1,25 +1,20 @@
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process -Verb runas -FilePath powershell.exe -ArgumentList "$PSCommandPath"
-        break
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = [Security.Principal.WindowsPrincipal]::new($identity)
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $powershellPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $scriptArgument = '"{0}"' -f $PSCommandPath
+    try {
+        $elevatedProcess = Start-Process -FilePath $powershellPath `
+            -ArgumentList @('-NoProfile', '-File', $scriptArgument) `
+            -Verb RunAs -Wait -PassThru
+        exit $elevatedProcess.ExitCode
     }
-    
-####################################
-$path_to_use = Get-Location
+    catch {
+        Write-Error "Impossibile avviare lo script WSL con privilegi amministrativi: $($_.Exception.Message)"
+        exit 1
+    }
+}
 
-# Set location without displaying it
-Set-Location $path_to_use | Out-Null
-####################################
-# Set the registry key path
-$regKeyPath = "HKCU:\Console"
-
-# Set the registry value name and data
-$valueName = "QuickEdit"
-$valueData = 0
-
-# Create the registry value
-New-ItemProperty -Path $regKeyPath -Name $valueName -Value $valueData -PropertyType DWORD -Force | Out-Null
-####################################
-####################################
 # Hide Console
 # Define the function to hide the console
 Add-Type -Name Window -Namespace Console -MemberDefinition '
@@ -118,17 +113,43 @@ $buildButton.Add_Click({
         $Distro = "Oracle"
     }
 
-    Start-Process powershell -ArgumentList "wsl --install; dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart; dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart; wsl --set-default-version 2" -Verb RunAs -Wait
-
-    switch ($Distro) {
-        "Ubuntu" { Start-Process powershell -ArgumentList "wsl --install -d Ubuntu" -Verb RunAs -Wait }
-        "Debian" { Start-Process powershell -ArgumentList "wsl --install -d Debian" -Verb RunAs -Wait }
-        "KaliLinux" { Start-Process powershell -ArgumentList "wsl --install -d kali-linux" -Verb RunAs -Wait }
-        "Opensuse" { Start-Process powershell -ArgumentList "wsl --install -d opensuse-leap-15.5" -Verb RunAs -Wait }
-        "Oracle" { Start-Process powershell -ArgumentList "wsl --install -d oraclelinux_9_1" -Verb RunAs -Wait }
+    $distribution = switch ($Distro) {
+        "Ubuntu" { "Ubuntu" }
+        "Debian" { "Debian" }
+        "KaliLinux" { "kali-linux" }
+        "Opensuse" { "openSUSE-Leap-16.0" }
+        "Oracle" { "OracleLinux_9_5" }
+        default { $null }
     }
 
-    [System.Windows.Forms.MessageBox]::Show("Installazione completata. Per favore, riavvia il computer.", "Installazione WSL", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    if ([string]::IsNullOrWhiteSpace($distribution)) {
+        [System.Windows.Forms.MessageBox]::Show("La distribuzione selezionata non e valida.", "Installazione WSL", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        return
+    }
+
+    $wslPath = Join-Path ([Environment]::SystemDirectory) 'wsl.exe'
+    try {
+        $installProcess = Start-Process -FilePath $wslPath `
+            -ArgumentList @('--install', '--distribution', $distribution, '--no-launch') `
+            -Wait -PassThru
+
+        if ($installProcess.ExitCode -ne 0) {
+            throw "wsl.exe e terminato con codice $($installProcess.ExitCode)."
+        }
+
+        [System.Windows.Forms.MessageBox]::Show(
+            "Installazione WSL avviata correttamente per $distribution. Riavvia Windows se richiesto, poi apri la distribuzione dal menu Start per completare la configurazione dell'utente Linux.",
+            "Installazione WSL",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Information)
+    }
+    catch {
+        [System.Windows.Forms.MessageBox]::Show(
+            "Installazione WSL non riuscita. Dettagli: $($_.Exception.Message)",
+            "Installazione WSL",
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
 })
 $form.Controls.Add($buildButton)
 
