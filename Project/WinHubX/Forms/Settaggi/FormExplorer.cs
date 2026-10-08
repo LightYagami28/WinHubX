@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System.Diagnostics;
 using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Settaggi
@@ -40,8 +41,9 @@ namespace WinHubX.Forms.Settaggi
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Caricamento preferenze Esplora file non riuscito: {ex}");
             }
         }
 
@@ -72,8 +74,14 @@ namespace WinHubX.Forms.Settaggi
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Applicazione preferenze Esplora file non riuscita: {ex}");
+                MessageBox.Show(
+                    $"Impossibile applicare le preferenze di Esplora file. Alcune impostazioni potrebbero essere state aggiornate.\n{ex.Message}",
+                    "WinHubX",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
     }
