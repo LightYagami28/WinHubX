@@ -270,18 +270,35 @@ if ($existingRestorePoints.Count -eq 0) {
 }
 ";
 
-                    string tempScriptPath = Path.Combine(Path.GetTempPath(), "CreateRestorePoint.ps1");
-                    System.IO.File.WriteAllText(tempScriptPath, script);
-
-                    ProcessStartInfo psi = new ProcessStartInfo()
+                    string tempScriptPath = Path.Combine(Path.GetTempPath(), $"WinHubX-RestorePoint-{Guid.NewGuid():N}.ps1");
+                    try
                     {
-                        FileName = "powershell.exe",
-                        Arguments = $"-ExecutionPolicy Bypass -NoProfile -File \"{tempScriptPath}\"",
-                        UseShellExecute = false,
-                        Verb = "runas"
-                    };
+                        System.IO.File.WriteAllText(tempScriptPath, script);
 
-                    Process.Start(psi)?.WaitForExit();
+                        ProcessStartInfo psi = new ProcessStartInfo
+                        {
+                            FileName = "powershell.exe",
+                            UseShellExecute = true,
+                            Verb = "runas",
+                            WindowStyle = ProcessWindowStyle.Hidden
+                        };
+                        psi.ArgumentList.Add("-NoProfile");
+                        psi.ArgumentList.Add("-NonInteractive");
+                        psi.ArgumentList.Add("-File");
+                        psi.ArgumentList.Add(tempScriptPath);
+
+                        using Process restorePointProcess = Process.Start(psi)
+                            ?? throw new InvalidOperationException("Impossibile avviare la creazione del punto di ripristino.");
+                        restorePointProcess.WaitForExit();
+                        if (restorePointProcess.ExitCode != 0)
+                            throw new InvalidOperationException($"Creazione punto di ripristino terminata con codice {restorePointProcess.ExitCode}.");
+                    }
+                    finally
+                    {
+                        try { File.Delete(tempScriptPath); }
+                        catch (IOException) { }
+                        catch (UnauthorizedAccessException) { }
+                    }
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                     string regBackupPath = Path.Combine(desktopPath, $"BackupRegistroWinHubX_{DateTime.Now:yyyyMMdd_HHmmss}.reg");
 
