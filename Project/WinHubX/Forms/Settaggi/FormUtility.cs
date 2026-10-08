@@ -310,16 +310,16 @@ namespace WinHubX.Forms.Settaggi
         {
             try
             {
-                var taskService = new Microsoft.Win32.TaskScheduler.TaskService();
+                using var taskService = new Microsoft.Win32.TaskScheduler.TaskService();
                 var task = taskService.GetTask(taskPath);
                 if (task != null)
                 {
                     task.Enabled = false;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Impossibile disabilitare l’attività pianificata '{taskPath}': {ex}");
             }
         }
 
