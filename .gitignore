@@ -1,1 +1,14 @@
 
+
+# IDE e output di compilazione
+.vs/
+**/bin/
+**/obj/
+publish/
+*.log
+*.diagsession
+*.nettrace
+*.gcdump
+*.etlx
+*.speedscope.json
+*-counters.csv
