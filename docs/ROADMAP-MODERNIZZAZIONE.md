@@ -4,7 +4,7 @@ Roadmap tecnica verificabile per portare WinHubX a uno standard moderno Windows/
 
 ## Criteri finiti di completamento
 
-Lo scope WinHubX è tracciato nei 30 task numerati qui sotto: al checkpoint 2026-10-08 ne risultano chiusi 10 e restano 20. Non si aggiungono refactoring cosmetici fuori da bug riproducibili, rischio di sicurezza, regressioni o requisiti espliciti. Dopo WinHubX, i repository pubblici di MrNico98 richiesti dall'utente avranno una roadmap e una verifica distinte.
+Lo scope WinHubX è tracciato nei 30 task numerati qui sotto: al checkpoint 2026-10-08 ne risultano chiusi 11 e restano 19. Non si aggiungono refactoring cosmetici fuori da bug riproducibili, rischio di sicurezza, regressioni o requisiti espliciti. Dopo WinHubX, i repository pubblici di MrNico98 richiesti dall'utente avranno una roadmap e una verifica distinte.
 
 Il lavoro si considera consegnabile quando ogni task è verificato con evidenze oppure ha un'eccezione motivata e un'alternativa sicura; `main` compila su .NET 10 stabile e il branch separato compila sul target .NET 11 disponibile, con tutti i warning trattati senza soppressioni; test, CI, CodeQL e audit dipendenze sono verdi; avvio e flussi UI pertinenti sono verificati su Windows; ogni dipendenza diretta è alla più recente versione stabile e le transitive sono aggiornate al massimo compatibile, con major incompatibili migrate insieme o sostituite. Restano esplicitamente fuori una certificazione legale NIS2 e la firma Authenticode finché non è disponibile un certificato. Raggiunti questi criteri, si ferma la modernizzazione e si consegna lo stato, non si riapre il ciclo per perfezionismi.
 
@@ -36,7 +36,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 
 - [ ] 19. Rendere tutti i download HTTPS-only con allowlist e timeout.
 - [x] 20. Rendere obbligatori hash SHA-256 per i nuovi artefatti pubblicati dalla CI: `New-ArtifactSha256Manifest.ps1` calcola SHA-256 e dimensione per ogni file, incluso l'eseguibile; il manifest generato è verificato localmente e allegato all'artefatto.
-- [ ] 21. Aggiungere verifica Authenticode quando l’artefatto è firmato.
+- [x] 21. Verificare Authenticode per i binari pubblicati: ogni firma deve risultare valida; i file non firmati sono esplicitamente indicati come `NotSigned` nel manifest, senza bloccare lo stato attuale privo di certificato.
 - [ ] 22. Rendere updater atomico con backup, rollback e controllo del processo avviato.
 - [ ] 23. Eliminare quoting fragile nei processi PowerShell/CMD.
 - [ ] 24. Verificare privilegi minimi e isolare ogni azione che richiede UAC.

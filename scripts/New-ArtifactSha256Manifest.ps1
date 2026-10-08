@@ -24,11 +24,26 @@ $entries = @(
         Where-Object { $_.FullName -ne $manifestPath } |
         Sort-Object { [IO.Path]::GetRelativePath($artifactRoot, $_.FullName) } |
         ForEach-Object {
-            [ordered]@{
+            $entry = [ordered]@{
                 path = [IO.Path]::GetRelativePath($artifactRoot, $_.FullName).Replace('\', '/')
                 sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
                 sizeBytes = $_.Length
             }
+
+            if ([IO.Path]::GetExtension($_.Name) -in @('.exe', '.dll', '.msi', '.msix', '.msixbundle', '.appx', '.appxbundle')) {
+                $signature = Get-AuthenticodeSignature -LiteralPath $_.FullName
+                if ($signature.Status -notin @([Management.Automation.SignatureStatus]::Valid, [Management.Automation.SignatureStatus]::NotSigned)) {
+                    throw "Firma Authenticode non valida per '$($_.Name)': $($signature.Status) — $($signature.StatusMessage)"
+                }
+
+                $entry.authenticodeStatus = $signature.Status.ToString()
+                if ($signature.Status -eq [Management.Automation.SignatureStatus]::Valid) {
+                    $entry.signerSubject = $signature.SignerCertificate.Subject
+                    $entry.signerThumbprint = $signature.SignerCertificate.Thumbprint
+                }
+            }
+
+            $entry
         }
 )
 
