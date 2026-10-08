@@ -28,8 +28,16 @@ jobs:
           languages: csharp
           queries: security-and-quality
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ startsWith(github.ref, 'refs/heads/experiment/net11') && '11.0.x' || '10.0.x' }}
+
+      - name: Restore
+        run: dotnet restore Project/WinHubX/WinHubX.csproj
+
+      - name: Build for CodeQL
+        run: dotnet build Project/WinHubX/WinHubX.csproj --configuration Release --no-restore --warnaserror --nologo
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
