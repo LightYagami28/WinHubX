@@ -72,6 +72,37 @@ namespace WinHubX.Forms.Settaggi
             return LanguageManager.GetTranslation("FormUtility", $"tooltipAbil_{index}");
         }
 
+        private static void SetSystemVolumeIndexing(bool enabled)
+        {
+            string systemDrive = Path.GetPathRoot(Environment.SystemDirectory)
+                ?? throw new InvalidOperationException("Impossibile individuare l'unità di Windows.");
+            systemDrive = systemDrive.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string escapedDrive = systemDrive.Replace("'", "''", StringComparison.Ordinal);
+            string enabledLiteral = enabled ? "$true" : "$false";
+            string script = "$ErrorActionPreference='Stop'; " +
+                $"$volume=Get-CimInstance -ClassName Win32_Volume -Filter \"DriveLetter='{escapedDrive}'\"; " +
+                "if ($null -eq $volume) { throw 'Volume di Windows non trovato.' }; " +
+                $"$volume | Set-CimInstance -Property @{{IndexingEnabled={enabledLiteral}}} | Out-Null";
+
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                Verb = "runas"
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(script);
+
+            using var process = System.Diagnostics.Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare la modifica dell'indicizzazione.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"Modifica dell'indicizzazione terminata con codice {process.ExitCode}.");
+        }
+
         private void SetCheckboxState(string itemName, bool isChecked)
         {
             using (RegistryKey? key = Registry.CurrentUser.CreateSubKey("Software\\WinHubX"))
@@ -411,9 +442,9 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Modifica delle app in background non riuscita: {ex.Message}");
                 }
             }
             else
@@ -472,9 +503,9 @@ namespace WinHubX.Forms.Settaggi
                         key64?.SetValue("DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Modifica Advertising ID non riuscita: {ex.Message}");
                 }
             }
             else
@@ -641,35 +672,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    var startInfo = new System.Diagnostics.ProcessStartInfo()
-                    {
-                        FileName = "powershell.exe",
-                        Arguments = @"
-                $obj = Get-CimInstance -ClassName Win32_Volume -Filter ""DriveLetter='$Drive'"";
-                $indexing = $obj.IndexingEnabled;
-                if ($indexing -eq $True) {
-                    $obj | Set-CimInstance -Property @{IndexingEnabled=$False} | Out-Null
+                    SetSystemVolumeIndexing(enabled: false);
                 }
-            ",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        Verb = "runus"
-                    };
-
-                    using (var process = System.Diagnostics.Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile avviare il processo di gestione Explorer."))
-                    {
-                        process.WaitForExit();
-
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
-                    }
-                }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Disattivazione indicizzazione non riuscita: {ex.Message}");
                 }
             }
             else
@@ -1452,35 +1459,11 @@ namespace WinHubX.Forms.Settaggi
 
                 try
                 {
-                    var startInfo = new System.Diagnostics.ProcessStartInfo()
-                    {
-                        FileName = "powershell.exe",
-                        Arguments = @"
-                $obj = Get-CimInstance -ClassName Win32_Volume -Filter ""DriveLetter='$Drive'"";
-                $indexing = $obj.IndexingEnabled;
-                if ($indexing -eq $False) {
-                    $obj | Set-CimInstance -Property @{IndexingEnabled=$True} | Out-Null
+                    SetSystemVolumeIndexing(enabled: true);
                 }
-            ",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        Verb = "runas"
-                    };
-
-                    using (var process = System.Diagnostics.Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile avviare il processo di indicizzazione."))
-                    {
-                        process.WaitForExit();
-
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
-                    }
-                }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Attivazione indicizzazione non riuscita: {ex.Message}");
                 }
             }
             else
@@ -1497,25 +1480,24 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = "powercfg.exe",
-                        Arguments = "-duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
                     };
+                    startInfo.ArgumentList.Add("-duplicatescheme");
+                    startInfo.ArgumentList.Add("e9a42b02-d5df-448d-aa00-03f14749eb61");
 
                     using (var process = System.Diagnostics.Process.Start(startInfo)
                         ?? throw new InvalidOperationException("Impossibile avviare il processo di risparmio energetico."))
                     {
                         process.WaitForExit();
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
+                        if (process.ExitCode != 0)
+                            throw new InvalidOperationException($"powercfg terminato con codice {process.ExitCode}.");
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Creazione del profilo energetico non riuscita: {ex.Message}");
                 }
             }
             else

@@ -464,9 +464,9 @@ namespace WinHubX.Forms.Settaggi
                     ModificaDownloadAutomatico(RegistryView.Registry32);
                     ModificaDownloadAutomatico(RegistryView.Registry64);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Modifica download automatico Windows Update non riuscita: {ex.Message}");
                 }
             }
             else
@@ -483,30 +483,26 @@ namespace WinHubX.Forms.Settaggi
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
                         FileName = "powershell.exe",
-                        Arguments = @"
-                        If ((New-Object -ComObject Microsoft.Update.ServiceManager).Services | Where-Object { $_.ServiceID -eq ""7971f918-a847-4430-9279-4a52d1efe18d""}) {
-                        (New-Object -ComObject Microsoft.Update.ServiceManager).RemoveService(""7971f918-a847-4430-9279-4a52d1efe18d"")
-                          }
-                           ",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        Verb = "runus"
+                        UseShellExecute = true,
+                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                        Verb = "runas"
                     };
+                    startInfo.ArgumentList.Add("-NoProfile");
+                    startInfo.ArgumentList.Add("-NonInteractive");
+                    startInfo.ArgumentList.Add("-Command");
+                    startInfo.ArgumentList.Add("$ErrorActionPreference='Stop'; $manager=New-Object -ComObject Microsoft.Update.ServiceManager; if ($manager.Services | Where-Object { $_.ServiceID -eq '7971f918-a847-4430-9279-4a52d1efe18d' }) { $manager.RemoveService('7971f918-a847-4430-9279-4a52d1efe18d') }");
 
                     using (var process = System.Diagnostics.Process.Start(startInfo)
                         ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
                     {
                         process.WaitForExit();
-
-                        var output = process.StandardOutput.ReadToEnd();
-                        var error = process.StandardError.ReadToEnd();
+                        if (process.ExitCode != 0)
+                            throw new InvalidOperationException($"Rimozione del servizio Microsoft Update terminata con codice {process.ExitCode}.");
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    System.Diagnostics.Debug.WriteLine($"Rimozione del servizio Microsoft Update non riuscita: {ex.Message}");
                 }
             }
             else
