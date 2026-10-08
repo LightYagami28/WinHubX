@@ -124,26 +124,26 @@ namespace WinHubX.Forms.InstallaComponenti
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                FileName = Path.Combine(Environment.SystemDirectory, "WSReset.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            startInfo.ArgumentList.Add("/c");
-            startInfo.ArgumentList.Add("WSReset");
             startInfo.ArgumentList.Add("-i");
 
             using (Process process = new Process { StartInfo = startInfo })
             {
                 _ = process.Start();
                 await process.WaitForExitAsync();
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"WSReset è terminato con codice {process.ExitCode}.");
             }
             await Task.Delay(TimeSpan.FromSeconds(20));
             using (Process process = new Process { StartInfo = startInfo })
             {
                 _ = process.Start();
                 await process.WaitForExitAsync();
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"WSReset è terminato con codice {process.ExitCode}.");
             }
 
             _ = MessageBox.Show(LanguageManager.GetTranslation("FormReinstallAPP", "storeinstalling"));
