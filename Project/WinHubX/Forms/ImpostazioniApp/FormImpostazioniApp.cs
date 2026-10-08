@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Management;
 using System.Security.Policy;
 using System.Text;
+using System.Net;
 using WinHubX.Forms.Base;
 using WinHubX.Impostazioni;
 
@@ -363,6 +364,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                 JObject configData = JObject.Parse(configResponse);
                 string updateInfoUrl = configData["Form1"]?["updateInfoUrl"]?.Value<string>()
                     ?? throw new InvalidOperationException("URL aggiornamenti non presente nella configurazione.");
+                EnsureTrustedHttpsUrl(updateInfoUrl, "manifest aggiornamenti");
 
                 var response = await client.GetStringAsync(updateInfoUrl);
                 JObject updateInfo = JObject.Parse(response);
@@ -371,6 +373,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                     ?? throw new InvalidOperationException("Versione aggiornata non presente.");
                 string updateUrl = updateInfo["updateUrl"]?.Value<string>()
                     ?? throw new InvalidOperationException("URL aggiornamento non presente.");
+                EnsureTrustedHttpsUrl(updateUrl, "pacchetto aggiornamento");
 
                 string userLang = Thread.CurrentThread.CurrentUICulture
                     .TwoLetterISOLanguageName.ToUpper();
@@ -379,7 +382,7 @@ namespace WinHubX.Forms.ImpostazioniApp
 
                 return new UpdateInfoResult
                 {
-                    UpdateAvailable = latestVersion != currentVersion,
+                    UpdateAvailable = IsNewerVersion(latestVersion, currentVersion),
                     LatestVersion = latestVersion,
                     UpdateUrl = updateUrl,
                     ReleaseNotes = releaseNotes
@@ -390,6 +393,32 @@ namespace WinHubX.Forms.ImpostazioniApp
                 MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return new UpdateInfoResult { UpdateAvailable = false };
             }
+        }
+
+        private static bool IsNewerVersion(string candidate, string current)
+        {
+            return Version.TryParse(candidate, out Version? candidateVersion)
+                && Version.TryParse(current, out Version? currentVersion)
+                && candidateVersion > currentVersion;
+        }
+
+        private static void EnsureTrustedHttpsUrl(string value, string description)
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out Uri? uri)
+                || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+                || uri.UserInfo.Length != 0
+                || !IsTrustedUpdateHost(uri.Host))
+            {
+                throw new InvalidOperationException($"URL non attendibile per {description}.");
+            }
+        }
+
+        private static bool IsTrustedUpdateHost(string host)
+        {
+            return host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
+                || host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+                || host.Equals("objects.githubusercontent.com", StringComparison.OrdinalIgnoreCase)
+                || host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetReleaseNotesByLanguage(JToken? releaseNotesObject, string language)
@@ -416,7 +445,7 @@ namespace WinHubX.Forms.ImpostazioniApp
 
         private async Task DownloadAndUpdate(string updateUrl, string version)
         {
-            string updateFilePath = Path.Combine(Path.GetTempPath(), $"WinHubX{version}.exe");
+            string updateFilePath = Path.Combine(Path.GetTempPath(), $"WinHubX-{version}-{Guid.NewGuid():N}.exe");
             using (var progressForm = new ProgressForm())
             {
                 progressForm.Show();
@@ -443,22 +472,12 @@ namespace WinHubX.Forms.ImpostazioniApp
 
         private async Task DownloadFileWithProgress(string url, string filePath, ProgressForm progressForm)
         {
-            string localPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinHubX");
-            if (File.Exists(localPath))
-            {
-                try
-                {
-                    File.Delete(localPath);
-                }
-                catch (Exception ex)
-                {
-                    _ = MessageBox.Show($"Error:\n{ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-
+            EnsureTrustedHttpsUrl(url, "pacchetto aggiornamento");
             using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             _ = response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault();
+            if (totalBytes <= 0)
+                throw new InvalidOperationException("Il pacchetto aggiornamento non espone una dimensione valida.");
             using var contentStream = await response.Content.ReadAsStreamAsync();
             using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
             var buffer = new byte[8192];
@@ -467,8 +486,9 @@ namespace WinHubX.Forms.ImpostazioniApp
             while ((read = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
                 await fileStream.WriteAsync(buffer, 0, read);
+                bytesRead += read;
                 progressForm.Invoke(new Action(() =>
-                progressForm.SetStatus("Download...", (int)((bytesRead * 100) / totalBytes))));
+                    progressForm.SetStatus("Download...", (int)Math.Clamp((bytesRead * 100) / totalBytes, 0, 100))));
             }
         }
 
