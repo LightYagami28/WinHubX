@@ -55,6 +55,11 @@ jobs:
       - name: Smoke test published application startup
         shell: pwsh
         run: ./.github/scripts/smoke-test-published-app.ps1 -ExecutablePath ./artifacts/WinHubX/WinHubX.exe
+      - name: Generate SHA-256 manifest for published files
+        shell: pwsh
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: ./scripts/New-ArtifactSha256Manifest.ps1 -ArtifactDirectory ./artifacts/WinHubX
       - uses: actions/upload-artifact@v7
         with:
           name: WinHubX
