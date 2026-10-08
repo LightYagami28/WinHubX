@@ -1,5 +1,4 @@
 using HartUI.Controls;
-using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -10,25 +9,12 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormSettaggi : Form
     {
-        private static readonly HttpClient HttpClient = new(new SocketsHttpHandler
-        {
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-            AutomaticDecompression = System.Net.DecompressionMethods.All
-        })
-        {
-            Timeout = TimeSpan.FromSeconds(30)
-        };
-
         private readonly Form1 form1;
-        private string? wsa11x64;
-        private string? wsa11arm64;
-        private string? wsa10x64;
 
         public FormSettaggi(Form1 form1)
         {
             InitializeComponent();
             this.form1 = form1;
-            LoadJsonLinks();
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             btnWSLTweaksPrinci.Content = LanguageManager.CurrentLanguage switch
             {
@@ -181,23 +167,6 @@ namespace WinHubX.Forms.Base
             mainForm.pictureBox3.Visible = false;
             mainForm.LoadForm(new FormSettaggi(mainForm), mainForm.btnSettaggi, "Tweaks");
         }
-        private async void LoadJsonLinks()
-        {
-            try
-            {
-                    string json = await HttpClient.GetStringAsync(Dipendenze.GitHubConfigUrl);
-                    JObject data = JObject.Parse(json);
-
-                    wsa11x64 = data["WSA"]?["win11x64"]?.ToString();
-                    wsa11arm64 = data["WSA"]?["win11arm64"]?.ToString();
-                    wsa10x64 = data["WSA"]?["win10x64"]?.ToString();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private async void btnAttivaWSL_Click(object sender, EventArgs e)
         {
             if (MessageBox.Show(
