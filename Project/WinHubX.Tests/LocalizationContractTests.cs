@@ -10,6 +10,24 @@ public sealed class LocalizationContractTests
     private static readonly Dictionary<string, Dictionary<string, string>> English = LoadCatalog("en");
 
     [Fact]
+    public void LanguageManager_UsesEmbeddedCatalogsAndFallsBackForUnsupportedLanguages()
+    {
+        LanguageManager.SetLanguage("en");
+        Assert.Equal("en", LanguageManager.CurrentLanguage);
+        Assert.Equal("File {0} could not be extracted correctly.",
+            LanguageManager.GetTranslation("FormOffice", "fileextracterror"));
+
+        LanguageManager.SetLanguage("it");
+        Assert.Equal("it", LanguageManager.CurrentLanguage);
+        Assert.Equal("Il file {0} non è stato estratto correttamente.",
+            LanguageManager.GetTranslation("FormOffice", "fileextracterror"));
+
+        LanguageManager.SetLanguage("en-US");
+        Assert.Equal("it", LanguageManager.CurrentLanguage);
+        Assert.Equal("unknown_key", LanguageManager.GetTranslation("UnknownForm", "unknown_key"));
+    }
+
+    [Fact]
     public void Catalogs_ContainTheSameSectionsAndKeys()
     {
         string[] missingSections = Italian.Keys.Except(English.Keys, StringComparer.Ordinal).ToArray();
@@ -69,7 +87,7 @@ public sealed class LocalizationContractTests
 
     private static Dictionary<string, Dictionary<string, string>> LoadCatalog(string language)
     {
-        string resourceName = $"WinHubX.Tests.Resources.{language}.json";
+        string resourceName = $"WinHubX.Resources.{language}.json";
         using Stream stream = typeof(LocalizationContractTests).Assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded localization resource '{resourceName}' was not found.");
 
@@ -79,7 +97,7 @@ public sealed class LocalizationContractTests
 
     private static string FindDuplicateProperties(string language)
     {
-        string resourceName = $"WinHubX.Tests.Resources.{language}.json";
+        string resourceName = $"WinHubX.Resources.{language}.json";
         using Stream stream = typeof(LocalizationContractTests).Assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded localization resource '{resourceName}' was not found.");
         using JsonDocument document = JsonDocument.Parse(stream);
