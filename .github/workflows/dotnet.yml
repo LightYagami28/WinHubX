@@ -20,7 +20,9 @@ jobs:
       - name: Restore
         run: dotnet restore Project/WinHubX.sln
       - name: Build
-        run: dotnet build Project/WinHubX.sln --configuration Release --no-restore
+        run: dotnet build Project/WinHubX.sln --configuration Release --no-restore -warnaserror --nologo
+      - name: Dependency audit
+        run: dotnet list Project/WinHubX/WinHubX.csproj package --vulnerable --include-transitive
       - name: Publish artifact
         run: dotnet publish Project/WinHubX/WinHubX.csproj --configuration Release --no-restore --output artifacts/WinHubX
       - uses: actions/upload-artifact@v7
