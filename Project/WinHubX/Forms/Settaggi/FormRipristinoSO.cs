@@ -9,6 +9,7 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormRipristinoSO : Form
     {
+        private static long _cpuStressResultBits;
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private System.Windows.Forms.Timer? countdownTimer;
@@ -305,12 +306,15 @@ namespace WinHubX.Forms.Settaggi
                                 if (j % 1_000_000 == 0 && workerToken.IsCancellationRequested)
                                     return;
                             }
+                            Interlocked.Exchange(ref _cpuStressResultBits, BitConverter.DoubleToInt64Bits(result));
                             _ = Thread.Yield();
                         }
                     }, workerToken));
                 }
 
                 await Task.WhenAll(tasks);
+                double checksum = BitConverter.Int64BitsToDouble(Interlocked.Read(ref _cpuStressResultBits));
+                LogMessage($"Checksum test CPU: {checksum:R}");
                 token.ThrowIfCancellationRequested();
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
