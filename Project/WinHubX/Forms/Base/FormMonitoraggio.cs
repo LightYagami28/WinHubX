@@ -582,8 +582,9 @@ namespace WinHubX.Forms.Base
                     BarDISCOtext.Text = $"{discoUsage:0}%";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Aggiornamento UI utilizzo disco non riuscito: {ex}");
             }
         }
 
