@@ -36,9 +36,12 @@ namespace WinHubX.Forms.Base
         private readonly Form1 _mainForm;
         private Computer _computer = new();
         private System.Windows.Forms.Timer _tempMonitorTimer = new();
+        private System.Windows.Forms.Timer? _ramMonitorTimer;
         private PerformanceCounter _cpuCounter = new("Processor", "% Processor Time", "_Total");
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private bool _monitoringStarted;
+        private int _ramCleanupRunning;
+        private DateTime _lastAutomaticRamCleanupUtc = DateTime.MinValue;
 
         private NotifyIcon _notifyIcon = new();
         #endregion
@@ -252,22 +255,53 @@ namespace WinHubX.Forms.Base
         #region RAM Monitoring and Management
         private void StartRamMonitoring()
         {
-            var timer = new System.Windows.Forms.Timer { Interval = 3000 };
-            timer.Tick += (sender, e) =>
-            {
-                MEMORYSTATUSEX memStatus = GetMemoryStatus();
-                double ramUsagePercentage = ((double)(memStatus.ullTotalPhys - memStatus.ullAvailPhys) / memStatus.ullTotalPhys) * 100;
+            _ramMonitorTimer = new System.Windows.Forms.Timer { Interval = 3000 };
+            _ramMonitorTimer.Tick += RamMonitorTimer_Tick;
+            _ramMonitorTimer.Start();
+        }
 
-                BarRAM.ProgressValue = Math.Min((int)ramUsagePercentage, 100);
-                BarRAMtext.Text = $"{ramUsagePercentage:0}%";
-                if (MonitorSettings.PuliziaAutomaticaRAM && ramUsagePercentage > (double)MonitorSettings.LimiteRAM)
+        private async void RamMonitorTimer_Tick(object? sender, EventArgs e)
+        {
+            MEMORYSTATUSEX memStatus = GetMemoryStatus();
+            if (memStatus.ullTotalPhys == 0)
+            {
+                Debug.WriteLine("Impossibile leggere la memoria fisica totale.");
+                return;
+            }
+
+            double ramUsagePercentage = ((double)(memStatus.ullTotalPhys - memStatus.ullAvailPhys) / memStatus.ullTotalPhys) * 100;
+            BarRAM.ProgressValue = Math.Min((int)ramUsagePercentage, 100);
+            BarRAMtext.Text = $"{ramUsagePercentage:0}%";
+
+            if (!MonitorSettings.PuliziaAutomaticaRAM ||
+                ramUsagePercentage <= (double)MonitorSettings.LimiteRAM ||
+                DateTime.UtcNow - _lastAutomaticRamCleanupUtc < TimeSpan.FromSeconds(30) ||
+                Interlocked.Exchange(ref _ramCleanupRunning, 1) != 0)
+            {
+                return;
+            }
+
+            _lastAutomaticRamCleanupUtc = DateTime.UtcNow;
+            try
+            {
+                await Task.Run(() =>
                 {
                     CleanMemory();
                     CpuReduce();
                     OptimizeMemory();
-                }
-            };
-            timer.Start();
+                }, _monitoringCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Pulizia automatica della memoria non riuscita: {ex}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _ramCleanupRunning, 0);
+            }
         }
 
         private void CleanMemory()
@@ -276,12 +310,16 @@ namespace WinHubX.Forms.Base
 
             foreach (var process in processes)
             {
-                try
+                using (process)
                 {
-                    CleanProcessMemory(process);
-                }
-                catch (Exception)
-                {
+                    try
+                    {
+                        CleanProcessMemory(process);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Riduzione working set del processo {process.Id} non riuscita: {ex.Message}");
+                    }
                 }
             }
         }
@@ -509,7 +547,7 @@ namespace WinHubX.Forms.Base
                     BarCPUtext.Text = $"{cpuUsagePercentage:0}%";
                     if (MonitorSettings.PuliziaAutomaticaCPU && cpuUsagePercentage > (double)MonitorSettings.LimiteCPU)
                     {
-                        CpuReduce();
+                        await Task.Run(CpuReduce, _monitoringCancellation.Token);
                     }
 
                     await Task.Delay(2000, _monitoringCancellation.Token);
@@ -740,25 +778,25 @@ namespace WinHubX.Forms.Base
 
             foreach (var process in processes)
             {
-                try
+                using (process)
                 {
-                    ManageProcess(process);
-                }
-                catch (Exception)
-                {
+                    try
+                    {
+                        ManageProcess(process);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Ottimizzazione del processo {process.Id} non riuscita: {ex.Message}");
+                    }
                 }
             }
         }
 
         private void ManageProcess(Process process)
         {
-            if (ShouldOptimizeProcess(process))
+            if (process.Id != Environment.ProcessId && ShouldOptimizeProcess(process))
             {
                 OptimizeProcess(process);
-            }
-            else if (ShouldTerminateProcess(process))
-            {
-                TerminateProcess(process);
             }
         }
 
@@ -768,20 +806,9 @@ namespace WinHubX.Forms.Base
                    process.WorkingSet64 > 200 * 1024 * 1024;
         }
 
-        private bool ShouldTerminateProcess(Process process)
-        {
-            return process.TotalProcessorTime > TimeSpan.FromSeconds(10) &&
-                   process.WorkingSet64 > 500 * 1024 * 1024;
-        }
-
         private void OptimizeProcess(Process process)
         {
             process.PriorityClass = ProcessPriorityClass.BelowNormal;
-        }
-
-        private void TerminateProcess(Process process)
-        {
-            process.Kill();
         }
         #endregion
 
@@ -873,15 +900,48 @@ namespace WinHubX.Forms.Base
             e.Cancel = false;
         }
 
-        private void btn_pulisciram_Click(object sender, EventArgs e)
+        private async void btn_pulisciram_Click(object sender, EventArgs e)
         {
-            CleanMemory();
-            OptimizeMemory();
+            btnPulisciRam.Enabled = false;
+            try
+            {
+                await Task.Run(() =>
+                {
+                    CleanMemory();
+                    OptimizeMemory();
+                });
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage($"Pulizia RAM non riuscita:\n{ex.Message}");
+            }
+            finally
+            {
+                if (!IsDisposed)
+                {
+                    btnPulisciRam.Enabled = true;
+                }
+            }
         }
 
-        private void btn_puliscicpu_Click(object sender, EventArgs e)
+        private async void btn_puliscicpu_Click(object sender, EventArgs e)
         {
-            CpuReduce();
+            btnPulisciCPU.Enabled = false;
+            try
+            {
+                await Task.Run(CpuReduce);
+            }
+            catch (Exception ex)
+            {
+                ShowErrorMessage($"Ottimizzazione CPU non riuscita:\n{ex.Message}");
+            }
+            finally
+            {
+                if (!IsDisposed)
+                {
+                    btnPulisciCPU.Enabled = true;
+                }
+            }
         }
 
         private void btnPulisciTemp_Click(object sender, EventArgs e)
@@ -893,7 +953,7 @@ namespace WinHubX.Forms.Base
         #region Utility Methods
         private void OptimizeMemory()
         {
-            var currentProcess = Process.GetCurrentProcess();
+            using var currentProcess = Process.GetCurrentProcess();
             _ = ReduceMemoryUse(currentProcess.Id);
         }
 
@@ -943,6 +1003,7 @@ namespace WinHubX.Forms.Base
 
             _cpuCounter?.Dispose();
             _tempMonitorTimer?.Dispose();
+            _ramMonitorTimer?.Dispose();
             _notifyIcon?.Dispose();
             _monitoringCancellation.Dispose();
         }
