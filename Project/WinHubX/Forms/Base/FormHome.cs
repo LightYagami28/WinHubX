@@ -158,7 +158,8 @@ namespace WinHubX
         {
             try
             {
-                var systemData = await RecuperaInformazioniSistemaAsync();
+                var progress = new Progress<int>(step => cuiProgressTrackerHorizontal1.TasksProgress = step);
+                var systemData = await RecuperaInformazioniSistemaAsync(progress);
 
                 await SalvaDatiSistemaAsync(systemData);
 
@@ -237,56 +238,54 @@ namespace WinHubX
             }
         }
 
-        private async Task<object> RecuperaInformazioniSistemaAsync()
+        private async Task<object> RecuperaInformazioniSistemaAsync(IProgress<int> progress)
         {
-
-            string osInfo = GetOSInfo();
-            string architettura = Environment.Is64BitOperatingSystem ? "64" : "32";
-            cuiProgressTrackerHorizontal1.TasksProgress = 1;
-
-
-            string cpuName = GetCPUName();
-            string ramInfo = GetRAMInfo();
-            string diskInfo = GetSystemDiskType();
-            cuiProgressTrackerHorizontal1.TasksProgress = 2;
-
-
-            string windowsActivation = GetWindowsActivationStatus();
-            cuiProgressTrackerHorizontal1.TasksProgress = 3;
-
- 
-            string officeActivation;
-
-            if (!IsOfficeInstalled())
+            return await Task.Run<object>(() =>
             {
-                officeActivation = "Non installato";
-            }
-            else
-            {
-                bool officeActivated = IsOfficeActivated();
-                officeActivation = officeActivated ? "Attivato" : "Da attivare";
-            }
+                string osInfo = GetOSInfo();
+                string architettura = Environment.Is64BitOperatingSystem ? "64" : "32";
+                progress.Report(1);
 
-            cuiProgressTrackerHorizontal1.TasksProgress = 4;
-            cuiProgressTrackerHorizontal1.TasksProgress = 5;
+                string cpuName = GetCPUName();
+                string ramInfo = GetRAMInfo();
+                string diskInfo = GetSystemDiskType();
+                progress.Report(2);
 
-            return new
-            {
-                Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                OperatingSystem = osInfo,
-                Architettura = architettura,
-                Hardware = new
+                string windowsActivation = GetWindowsActivationStatus();
+                progress.Report(3);
+
+                string officeActivation;
+                if (!IsOfficeInstalled())
                 {
-                    CPU = cpuName,
-                    RAM = ramInfo,
-                    Disk = diskInfo
-                },
-                Activation = new
-                {
-                    Windows = windowsActivation,
-                    Office = officeActivation
+                    officeActivation = "Non installato";
                 }
-            };
+                else
+                {
+                    bool officeActivated = IsOfficeActivated();
+                    officeActivation = officeActivated ? "Attivato" : "Da attivare";
+                }
+
+                progress.Report(4);
+                progress.Report(5);
+
+                return new
+                {
+                    Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    OperatingSystem = osInfo,
+                    Architettura = architettura,
+                    Hardware = new
+                    {
+                        CPU = cpuName,
+                        RAM = ramInfo,
+                        Disk = diskInfo
+                    },
+                    Activation = new
+                    {
+                        Windows = windowsActivation,
+                        Office = officeActivation
+                    }
+                };
+            });
         }
 
 
@@ -418,7 +417,7 @@ namespace WinHubX
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "cscript.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "cscript.exe"),
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -430,8 +429,15 @@ namespace WinHubX
 
                 using var process = Process.Start(psi)
                     ?? throw new InvalidOperationException("Impossibile avviare cscript.");
-                string output = process.StandardOutput.ReadToEnd().ToLowerInvariant();
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
                 process.WaitForExit();
+                string output = outputTask.GetAwaiter().GetResult().ToLowerInvariant();
+                string error = errorTask.GetAwaiter().GetResult();
+                if (process.ExitCode != 0)
+                {
+                    throw new InvalidOperationException($"Verifica licenza terminata con codice {process.ExitCode}: {error}");
+                }
 
                 if (output.Contains("permanently activated") ||
                     output.Contains("attivato definitivamente") ||
