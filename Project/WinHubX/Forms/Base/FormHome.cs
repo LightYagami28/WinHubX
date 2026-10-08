@@ -9,6 +9,7 @@ namespace WinHubX
 {
     public partial class FormHome : Form
     {
+        private static readonly TimeSpan HardwareSnapshotLifetime = TimeSpan.FromHours(1);
         private readonly string jsonPath;
 
         public FormHome()
@@ -47,13 +48,26 @@ namespace WinHubX
 
             ApplicaTraduzioniUI();
 
-            if (File.Exists(jsonPath))
+            if (IsSnapshotFresh())
             {
                 ShowResultsUI();
                 AggiornaRiassunto();
             }
             else
                 _ = VerificaSistemaAsync();
+        }
+
+        private bool IsSnapshotFresh()
+        {
+            try
+            {
+                return File.Exists(jsonPath)
+                    && DateTime.UtcNow - File.GetLastWriteTimeUtc(jsonPath) < HardwareSnapshotLifetime;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
         }
         private void ApplicaTraduzioniUI()
         {
@@ -574,8 +588,7 @@ namespace WinHubX
             labelwindows.Visible = false;
             labeloffice.Visible = false;
             label7.Visible = false;
-            await Task.Delay(2000);
-            _ = VerificaSistemaAsync();
+            await VerificaSistemaAsync();
         }
     }
 }
