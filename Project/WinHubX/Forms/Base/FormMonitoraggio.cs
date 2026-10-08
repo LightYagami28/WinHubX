@@ -41,12 +41,16 @@ namespace WinHubX.Forms.Base
         private PerformanceCounter? _cpuCounter;
         private readonly CancellationTokenSource _monitoringCancellation = new();
         private readonly CancellationToken _monitoringToken;
+        private Task[] _monitoringTasks = Array.Empty<Task>();
+        private Task? _initializationTask;
         private bool _monitoringStarted;
+        private bool _shutdownRequested;
+        private bool _closeAfterMonitoringStops;
+        private Task? _cleanupTask;
         private int _ramCleanupRunning;
         private DateTime _lastAutomaticRamCleanupUtc = DateTime.MinValue;
 
         private NotifyIcon? _notifyIcon;
-        private bool _resourcesCleaned;
         #endregion
 
         #region Constructor
@@ -84,8 +88,9 @@ namespace WinHubX.Forms.Base
                 btnPulisciRam.Content = LanguageManager.CurrentLanguage == "it" ? "  Pulizia" : "  Clean";
                 btnSvuotaTemp.Content = LanguageManager.CurrentLanguage == "it" ? "  Svuota" : "  Empty";
 
-                await Task.Run(InitializeComputer);
-                if (IsDisposed || !IsHandleCreated)
+                _initializationTask = Task.Run(InitializeComputer);
+                await _initializationTask;
+                if (_shutdownRequested || IsDisposed || !IsHandleCreated)
                 {
                     return;
                 }
@@ -94,12 +99,15 @@ namespace WinHubX.Forms.Base
                 InitializePerformanceCounter();
                 InitializeNotificationIcon();
                 ApplyTheme();
-                StartCpuMonitoring();
                 StartRamMonitoring();
-                StartReteMonitoring();
-                StartHardwareMonitoring();
-                StartDiscoMonitoring();
-                StartTEMPMonitoring();
+                _monitoringTasks =
+                [
+                    StartCpuMonitoring(),
+                    StartReteMonitoring(),
+                    StartHardwareMonitoring(),
+                    StartDiscoMonitoring(),
+                    StartTEMPMonitoring()
+                ];
                 LoadMonitoraggioSettings();
             }
             catch (Exception ex)
@@ -380,7 +388,7 @@ namespace WinHubX.Forms.Base
         #endregion
 
         #region CPU Monitoring and Management
-        private async void StartTEMPMonitoring()
+        private async Task StartTEMPMonitoring()
         {
             string tempPath = Path.GetTempPath();
 
@@ -488,7 +496,7 @@ namespace WinHubX.Forms.Base
         }
 
 
-        private async void StartDiscoMonitoring()
+        private async Task StartDiscoMonitoring()
         {
             try
             {
@@ -592,7 +600,7 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private async void StartCpuMonitoring()
+        private async Task StartCpuMonitoring()
         {
             try
             {
@@ -623,7 +631,7 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private async void StartHardwareMonitoring()
+        private async Task StartHardwareMonitoring()
         {
             try
             {
@@ -714,7 +722,7 @@ namespace WinHubX.Forms.Base
             BarGPU.ProgressValue = (int)Math.Round(gpuUsage);
             BarGPUtext.Text = $"{gpuUsage:0}%";
         }
-        private async void StartReteMonitoring()
+        private async Task StartReteMonitoring()
         {
             try
             {
@@ -901,10 +909,21 @@ namespace WinHubX.Forms.Base
 
         #region Event Handlers
 
-        private void FormMonitoraggio_FormClosing(object sender, FormClosingEventArgs e)
+        private async void FormMonitoraggio_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            CleanupResources();
-            e.Cancel = false;
+            if (_closeAfterMonitoringStops)
+            {
+                return;
+            }
+
+            e.Cancel = true;
+            _shutdownRequested = true;
+            await CleanupResourcesAsync();
+            if (!IsDisposed)
+            {
+                _closeAfterMonitoringStops = true;
+                Close();
+            }
         }
 
         private async void btn_pulisciram_Click(object sender, EventArgs e)
@@ -972,42 +991,41 @@ namespace WinHubX.Forms.Base
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
 
-        public void CleanupResources()
+        public Task CleanupResourcesAsync()
         {
-            if (_resourcesCleaned)
+            if (_cleanupTask is not null)
             {
-                return;
+                return _cleanupTask;
             }
 
-            _resourcesCleaned = true;
             _monitoringCancellation.Cancel();
-            if (Monitor.TryEnter(_hardwareSync))
+            _cleanupTask = CleanupResourcesCoreAsync();
+            return _cleanupTask;
+        }
+
+        private async Task CleanupResourcesCoreAsync()
+        {
+            try
             {
-                try
+                if (_initializationTask is not null)
                 {
-                    _computer?.Close();
+                    await _initializationTask;
                 }
-                finally
-                {
-                    Monitor.Exit(_hardwareSync);
-                }
+
+                await Task.WhenAll(_monitoringTasks);
             }
-            else
+            catch (OperationCanceledException)
             {
-                _ = Task.Run(() =>
-                {
-                    try
-                    {
-                        lock (_hardwareSync)
-                        {
-                            _computer?.Close();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Chiusura del monitor hardware non riuscita: {ex}");
-                    }
-                });
+                // La cancellazione è il normale percorso di arresto dei monitor.
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Arresto dei monitor non riuscito: {ex}");
+            }
+
+            lock (_hardwareSync)
+            {
+                _computer?.Close();
             }
 
             _cpuCounter?.Dispose();
