@@ -316,7 +316,10 @@ namespace WinHubX
                     return $"{caption} (Versione {version}, Build {build}, {arch})";
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura informazioni OS tramite WMI non riuscita: {ex}");
+            }
             return "Informazioni OS non disponibili";
         }
 
@@ -335,7 +338,10 @@ namespace WinHubX
                         : $"{name} ({threads} thread logici)";
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura nome CPU tramite WMI non riuscita: {ex}");
+            }
             return "Sconosciuto";
         }
 
@@ -354,8 +360,9 @@ namespace WinHubX
                 double totalGiB = totalBytes / (1024d * 1024 * 1024);
                 return $"{totalGiB:0.0} GB";
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Lettura memoria RAM tramite WMI non riuscita: {ex}");
                 return "Sconosciuta";
             }
         }
@@ -406,7 +413,10 @@ namespace WinHubX
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Lettura tipo disco tramite WMI non riuscita: {ex}");
+            }
 
             return "Sconosciuto";
         }
@@ -453,7 +463,10 @@ namespace WinHubX
                 if (output.Contains("not activated") || output.Contains("non attivato"))
                     return "Non attivato";
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Verifica licenza Windows con cscript non riuscita; provo WMI: {ex}");
+            }
 
             try
             {
@@ -505,9 +518,9 @@ namespace WinHubX
 
 
             }
-            catch
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Verifica attivazione Office tramite WMI non riuscita: {ex}");
             }
 
             return false;
@@ -569,8 +582,9 @@ namespace WinHubX
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Ricerca installazione Office nel registro non riuscita: {ex}");
             }
             return false;
         }
