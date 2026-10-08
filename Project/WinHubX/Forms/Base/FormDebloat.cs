@@ -146,7 +146,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -212,7 +212,7 @@ namespace WinHubX.Forms.Base
                 {
                     ProcessStartInfo psi = new ProcessStartInfo
                     {
-                        FileName = "powershell.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
@@ -313,7 +313,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     Verb = "runas",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden
@@ -341,7 +341,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     Verb = "runas",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden
@@ -420,7 +420,7 @@ namespace WinHubX.Forms.Base
         {
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"

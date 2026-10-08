@@ -975,7 +975,7 @@ namespace WinHubX.Forms.CreaISO
 
                     var psi = new ProcessStartInfo
                     {
-                        FileName = "powershell.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         CreateNoWindow = true,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -1250,7 +1250,7 @@ namespace WinHubX.Forms.CreaISO
                 try
                 {
                     var process = new Process();
-                    process.StartInfo.FileName = "reg.exe";
+                    process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "reg.exe");
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.ArgumentList.Add("export");

@@ -104,7 +104,7 @@ namespace WinHubX.Forms.InstallaComponenti
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     UseShellExecute = true,
                     Verb = "runas",
                     CreateNoWindow = true

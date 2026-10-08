@@ -121,7 +121,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -401,7 +401,7 @@ namespace WinHubX.Forms.Settaggi
             var commandString = string.Join("; ", commands);
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
-                FileName = "powershell.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,

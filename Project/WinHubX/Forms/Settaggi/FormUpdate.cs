@@ -218,7 +218,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
-                FileName = "reg.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "reg.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -321,7 +321,7 @@ namespace WinHubX.Forms.Settaggi
         {
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
-                FileName = "sc.exe",
+                FileName = Path.Combine(Environment.SystemDirectory, "sc.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -491,7 +491,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = "powershell.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
@@ -627,7 +627,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = "powershell.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
