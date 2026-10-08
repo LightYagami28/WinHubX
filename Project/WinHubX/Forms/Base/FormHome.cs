@@ -130,7 +130,6 @@ namespace WinHubX
                 await SalvaDatiSistemaAsync(systemData);
 
                 cuiProgressTrackerHorizontal1.TasksProgress = 5;
-                await Task.Delay(1500);
 
                 ShowResultsUI();
                 AggiornaRiassunto();
@@ -208,25 +207,21 @@ namespace WinHubX
         private async Task<object> RecuperaInformazioniSistemaAsync()
         {
 
-            await Task.Delay(3000);
             string osInfo = GetOSInfo();
             string architettura = Environment.Is64BitOperatingSystem ? "64" : "32";
             cuiProgressTrackerHorizontal1.TasksProgress = 1;
 
 
-            await Task.Delay(3000);
             string cpuName = GetCPUName();
             string ramInfo = GetRAMInfo();
             string diskInfo = GetSystemDiskType();
             cuiProgressTrackerHorizontal1.TasksProgress = 2;
 
 
-            await Task.Delay(2000);
             string windowsActivation = GetWindowsActivationStatus();
             cuiProgressTrackerHorizontal1.TasksProgress = 3;
 
  
-            await Task.Delay(2000);
             string officeActivation;
 
             if (!IsOfficeInstalled())
@@ -240,9 +235,7 @@ namespace WinHubX
             }
 
             cuiProgressTrackerHorizontal1.TasksProgress = 4;
-            await Task.Delay(2000);
-            cuiProgressTrackerHorizontal1.TasksProgress = 6;
-            await Task.Delay(2000);
+            cuiProgressTrackerHorizontal1.TasksProgress = 5;
 
             return new
             {
@@ -273,7 +266,6 @@ namespace WinHubX
             });
 
             await File.WriteAllTextAsync(jsonPath, json);
-            await Task.Delay(4000); 
         }
 
 
