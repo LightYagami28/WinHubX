@@ -243,10 +243,13 @@ namespace WinHubX
                 try
                 {
                     string script = @"
+$ErrorActionPreference = 'Stop'
+
 try {
     Enable-ComputerRestore -Drive ""$env:SystemDrive""
 } catch {
-    Write-Host ""Errore nell'abilitazione del Ripristino configurazione di sistema: $_""
+    Write-Error ""Errore nell'abilitazione del Ripristino configurazione di sistema: $_""
+    exit 1
 }
 
 $exists = Get-ItemProperty -path ""HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore"" -Name ""SystemRestorePointCreationFrequency"" -ErrorAction SilentlyContinue
@@ -257,13 +260,15 @@ if($null -eq $exists) {
 try {
     Import-Module Microsoft.PowerShell.Management -ErrorAction Stop
 } catch {
-    return
+    Write-Error ""Errore nel caricamento del modulo di ripristino: $_""
+    exit 1
 }
 
 try {
     $existingRestorePoints = Get-ComputerRestorePoint | Where-Object { $_.CreationTime.Date -eq (Get-Date).Date }
 } catch {
-    return
+    Write-Error ""Errore nella verifica dei punti di ripristino: $_""
+    exit 1
 }
 if ($existingRestorePoints.Count -eq 0) {
     Checkpoint-Computer -Description ""Punto di ripristino creato da WinHubX"" -RestorePointType MODIFY_SETTINGS
@@ -277,12 +282,13 @@ if ($existingRestorePoints.Count -eq 0) {
 
                         ProcessStartInfo psi = new ProcessStartInfo
                         {
-                            FileName = "powershell.exe",
+                            FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                             UseShellExecute = true,
                             Verb = "runas",
                             WindowStyle = ProcessWindowStyle.Hidden
                         };
                         psi.ArgumentList.Add("-NoProfile");
+                        psi.ArgumentList.Add("-NoLogo");
                         psi.ArgumentList.Add("-NonInteractive");
                         psi.ArgumentList.Add("-File");
                         psi.ArgumentList.Add(tempScriptPath);
@@ -296,15 +302,15 @@ if ($existingRestorePoints.Count -eq 0) {
                     finally
                     {
                         try { File.Delete(tempScriptPath); }
-                        catch (IOException) { }
-                        catch (UnauthorizedAccessException) { }
+                        catch (IOException ex) { Debug.WriteLine($"Impossibile eliminare lo script temporaneo del ripristino: {ex}"); }
+                        catch (UnauthorizedAccessException ex) { Debug.WriteLine($"Accesso negato durante la rimozione dello script temporaneo: {ex}"); }
                     }
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                     string regBackupPath = Path.Combine(desktopPath, $"BackupRegistroWinHubX_{DateTime.Now:yyyyMMdd_HHmmss}.reg");
 
                     ProcessStartInfo regExport = new ProcessStartInfo()
                     {
-                        FileName = "reg.exe",
+                        FileName = Path.Combine(Environment.SystemDirectory, "reg.exe"),
                         UseShellExecute = true,
                         Verb = "runas"
                     };
@@ -313,7 +319,11 @@ if ($existingRestorePoints.Count -eq 0) {
                     regExport.ArgumentList.Add(regBackupPath);
                     regExport.ArgumentList.Add("/y");
 
-                    Process.Start(regExport)?.WaitForExit();
+                    using Process exportProcess = Process.Start(regExport)
+                        ?? throw new InvalidOperationException("Impossibile avviare l'esportazione del registro.");
+                    exportProcess.WaitForExit();
+                    if (exportProcess.ExitCode != 0)
+                        throw new InvalidOperationException($"Esportazione del registro terminata con codice {exportProcess.ExitCode}.");
                 }
                 catch (Exception ex)
                 {
