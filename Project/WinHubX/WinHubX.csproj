@@ -234,10 +234,9 @@
   <ItemGroup>
     <PackageReference Include="DiscUtils.Udf" Version="0.16.13" />
     <PackageReference Include="HartUI.Winforms" Version="2026.8.24" />
-		<PackageReference Include="LibreHardwareMonitorLib" Version="0.9.7-pre749" />
-		<PackageReference Include="Microsoft.PowerShell.Native" Version="700.0.1" />
-		<PackageReference Include="System.Management.Automation" Version="7.7.0-preview.5" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.7-pre749" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="11.0.0-rc.1.26425.128" />
     <PackageReference Include="TaskScheduler" Version="2.12.2" />
   </ItemGroup>
 
