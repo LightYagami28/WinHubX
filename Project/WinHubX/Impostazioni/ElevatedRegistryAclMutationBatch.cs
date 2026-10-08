@@ -54,7 +54,8 @@ internal sealed class ElevatedRegistryAclMutationBatch
                 $view = [Microsoft.Win32.RegistryView][Enum]::Parse([Microsoft.Win32.RegistryView], [string]$operation.View)
                 $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $view)
                 try {
-                    $key = $baseKey.OpenSubKey([string]$operation.Path, $true)
+                    $rights = [System.Security.AccessControl.RegistryRights]::ReadPermissions -bor [System.Security.AccessControl.RegistryRights]::ChangePermissions
+                    $key = $baseKey.OpenSubKey([string]$operation.Path, [Microsoft.Win32.RegistryKeyPermissionCheck]::ReadWriteSubTree, $rights)
                     if ($null -eq $key) { throw "La chiave ACL richiesta non esiste." }
                     try {
                         $acl = $key.GetAccessControl()
