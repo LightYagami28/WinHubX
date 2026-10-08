@@ -51,86 +51,64 @@ namespace WinHubX.Forms.InstallaComponenti
         }
         private async Task WingetInstall()
         {
-            string[] urls =
+            (string Url, string Name)[] packages =
             {
-        "https://aka.ms/getwinget",
-        "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx",
-        "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx"
-    };
+                ("https://aka.ms/getwinget", "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"),
+                ("https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx", "Microsoft.VCLibs.x64.14.00.Desktop.appx"),
+                ("https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx", "Microsoft.UI.Xaml.2.8.x64.appx")
+            };
+            string componentFolder = Path.Combine(Path.GetTempPath(), "WinHubX", "Components");
+            Directory.CreateDirectory(componentFolder);
+            var localFiles = new List<string>(packages.Length);
 
-            string[] localFiles =
+            foreach ((string url, string name) in packages)
             {
-        "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle",
-        "Microsoft.VCLibs.x64.14.00.Desktop.appx",
-        "Microsoft.UI.Xaml.2.8.x64.appx"
-    };
-
-            using (HttpClient client = new HttpClient())
-            {
-                for (int i = 0; i < urls.Length; i++)
+                try
                 {
-                    try
-                    {
-                        using (var response = await client.GetAsync(urls[i]))
-                        {
-                            if (response.IsSuccessStatusCode)
-                            {
-                                byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
-                                await File.WriteAllBytesAsync(localFiles[i], fileBytes);
-                            }
-                            else
-                            {
-                                _ = MessageBox.Show($"Error downloading {localFiles[i]}: {response.StatusCode}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _ = MessageBox.Show($"Error: {localFiles[i]}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    string filePath = Path.Combine(componentFolder, name);
+                    await DownloadManager.DownloadFileAsync(url, filePath, CancellationToken.None, autoParallel: false);
+                    localFiles.Add(filePath);
+                }
+                catch (Exception ex)
+                {
+                    _ = MessageBox.Show($"Error: {name}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
             foreach (string file in localFiles)
             {
-                try
-                {
-                    AddAppxPackage(file);
-                }
+                try { await AddAppxPackageAsync(file); }
                 catch (Exception ex)
                 {
-                    _ = MessageBox.Show($"Error: {file}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _ = MessageBox.Show($"Error: {Path.GetFileName(file)}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+
+            try { Directory.Delete(componentFolder, recursive: true); }
+            catch (IOException) { /* cleanup best effort; files are temporary */ }
         }
-        private void AddAppxPackage(string packagePath)
+
+        private static async Task AddAppxPackageAsync(string packagePath)
         {
-            Process process = new Process
+            string escapedPath = packagePath.Replace("'", "''", StringComparison.Ordinal);
+            using Process process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
-                    Arguments = $"-Command Start-Process powershell -ArgumentList 'Add-AppxPackage -Path \"{packagePath}\"' -Verb RunAs",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
+                    UseShellExecute = true,
+                    Verb = "runas",
                     CreateNoWindow = true
                 }
             };
-
+            process.StartInfo.ArgumentList.Add("-NoProfile");
+            process.StartInfo.ArgumentList.Add("-NonInteractive");
+            process.StartInfo.ArgumentList.Add("-Command");
+            process.StartInfo.ArgumentList.Add($"Add-AppxPackage -LiteralPath '{escapedPath}'");
             _ = process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            if (!string.IsNullOrEmpty(output))
-            {
-            }
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                _ = MessageBox.Show($"Error: {error}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            await process.WaitForExitAsync();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"Add-AppxPackage terminato con codice {process.ExitCode}.");
         }
 
         private async Task MicrosoftStoreInstall()
