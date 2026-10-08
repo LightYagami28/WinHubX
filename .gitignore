@@ -1,1 +1,16 @@
 
+
+# IDE and build output
+.vs/
+**/bin/
+**/obj/
+publish/
+
+# Local diagnostics and profiling artifacts
+*.log
+*.diagsession
+*.nettrace
+*.gcdump
+*.etlx
+*.speedscope.json
+*-counters.csv
