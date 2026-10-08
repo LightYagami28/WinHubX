@@ -146,6 +146,7 @@ namespace WinHubX
 
         private async void btnScrubber_Click(object? sender, EventArgs e)
         {
+            string? tempFolder = null;
             try
             {
                 string zipFileUrl = string.Empty;
@@ -167,15 +168,13 @@ namespace WinHubX
                     );
                     return;
                 }
-                string tempFolder = Path.Combine(Path.GetTempPath(), "OfficeScrubber");
+                tempFolder = Path.Combine(Path.GetTempPath(), $"WinHubX-OfficeScrubber-{Guid.NewGuid():N}");
                 string tempZipPath = Path.Combine(tempFolder, "OfficeScrubber.zip");
 
-                if (Directory.Exists(tempFolder))
-                    Directory.Delete(tempFolder, true);
                 Directory.CreateDirectory(tempFolder);
                 await DownloadManager.DownloadFileAsync(zipFileUrl, tempZipPath,
                     _cts?.Token ?? CancellationToken.None, autoParallel: false);
-                ZipFile.ExtractToDirectory(tempZipPath, tempFolder);
+                ExtractZipSafely(tempZipPath, tempFolder);
                 string cmdPath = Path.Combine(tempFolder, "OfficeScrubber.cmd");
 
                 if (!File.Exists(cmdPath))
@@ -194,17 +193,17 @@ namespace WinHubX
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "cmd.exe",
-                        Arguments = $"/c \"{cmdPath}\"",
                         WorkingDirectory = tempFolder,
                         Verb = "runas",
                         UseShellExecute = true
                     }
                 };
+                process.StartInfo.ArgumentList.Add("/c");
+                process.StartInfo.ArgumentList.Add(cmdPath);
 
                 process.Start();
                 await process.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
                 await Task.Run(() => AttendiScrubberConTitolo("Office Scrubber v12"));
-                Directory.Delete(tempFolder, true);
             }
             catch (Exception ex)
             {
@@ -214,6 +213,42 @@ namespace WinHubX
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
+            }
+            finally
+            {
+                if (tempFolder is not null)
+                {
+                    try
+                    {
+                        if (Directory.Exists(tempFolder))
+                            Directory.Delete(tempFolder, recursive: true);
+                    }
+                    catch (IOException) { }
+                    catch (UnauthorizedAccessException) { }
+                }
+            }
+        }
+
+        private static void ExtractZipSafely(string archivePath, string destination)
+        {
+            Directory.CreateDirectory(destination);
+            string root = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+            using ZipArchive archive = ZipFile.OpenRead(archivePath);
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                string target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
+                if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Archivio Office Scrubber non valido: percorso ZIP non sicuro.");
+
+                if (string.IsNullOrEmpty(entry.Name))
+                {
+                    Directory.CreateDirectory(target);
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                entry.ExtractToFile(target, overwrite: true);
             }
         }
 
