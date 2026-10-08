@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using WinHubX.Forms.DebloatAvanzato;
 using WinHubX.Forms.InstallaComponenti;
@@ -515,6 +516,13 @@ namespace WinHubX.Forms.Base
         {
             if (IsWindowsServer())
                 return;
+
+            if (MessageBox.Show(
+                    "DefendNot registra un provider di sicurezza alternativo tramite Windows Security Center e può disattivare Microsoft Defender. Continuare?",
+                    "Avviso sicurezza Defender", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+                return;
+
             string arch = hardwareInfo.Architettura;
 
             string url = Dipendenze.GitHubConfigUrl;
@@ -541,11 +549,24 @@ namespace WinHubX.Forms.Base
                     return;
                 }
 
-                using (var response = await client.GetAsync(downloadUrl))
+                if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out Uri? resourceUri)
+                    || resourceUri.Scheme != Uri.UriSchemeHttps
+                    || !resourceUri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("La risorsa DefendNot deve provenire da GitHub tramite HTTPS.");
+                await DownloadManager.DownloadFileAsync(resourceUri.ToString(), tempPath,
+                    CancellationToken.None, autoParallel: false);
+                string expectedHash = arch switch
                 {
-                    _ = response.EnsureSuccessStatusCode();
-                    await using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
-                    await response.Content.CopyToAsync(fs);
+                    "64" => "A7BC789268A8933ACACACA2D0E7BBC8D6C1AAD5560FBCA2D4F8C152A4D4493",
+                    "86" => "BCFD08104C863679A33FAF8E923C860FE2378FE6D6F0A031972D0DBB20930668",
+                    "arm64" => "7B09DDDE16DD4D3E7C07FA4856F0956A11D6F838DCFED32D5B3FA0C777F93A44",
+                    _ => throw new InvalidOperationException("Architettura non supportata.")
+                };
+                await using (FileStream downloadedFile = File.OpenRead(tempPath))
+                {
+                    byte[] actualHash = await SHA256.HashDataAsync(downloadedFile);
+                    if (!CryptographicOperations.FixedTimeEquals(actualHash, Convert.FromHexString(expectedHash)))
+                        throw new InvalidDataException("Hash SHA-256 dell'archivio DefendNot non valido.");
                 }
                 if (Directory.Exists(extractPath))
                     Directory.Delete(extractPath, true);
@@ -563,7 +584,6 @@ namespace WinHubX.Forms.Base
                     process.StartInfo.ArgumentList.Add("--name");
                     process.StartInfo.ArgumentList.Add("WinHubX");
                     process.StartInfo.ArgumentList.Add("--autorun-as-user");
-                    process.StartInfo.ArgumentList.Add("--silent");
                     process.StartInfo.Verb = "runas";
                     _ = process.Start();
                     await process.WaitForExitAsync();
