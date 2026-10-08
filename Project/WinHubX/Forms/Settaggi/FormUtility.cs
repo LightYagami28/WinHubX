@@ -300,43 +300,42 @@ namespace WinHubX.Forms.Settaggi
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = "powershell.exe",
-                Arguments = commandString,
-                UseShellExecute = false,
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
                 Verb = "runas"
             };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(commandString);
 
             using (var process = System.Diagnostics.Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Impossibile avviare il comando elevato."))
             {
                 process.WaitForExit();
 
-                var output = process.StandardOutput.ReadToEnd();
-                var error = process.StandardError.ReadToEnd();
-
-                if (!string.IsNullOrEmpty(error))
-                {
-                    throw new Exception(error);
-                }
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"PowerShell terminato con codice {process.ExitCode}.");
             }
         }
         private void EnableScheduledTask(string taskName)
         {
             try
             {
-                var taskCommand = $@"schtasks /Change /TN ""{taskName}"" /ENABLE";
                 var startInfo = new System.Diagnostics.ProcessStartInfo()
                 {
                     FileName = "cmd.exe",
-                    Arguments = "/c " + taskCommand,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    UseShellExecute = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                     Verb = "runas"
                 };
+                startInfo.ArgumentList.Add("/c");
+                startInfo.ArgumentList.Add("schtasks");
+                startInfo.ArgumentList.Add("/Change");
+                startInfo.ArgumentList.Add("/TN");
+                startInfo.ArgumentList.Add(taskName);
+                startInfo.ArgumentList.Add("/ENABLE");
 
                 using (var process = System.Diagnostics.Process.Start(startInfo)
                     ?? throw new InvalidOperationException("Impossibile avviare schtasks."))
