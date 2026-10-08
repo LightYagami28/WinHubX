@@ -31,7 +31,7 @@ jobs:
       - name: Build
         run: dotnet build Project/WinHubX.sln --configuration Release --no-restore -warnaserror --nologo
       - name: Test
-        run: dotnet test Project/WinHubX.sln --configuration Release --no-build --no-restore --nologo
+        run: dotnet run --project Project/WinHubX.Tests/WinHubX.Tests.csproj --configuration Release --no-build --no-restore
       - name: Dependency audit
         run: dotnet list Project/WinHubX/WinHubX.csproj package --vulnerable --include-transitive
       - name: Publish artifact

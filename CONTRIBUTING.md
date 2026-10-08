@@ -14,11 +14,11 @@ Grazie per il contributo. Per modifiche importanti apri prima una issue descrive
 ```powershell
 dotnet restore Project/WinHubX.sln
 dotnet build Project/WinHubX.sln --configuration Release --warnaserror
-dotnet test Project/WinHubX.sln --configuration Release
+dotnet run --project Project/WinHubX.Tests/WinHubX.Tests.csproj --configuration Release
 git diff --check
 ```
 
-La soluzione include i test automatizzati per l'importazione dei preset del registro; il runner Microsoft.Testing.Platform è configurato in `global.json`.
+La suite xUnit usa Microsoft.Testing.Platform; avviarla con `dotnet run` come sopra (anche in CI), dopo il restore/build della soluzione.
 
 Non sopprimere warning per far passare la CI: correggi la causa o documenta una motivazione tecnica verificabile. I pacchetti NuGet devono provenire da fonti affidabili.
 
