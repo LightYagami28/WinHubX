@@ -31,6 +31,8 @@ git diff --check
 La pipeline Windows esegue anche lo smoke test del publish e CodeQL. Una release non va pubblicata se uno di questi controlli fallisce.
 L'artefatto CI contiene `SHA256SUMS.json`, con hash SHA-256 e dimensione di ogni file pubblicato, incluso l'eseguibile. Per i binari il manifest registra anche lo stato Authenticode: se firmato, la pipeline richiede `Valid` e registra soggetto e thumbprint; se non firmato, riporta esplicitamente `NotSigned`. Ogni firma presente ma non valida interrompe la pipeline. Per validare un file scaricato, confrontare il digest ricalcolato localmente con la voce `path` corrispondente; il manifest da solo non sostituisce una firma Authenticode o una fonte di pubblicazione autenticata.
 
+L'updater verifica l'hash del download e della copia staged nella stessa directory dell'app, sostituisce l'eseguibile con backup, avvia la nuova versione e attende la finestra principale. Se il processo non parte o non diventa pronto entro 20 secondi, viene terminato e il backup viene ripristinato. I test coprono successo, hash errato e rollback.
+
 ## Profili supportati
 
 ### Singolo eseguibile, runtime installato

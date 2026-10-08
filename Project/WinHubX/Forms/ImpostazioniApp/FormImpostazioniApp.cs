@@ -467,20 +467,11 @@ namespace WinHubX.Forms.ImpostazioniApp
                     string actualSha256 = Convert.ToHexString(actualHash);
                     if (!actualSha256.Equals(expectedSha256, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("Il controllo SHA-256 del pacchetto aggiornamento non è riuscito.");
-                    string currentExecutablePath = Application.ExecutablePath;
-                    string backupExecutablePath = Path.ChangeExtension(currentExecutablePath, ".old");
-                    File.Move(currentExecutablePath, backupExecutablePath, true);
-                    try
-                    {
-                        File.Move(updateFilePath, currentExecutablePath);
-                    }
-                    catch
-                    {
-                        if (!File.Exists(currentExecutablePath) && File.Exists(backupExecutablePath))
-                            File.Move(backupExecutablePath, currentExecutablePath);
-                        throw;
-                    }
-                    _ = Process.Start(currentExecutablePath);
+                    await UpdateInstaller.InstallAndStartAsync(
+                        updateFilePath,
+                        Application.ExecutablePath,
+                        expectedSha256,
+                        StartUpdatedProcessAndWaitForWindowAsync);
                     Application.Exit();
                 }
                 catch (Exception ex)
@@ -500,6 +491,61 @@ namespace WinHubX.Forms.ImpostazioniApp
                         System.Diagnostics.Debug.WriteLine($"File temporaneo aggiornamento non rimosso: {cleanupException.Message}");
                     }
                 }
+            }
+        }
+
+        private static async Task<bool> StartUpdatedProcessAndWaitForWindowAsync(string executablePath, CancellationToken cancellationToken)
+        {
+            using Process process = Process.Start(new ProcessStartInfo(executablePath) { UseShellExecute = false })
+                ?? throw new InvalidOperationException("Windows non ha avviato il processo aggiornato.");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(20));
+
+            try
+            {
+                while (!timeout.IsCancellationRequested)
+                {
+                    if (process.HasExited)
+                    {
+                        return false;
+                    }
+
+                    process.Refresh();
+                    if (process.MainWindowHandle != IntPtr.Zero)
+                    {
+                        return true;
+                    }
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(200), timeout.Token);
+                }
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // La nuova versione non ha mostrato la finestra entro il timeout: arrestarla prima del rollback.
+            }
+            catch
+            {
+                StopFailedUpdateProcess(process);
+                throw;
+            }
+
+            StopFailedUpdateProcess(process);
+            return false;
+        }
+
+        private static void StopFailedUpdateProcess(Process process)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                System.Diagnostics.Debug.WriteLine($"Arresto processo aggiornato non riuscito: {exception}");
             }
         }
 

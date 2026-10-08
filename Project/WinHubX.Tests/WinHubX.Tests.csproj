@@ -31,6 +31,7 @@
     <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationValidator.cs" Link="Impostazioni\ServiceConfigurationValidator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ServiceConfigurationScriptBuilder.cs" Link="Impostazioni\ServiceConfigurationScriptBuilder.cs" />
     <Compile Include="..\WinHubX\Impostazioni\UpdateManifestValidator.cs" Link="Impostazioni\UpdateManifestValidator.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\UpdateInstaller.cs" Link="Impostazioni\UpdateInstaller.cs" />
     <Compile Include="..\WinHubX\Impostazioni\NetworkUsageCalculator.cs" Link="Impostazioni\NetworkUsageCalculator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ThemeConfig.cs" Link="Impostazioni\ThemeConfig.cs" />
     <Compile Include="..\WinHubX\Impostazioni\LanguageManager.cs" Link="Impostazioni\LanguageManager.cs" />
