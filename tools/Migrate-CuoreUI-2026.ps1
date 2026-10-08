@@ -1,4 +1,4 @@
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
     [string]$Root = (Join-Path $PSScriptRoot '..\Project\WinHubX')
 )
@@ -11,7 +11,7 @@ Get-ChildItem -LiteralPath $Root -Recurse -Filter '*.Designer.cs' | ForEach-Obje
     $path = $_.FullName
     $content = Get-Content -Raw -LiteralPath $path
     $updated = [regex]::Replace($content, "(?m)^\s*[^\r\n]*\.($obsolete)\s*=.*\r?\n", '')
-    if ($updated -cne $content) {
+    if ($updated -cne $content -and $PSCmdlet.ShouldProcess($path, 'Remove obsolete Designer properties')) {
         [System.IO.File]::WriteAllText($path, $updated, [System.Text.UTF8Encoding]::new($false))
     }
 }
