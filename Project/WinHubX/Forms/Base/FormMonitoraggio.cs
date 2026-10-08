@@ -327,27 +327,46 @@ namespace WinHubX.Forms.Base
         {
             string tempPath = Path.GetTempPath();
 
-            while (!_monitoringCancellation.IsCancellationRequested)
+            try
             {
-                try
+                while (!_monitoringCancellation.IsCancellationRequested)
                 {
-                    // La scansione ricorsiva può attraversare migliaia di file: mai eseguirla sul thread UI.
-                    long totalBytes = await Task.Run(() => GetDirectorySize(tempPath));
+                    try
+                    {
+                        // La scansione ricorsiva può attraversare migliaia di file: mai eseguirla sul thread UI.
+                        long totalBytes = await Task.Run(() => GetDirectorySize(tempPath), _monitoringCancellation.Token);
+                        if (_monitoringCancellation.IsCancellationRequested || IsDisposed || !IsHandleCreated)
+                        {
+                            return;
+                        }
 
-                    double usedGB = Math.Round(totalBytes / 1024.0 / 1024.0 / 1024.0, 2);
-                    double limitGB = GetSelectedGB();
+                        double usedGB = Math.Round(totalBytes / 1024.0 / 1024.0 / 1024.0, 2);
+                        double limitGB = GetSelectedGB();
 
-                    BarTEMPtext.Text = $"{usedGB}GB";
+                        BarTEMPtext.Text = $"{usedGB}GB";
 
-                    int percent = (int)Math.Min((usedGB / limitGB) * 100, 100);
-                    BarTEMP.ProgressValue = percent;
-                    BarTEMP.ProgressColor = usedGB <= limitGB ? Color.Green : Color.Red;
+                        int percent = (int)Math.Min((usedGB / limitGB) * 100, 100);
+                        BarTEMP.ProgressValue = percent;
+                        BarTEMP.ProgressColor = usedGB <= limitGB ? Color.Green : Color.Red;
+                    }
+                    catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Lettura cartella temporanea non riuscita: {ex}");
+                    }
+
+                    await Task.Delay(10000, _monitoringCancellation.Token);
                 }
-                catch
-                {
-                }
-
-                await Task.Delay(10000, _monitoringCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Monitoraggio cartella temporanea terminato con errore: {ex}");
             }
         }
         private int GetSelectedGB()
@@ -376,23 +395,37 @@ namespace WinHubX.Forms.Base
 
         private async void StartDiscoMonitoring()
         {
-            await Task.Run(async () =>
+            try
             {
-                while (!_monitoringCancellation.IsCancellationRequested)
+                await Task.Run(async () =>
                 {
-                    try
+                    while (!_monitoringCancellation.IsCancellationRequested)
                     {
-                        double discoUsage = await GetDiscoUsagePercentageAsync();
-                        UpdateDiscoUI(discoUsage);
-                        await Task.Delay(3000, _monitoringCancellation.Token);
+                        try
+                        {
+                            double discoUsage = await GetDiscoUsagePercentageAsync();
+                            UpdateDiscoUI(discoUsage);
+                            await Task.Delay(3000, _monitoringCancellation.Token);
+                        }
+                        catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                        {
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Lettura utilizzo disco non riuscita: {ex}");
+                            await Task.Delay(3000, _monitoringCancellation.Token);
+                        }
                     }
-                    catch (Exception)
-                    {
-                        UpdateDiscoUI(0);
-                        await Task.Delay(3000, _monitoringCancellation.Token);
-                    }
-                }
-            });
+                }, _monitoringCancellation.Token);
+            }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Monitoraggio disco terminato con errore: {ex}");
+            }
         }
         private async Task<double> GetDiscoUsagePercentageAsync()
         {
@@ -407,6 +440,10 @@ namespace WinHubX.Forms.Base
                     return Math.Min(diskUsage, 100);
                 }
             }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception)
             {
                 try
@@ -418,6 +455,10 @@ namespace WinHubX.Forms.Base
                         float diskUsage = diskCounter.NextValue();
                         return Math.Min(diskUsage, 100);
                     }
+                }
+                catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch
                 {
@@ -454,17 +495,32 @@ namespace WinHubX.Forms.Base
 
         private async void StartCpuMonitoring()
         {
-            while (!_monitoringCancellation.IsCancellationRequested)
+            try
             {
-                double cpuUsagePercentage = await GetCpuUsagePercentageAsync();
-                BarCPU.ProgressValue = (int)cpuUsagePercentage;
-                BarCPUtext.Text = $"{cpuUsagePercentage:0}%";
-                if (MonitorSettings.PuliziaAutomaticaCPU && cpuUsagePercentage > (double)MonitorSettings.LimiteCPU)
+                while (!_monitoringCancellation.IsCancellationRequested)
                 {
-                    CpuReduce();
-                }
+                    double cpuUsagePercentage = await GetCpuUsagePercentageAsync();
+                    if (_monitoringCancellation.IsCancellationRequested || IsDisposed || !IsHandleCreated)
+                    {
+                        return;
+                    }
 
-                await Task.Delay(2000);
+                    BarCPU.ProgressValue = (int)cpuUsagePercentage;
+                    BarCPUtext.Text = $"{cpuUsagePercentage:0}%";
+                    if (MonitorSettings.PuliziaAutomaticaCPU && cpuUsagePercentage > (double)MonitorSettings.LimiteCPU)
+                    {
+                        CpuReduce();
+                    }
+
+                    await Task.Delay(2000, _monitoringCancellation.Token);
+                }
+            }
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Monitoraggio CPU terminato con errore: {ex}");
             }
         }
 
@@ -561,31 +617,42 @@ namespace WinHubX.Forms.Base
         }
         private async void StartReteMonitoring()
         {
-            networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(n => n.OperationalStatus == OperationalStatus.Up &&
-                           n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .ToArray();
-
-            if (networkInterfaces.Length == 0)
+            try
             {
-                labelReteUtilizzo.Text = "Nessuna interfaccia attiva";
-                labelVelocitaRete.Text = "0 KB/s";
-                return;
+                networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(n => n.OperationalStatus == OperationalStatus.Up &&
+                               n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                    .ToArray();
+
+                if (networkInterfaces.Length == 0)
+                {
+                    labelReteUtilizzo.Text = "Nessuna interfaccia attiva";
+                    labelVelocitaRete.Text = "0 KB/s";
+                    return;
+                }
+                lastUpdateTime = DateTime.Now;
+                lastBytesSent = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesSent);
+                lastBytesReceived = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesReceived);
+                while (!_monitoringCancellation.IsCancellationRequested)
+                {
+                    await Task.Delay(1000, _monitoringCancellation.Token);
+
+                    try
+                    {
+                        await UpdateNetworkStats();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Lettura statistiche di rete non riuscita: {ex}");
+                    }
+                }
             }
-            lastUpdateTime = DateTime.Now;
-            lastBytesSent = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesSent);
-            lastBytesReceived = networkInterfaces.Sum(n => n.GetIPv4Statistics().BytesReceived);
-            while (!_monitoringCancellation.IsCancellationRequested)
+            catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
-                await Task.Delay(1000);
-
-                try
-                {
-                    await UpdateNetworkStats();
-                }
-                catch (Exception)
-                {
-                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Monitoraggio rete terminato con errore: {ex}");
             }
         }
 
