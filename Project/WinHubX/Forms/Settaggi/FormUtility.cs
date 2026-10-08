@@ -356,13 +356,11 @@ namespace WinHubX.Forms.Settaggi
             {
                 var startInfo = new System.Diagnostics.ProcessStartInfo()
                 {
-                    FileName = "cmd.exe",
+                    FileName = Path.Combine(Environment.SystemDirectory, "schtasks.exe"),
                     UseShellExecute = true,
                     WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                     Verb = "runas"
                 };
-                startInfo.ArgumentList.Add("/c");
-                startInfo.ArgumentList.Add("schtasks");
                 startInfo.ArgumentList.Add("/Change");
                 startInfo.ArgumentList.Add("/TN");
                 startInfo.ArgumentList.Add(taskName);
@@ -372,11 +370,13 @@ namespace WinHubX.Forms.Settaggi
                     ?? throw new InvalidOperationException("Impossibile avviare schtasks."))
                 {
                     process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException($"schtasks.exe è terminato con codice {process.ExitCode} per l’attività '{taskName}'.");
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                Debug.WriteLine($"Impossibile riattivare l’attività pianificata '{taskName}': {ex.Message}");
             }
         }
         private void RemoveDisabledProperties(RegistryKey backgroundAppsKey)
