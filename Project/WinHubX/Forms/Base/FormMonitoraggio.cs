@@ -620,7 +620,7 @@ namespace WinHubX.Forms.Base
         private async Task<double> GetCpuUsagePercentageAsync()
         {
             _ = _cpuCounter.NextValue();
-            await Task.Delay(1000);
+            await Task.Delay(1000, _monitoringCancellation.Token);
             return _cpuCounter.NextValue();
         }
 
