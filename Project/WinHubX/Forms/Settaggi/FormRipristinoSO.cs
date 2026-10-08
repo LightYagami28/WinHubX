@@ -237,7 +237,7 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task RunStressTestsContinuously(CancellationToken token)
         {
-            await Task.Run(VerifyDiskStatus, token);
+            await Task.Run(() => VerifyDiskStatus(token), token);
             token.ThrowIfCancellationRequested();
 
             using CancellationTokenSource testTasksSource = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -491,16 +491,20 @@ namespace WinHubX.Forms.Settaggi
 
             return 0;
         }
-        public void VerifyDiskStatus()
+        private void VerifyDiskStatus(CancellationToken token)
         {
             UpdateLabel("Verifica stato del disco...");
             LogMessage("Inizio controllo avanzato del disco...");
 
             try
             {
-                using ManagementObjectSearcher searcher = new("SELECT * FROM Win32_DiskDrive");
-                foreach (ManagementObject disk in searcher.Get())
+                using ManagementObjectSearcher searcher = new("SELECT DeviceID, Model, Size, Signature, Status FROM Win32_DiskDrive");
+                using ManagementObjectCollection disks = searcher.Get();
+                foreach (ManagementObject disk in disks)
                 {
+                    using (disk)
+                    {
+                    token.ThrowIfCancellationRequested();
                     string deviceId = disk["DeviceID"]?.ToString() ?? "Sconosciuto";
                     string model = disk["Model"]?.ToString() ?? "Modello sconosciuto";
                     long diskSize = Convert.ToInt64(disk["Size"] ?? 0) / (1024 * 1024 * 1024);
@@ -510,36 +514,32 @@ namespace WinHubX.Forms.Settaggi
                     UpdateLabel($"Analisi {model}...");
 
                     AppendToRichTextBox2(diskInfo + Environment.NewLine);
-                    string NamespacePath = @"\\.\root\cimv2";
-                    string ClassName = "Win32_DiskDrive";
-                    ManagementClass oClass = new ManagementClass(NamespacePath + ":" + ClassName);
-
-                    foreach (ManagementObject oObject in oClass.GetInstances())
+                    string? signature = disk["Signature"]?.ToString();
+                    if (string.IsNullOrEmpty(signature))
                     {
-                        var sign = Convert.ToString(oObject["Signature"]);
-                        var smartModel = Convert.ToString(oObject["Model"]);
-                        var status = Convert.ToString(oObject["Status"]);
-
-                        if (Equals(sign, ""))
-                        {
-                            AppendToRichTextBox2("DISK model: " + smartModel);
-                            AppendToRichTextBox2("Status: " + status);
-                            AppendToRichTextBox2(Environment.NewLine);
-                        }
+                        AppendToRichTextBox2($"Stato WMI: {disk["Status"]?.ToString() ?? "Non disponibile"}");
+                        AppendToRichTextBox2(Environment.NewLine);
                     }
                     LogMessage("-------------------------------------------------");
                     AppendToRichTextBox2("-------------------------------------------------" + Environment.NewLine);
+                    }
                 }
 
-                string speedResults = DiskSpeedTest();
+                token.ThrowIfCancellationRequested();
+                string speedResults = DiskSpeedTest(token);
                 AppendToRichTextBox2(speedResults + Environment.NewLine);
 
                 UpdateLabel("Verifica disco completata.");
                 LogMessage("Verifica disco completata con successo.");
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 LogError($"Errore verifica disco: {ex.Message}");
+                throw;
             }
         }
         private void AppendToRichTextBox2(string message)
@@ -557,7 +557,7 @@ namespace WinHubX.Forms.Settaggi
                 richTextBox2.ScrollToCaret();
             }
         }
-        private string DiskSpeedTest()
+        private string DiskSpeedTest(CancellationToken token)
         {
             string tempFile = Path.Combine(Path.GetTempPath(), $"WinHubX-disk-test-{Guid.NewGuid():N}.tmp");
             try
@@ -570,7 +570,10 @@ namespace WinHubX.Forms.Settaggi
                 using (FileStream output = new(tempFile, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan))
                 {
                     for (int writtenMb = 0; writtenMb < testSizeMb; writtenMb++)
+                    {
+                        token.ThrowIfCancellationRequested();
                         output.Write(buffer, 0, buffer.Length);
+                    }
                     output.Flush(flushToDisk: true);
                 }
                 stopwatch.Stop();
@@ -578,7 +581,12 @@ namespace WinHubX.Forms.Settaggi
                 stopwatch.Restart();
                 using (FileStream input = new(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
                 {
-                    input.CopyTo(Stream.Null);
+                    while (true)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (input.Read(buffer, 0, buffer.Length) == 0)
+                            break;
+                    }
                 }
                 stopwatch.Stop();
                 double readSpeed = testSizeMb / Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
@@ -587,6 +595,10 @@ namespace WinHubX.Forms.Settaggi
                 string speedResult = $"Velocità volume temporaneo ({volumeRoot}): scrittura {writeSpeed:F2} MB/s | lettura {readSpeed:F2} MB/s";
                 LogMessage(speedResult);
                 return speedResult;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
