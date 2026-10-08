@@ -4,6 +4,7 @@
 
 - WinHubX non scarica né esegue script di attivazione da URL remoti.
 - I download applicativi devono usare HTTPS, file temporanei univoci e pubblicazione atomica al termine.
+- L'updater legge il manifest `update.json` dal repository `LightYagami28/WinHubX`, rifiuta destinazioni non attendibili e richiede uno SHA-256 di 64 caratteri esadecimali; il digest del file scaricato deve coincidere prima della sostituzione dell'eseguibile. Lo SHA-256 verifica l'integrità rispetto al manifest, ma non sostituisce una firma Authenticode.
 - I driver vengono aperti dalla pagina ufficiale del produttore; non vengono estratti o avviati automaticamente.
 - Le funzioni di attivazione aprono esclusivamente le impostazioni/account ufficiali Microsoft.
 - Nessuna esclusione di Microsoft Defender viene richiesta o configurata dall’applicazione.

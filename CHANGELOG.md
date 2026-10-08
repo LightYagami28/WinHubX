@@ -10,3 +10,5 @@ Il progetto segue release incrementali. Le modifiche rilevanti vengono riassunte
 - build con warning trattati come errori;
 - dipendenze e aggiornamenti gestiti tramite Dependabot;
 - miglioramenti progressivi a sicurezza, download HTTPS e prestazioni.
+- il controllo aggiornamenti all'avvio non blocca più l'interfaccia con finestre modali; l'avviso apre le impostazioni;
+- l'updater usa il manifest del fork, valida redirect HTTPS e richiede la verifica SHA-256 prima di sostituire l'eseguibile.

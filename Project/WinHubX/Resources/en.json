@@ -119,7 +119,9 @@
     "restorepoint_title": "Restore Point",
     "restorepoint_message": "Do you want to create a restore point before accessing the settings?",
     "aggiornamento_disponibile_msg": "An update is available!\nGo to Settings to update",
-    "aggiornamento_disponibile_title": "WinHubX"
+    "aggiornamento_disponibile_title": "WinHubX",
+    "update_available_button": "Update available",
+    "update_available_description": "Open settings to review and install the update"
   },
   "Global": {
     "sha256title": "SHA256 Copied!",
