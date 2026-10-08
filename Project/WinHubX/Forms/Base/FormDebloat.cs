@@ -213,13 +213,16 @@ namespace WinHubX.Forms.Base
                     ProcessStartInfo psi = new ProcessStartInfo
                     {
                         FileName = "powershell.exe",
-                        Arguments = includeAll
-                            ? "-Command \"Get-AppxPackage | Select-Object -ExpandProperty Name\""
-                            : "-Command \"Get-AppxPackage | Where-Object { $_.SignatureKind -eq 'Store' } | Select-Object -ExpandProperty Name\"",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
                     };
+                    psi.ArgumentList.Add("-NoProfile");
+                    psi.ArgumentList.Add("-NonInteractive");
+                    psi.ArgumentList.Add("-Command");
+                    psi.ArgumentList.Add(includeAll
+                        ? "Get-AppxPackage | Select-Object -ExpandProperty Name"
+                        : "Get-AppxPackage | Where-Object { $_.SignatureKind -eq 'Store' } | Select-Object -ExpandProperty Name");
 
                     using (Process process = new Process { StartInfo = psi })
                     {
@@ -312,12 +315,13 @@ namespace WinHubX.Forms.Base
                 {
                     FileName = "powershell.exe",
                     Verb = "runas",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    Arguments = $"-Command \"Get-AppxPackage -allusers {nomeApp} | Remove-AppxPackage\""
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
+                psi.ArgumentList.Add("-NoProfile");
+                psi.ArgumentList.Add("-NonInteractive");
+                psi.ArgumentList.Add("-Command");
+                psi.ArgumentList.Add($"Get-AppxPackage -AllUsers -Name '{EscapePowerShellLiteral(nomeApp)}' | Remove-AppxPackage");
 
                 using (Process process = new Process { StartInfo = psi })
                 {
@@ -339,12 +343,13 @@ namespace WinHubX.Forms.Base
                 {
                     FileName = "powershell.exe",
                     Verb = "runas",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    Arguments = $"-Command \"Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -like '*{nomeApp}*' }} | Remove-AppxProvisionedPackage -Online\""
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
                 };
+                psi.ArgumentList.Add("-NoProfile");
+                psi.ArgumentList.Add("-NonInteractive");
+                psi.ArgumentList.Add("-Command");
+                psi.ArgumentList.Add($"Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -like '*{EscapePowerShellLiteral(nomeApp)}*' }} | Remove-AppxProvisionedPackage -Online");
 
                 using (Process process = new Process { StartInfo = psi })
                 {
@@ -357,6 +362,8 @@ namespace WinHubX.Forms.Base
                 _ = MessageBox.Show($"Error: {nomeApp}: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 
         private void btnDebloatAuto_Click(object sender, EventArgs e)
         {
