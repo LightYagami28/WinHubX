@@ -36,7 +36,7 @@ public static class UpdateInstaller
             throw new DirectoryNotFoundException("La directory dell'applicazione non è disponibile.");
         }
 
-        string stagingPath = Path.Combine(destinationDirectory, $".{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.pending");
+        string stagingPath = Path.Join(destinationDirectory, $".{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.pending");
         string backupPath = $"{destinationPath}.{Guid.NewGuid():N}.rollback";
         bool replaced = false;
 
