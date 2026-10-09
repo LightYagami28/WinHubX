@@ -1132,35 +1132,25 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     string storagePolicyKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy";
-                    using (RegistryKey? key32 = Registry.CurrentUser.OpenSubKey(storagePolicyKey, true))
+                    using (RegistryKey baseKey32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32))
+                    using (RegistryKey key32 = baseKey32.CreateSubKey(storagePolicyKey)
+                        ?? throw new UnauthorizedAccessException($"Impossibile creare HKCU\\{storagePolicyKey} nella vista 32 bit."))
                     {
-                        if (key32 != null)
-                        {
-                            key32.SetValue("01", 1, RegistryValueKind.DWord);
-                            key32.SetValue("04", 1, RegistryValueKind.DWord);
-                            key32.SetValue("08", 1, RegistryValueKind.DWord);
-                            key32.SetValue("32", 0, RegistryValueKind.DWord);
-                            key32.SetValue("StoragePoliciesNotified", 1, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
-                        }
+                        key32.SetValue("01", 1, RegistryValueKind.DWord);
+                        key32.SetValue("04", 1, RegistryValueKind.DWord);
+                        key32.SetValue("08", 1, RegistryValueKind.DWord);
+                        key32.SetValue("32", 0, RegistryValueKind.DWord);
+                        key32.SetValue("StoragePoliciesNotified", 1, RegistryValueKind.DWord);
                     }
-                    using (RegistryKey? key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).OpenSubKey(storagePolicyKey, true))
+                    using (RegistryKey baseKey64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
+                    using (RegistryKey key64 = baseKey64.CreateSubKey(storagePolicyKey)
+                        ?? throw new UnauthorizedAccessException($"Impossibile creare HKCU\\{storagePolicyKey} nella vista 64 bit."))
                     {
-                        if (key64 != null)
-                        {
-                            key64.SetValue("01", 1, RegistryValueKind.DWord);
-                            key64.SetValue("04", 1, RegistryValueKind.DWord);
-                            key64.SetValue("08", 1, RegistryValueKind.DWord);
-                            key64.SetValue("32", 0, RegistryValueKind.DWord);
-                            key64.SetValue("StoragePoliciesNotified", 1, RegistryValueKind.DWord);
-                        }
-                        else
-                        {
-
-                        }
+                        key64.SetValue("01", 1, RegistryValueKind.DWord);
+                        key64.SetValue("04", 1, RegistryValueKind.DWord);
+                        key64.SetValue("08", 1, RegistryValueKind.DWord);
+                        key64.SetValue("32", 0, RegistryValueKind.DWord);
+                        key64.SetValue("StoragePoliciesNotified", 1, RegistryValueKind.DWord);
                     }
                 }
                 catch (UnauthorizedAccessException ex)

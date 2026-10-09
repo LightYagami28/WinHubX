@@ -467,104 +467,36 @@ namespace WinHubX.Forms.Settaggi
         private void AvviaProcessoDestroDefault()
         {
             string registryPath = @"SOFTWARE\CLASSES\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
-            try
-            {
-                using (RegistryKey? key32 = Registry.CurrentUser.OpenSubKey(registryPath, true))
-                {
-                    if (key32 != null)
-                    {
-                        Registry.CurrentUser.DeleteSubKeyTree(registryPath, false);
-                    }
-                    else
-                    {
-
-                    }
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            try
-            {
-                using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64))
-                {
-                    using (RegistryKey? subKey64 = key64.OpenSubKey(registryPath, true))
-                    {
-                        if (subKey64 != null)
-                        {
-                            key64.DeleteSubKeyTree(registryPath, false);
-
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            DeleteCurrentUserSubKeyIfPresent(registryPath, RegistryView.Registry32);
+            DeleteCurrentUserSubKeyIfPresent(registryPath, RegistryView.Registry64);
         }
 
         private void AvviaProcessoDestroLegacy()
         {
             string registryPath = @"SOFTWARE\CLASSES\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
-            try
-            {
-                using (RegistryKey key32 = Registry.CurrentUser.CreateSubKey(registryPath))
-                {
-                    if (key32 != null)
-                    {
-                        key32.SetValue("", "", RegistryValueKind.String);
+            SetCurrentUserDefaultString(registryPath, RegistryView.Registry32);
+            SetCurrentUserDefaultString(registryPath, RegistryView.Registry64);
+        }
 
-                    }
-                    else
-                    {
+        private static void DeleteCurrentUserSubKeyIfPresent(string subKeyPath, RegistryView registryView)
+        {
+            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, registryView);
+            bool exists;
+            using (RegistryKey? existingKey = baseKey.OpenSubKey(subKeyPath, writable: true))
+            {
+                exists = existingKey is not null;
+            }
 
-                    }
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            try
-            {
-                using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).CreateSubKey(registryPath))
-                {
-                    if (key64 != null)
-                    {
-                        key64.SetValue("", "", RegistryValueKind.String);
-                    }
-                    else
-                    {
+            if (exists)
+                baseKey.DeleteSubKeyTree(subKeyPath, throwOnMissingSubKey: false);
+        }
 
-                    }
-                }
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+        private static void SetCurrentUserDefaultString(string subKeyPath, RegistryView registryView)
+        {
+            using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, registryView);
+            using RegistryKey key = baseKey.CreateSubKey(subKeyPath)
+                ?? throw new UnauthorizedAccessException($"Impossibile creare HKCU\\{subKeyPath} nella vista {registryView}.");
+            key.SetValue(string.Empty, string.Empty, RegistryValueKind.String);
         }
 
         private void AvviaProcessoMostraSecondi()
