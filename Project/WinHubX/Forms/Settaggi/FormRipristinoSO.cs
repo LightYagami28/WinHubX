@@ -12,6 +12,7 @@ namespace WinHubX.Forms.Settaggi
         private static long _cpuStressResultBits;
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
+        private ElevatedProcessBrokerClient? _repairBroker;
         private System.Windows.Forms.Timer? countdownTimer;
         private int remainingTime;
         private CancellationTokenSource? cancellationTokenSource;
@@ -88,6 +89,11 @@ namespace WinHubX.Forms.Settaggi
 
         private async Task StartScanAsyncSW(CancellationToken token)
         {
+            string? workspaceRoot = null;
+            bool completed = false;
+            string windowsDrive = Path.GetPathRoot(Environment.SystemDirectory)?.TrimEnd(Path.DirectorySeparatorChar)
+                ?? throw new IOException("Impossibile determinare il volume di Windows.");
+
             var steps = new (string Label, string? Executable, string[]? Arguments)[]
             {
                 ("backupRegistro", null, null),
@@ -95,42 +101,76 @@ namespace WinHubX.Forms.Settaggi
                 ("scansioneErroriSistema", "dism.exe", ["/Online", "/Cleanup-Image", "/ScanHealth"]),
                 ("ripristinoFileSistema", "dism.exe", ["/Online", "/Cleanup-Image", "/RestoreHealth"]),
                 ("esecuzioneSfc", "sfc.exe", ["/scannow"]),
-                ("puliziaWinSxS", "dism.exe", ["/online", "/Cleanup-Image", "/StartComponentCleanup"]),
-                ("pianificazioneChkdsk", "fsutil.exe", ["dirty", "set", "C:"])
+                ("puliziaWinSxS", "dism.exe", ["/Online", "/Cleanup-Image", "/StartComponentCleanup"]),
+                ("pianificazioneChkdsk", "chkdsk.exe", [windowsDrive, "/scan"])
             };
 
-            int total = steps.Length + 1;
-            int current = 0;
-            UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", steps[0].Label));
-            await BackupRegistryAsync(token);
-            UpdateProgress(++current, total);
-            foreach (var step in steps.Skip(1))
+            try
             {
-                UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", step.Label));
-                if (step.Executable is not null && step.Arguments is not null)
-                    await RunCommandAsync(step.Executable, step.Arguments, token);
+                _repairBroker = await ElevatedProcessBrokerClient.StartAsync(token);
+                workspaceRoot = _repairBroker.WorkspaceRoot;
+                string repairDirectory = Path.Combine(workspaceRoot, "Repair");
+                Directory.CreateDirectory(repairDirectory);
 
+                int total = steps.Length + 1;
+                int current = 0;
+                UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", steps[0].Label));
+                await BackupRegistryAsync(repairDirectory, token);
                 UpdateProgress(++current, total);
+                foreach (var step in steps.Skip(1))
+                {
+                    UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", step.Label));
+                    if (step.Executable is not null && step.Arguments is not null)
+                        await RunCommandAsync(step.Executable, step.Arguments, token);
+
+                    UpdateProgress(++current, total);
+                }
+                UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "registrazioneDll"));
+                await RegisterSystemDLLs(token);
+                UpdateProgress(++current, total);
+                UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "ripristinoCompletato"));
+                MessageBox.Show(
+                    LanguageManager.GetTranslation("FormRipristinoSO", "msgRipristinoCompletato"),
+                    "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                completed = true;
             }
-            UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "registrazioneDll"));
-            await RegisterSystemDLLs(token);
-            UpdateProgress(++current, total);
-            UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "ripristinoCompletato"));
-            MessageBox.Show(
-                LanguageManager.GetTranslation("FormRipristinoSO", "msgRipristinoCompletato"),
-                "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            finally
+            {
+                ElevatedProcessBrokerClient? broker = _repairBroker;
+                _repairBroker = null;
+                if (broker is not null)
+                {
+                    try
+                    {
+                        await broker.DisposeAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        AppendSafe($"Chiusura del broker UAC non riuscita: {ex.Message}");
+                    }
+                }
+
+                if (completed && workspaceRoot is not null && Directory.Exists(workspaceRoot))
+                    Directory.Delete(workspaceRoot, recursive: true);
+            }
         }
 
-        private async Task BackupRegistryAsync(CancellationToken token)
+        private async Task BackupRegistryAsync(string repairDirectory, CancellationToken token)
         {
             string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string pathHKLM = Path.Combine(desktop, "RegistryBackup_HKLM.reg");
-            string pathHKCU = Path.Combine(desktop, "RegistryBackup_HKCU.reg");
+            if (string.IsNullOrWhiteSpace(desktop))
+                throw new IOException("Impossibile determinare la cartella Desktop per i backup del Registro.");
+            string pathHKLM = Path.Combine(repairDirectory, "RegistryBackup_HKLM.reg");
+            string pathHKCU = Path.Combine(repairDirectory, "RegistryBackup_HKCU.reg");
 
-            await RunCommandAsync("reg.exe", ["export", "HKLM\\SOFTWARE", pathHKLM, "/y"], token);
-            await RunCommandAsync("reg.exe", ["export", "HKCU", pathHKCU, "/y"], token);
+            await RunCommandAsync("reg.exe", ["export-hklm", pathHKLM], token);
+            await RunUserCommandAsync("reg.exe", ["export", "HKCU", pathHKCU, "/y"], token);
 
-            LogMessage($"Backup registro creato: {pathHKLM} + {pathHKCU}");
+            Directory.CreateDirectory(desktop);
+            File.Copy(pathHKLM, Path.Combine(desktop, Path.GetFileName(pathHKLM)), overwrite: true);
+            File.Copy(pathHKCU, Path.Combine(desktop, Path.GetFileName(pathHKCU)), overwrite: true);
+
+            LogMessage($"Backup registro creato sul Desktop: RegistryBackup_HKLM.reg + RegistryBackup_HKCU.reg");
         }
 
         private async Task RegisterSystemDLLs(CancellationToken token)
@@ -139,13 +179,50 @@ namespace WinHubX.Forms.Settaggi
 
             foreach (string dll in dlls)
             {
-                await RunCommandAsync("regsvr32.exe", ["/s", dll], token);
+                await RunCommandAsync("regsvr32.exe", ["regsvr32", "/s", dll], token);
                 LogMessage($"Registrata DLL: {dll}");
             }
         }
 
         private async Task RunCommandAsync(string executable, IEnumerable<string> arguments, CancellationToken token)
         {
+            ElevatedProcessBrokerClient broker = _repairBroker
+                ?? throw new InvalidOperationException("Broker UAC per il ripristino non inizializzato.");
+            string[] processArguments = arguments.ToArray();
+            string utility = Path.GetFileNameWithoutExtension(executable).ToLowerInvariant();
+            IReadOnlyList<string> utilityArguments = utility switch
+            {
+                "sfc" => ["sfc", .. processArguments],
+                "chkdsk" => ["chkdsk", .. processArguments],
+                "regsvr32" => processArguments,
+                "reg" when processArguments.Length == 2 && processArguments[0] == "export-hklm"
+                    => processArguments,
+                _ => []
+            };
+
+            int exitCode = utility switch
+            {
+                "dism" => await broker.RunDismAsync(processArguments,
+                    (line, isError) => AppendSafe(isError ? $"[ERRORE] {line}" : line), token),
+                "sfc" or "chkdsk" or "regsvr32" or "reg" when utilityArguments.Count > 0
+                    => await broker.RunSystemUtilityAsync(utilityArguments,
+                        (line, isError) => AppendSafe(isError ? $"[ERRORE] {line}" : line), token),
+                _ => throw new InvalidOperationException($"Comando elevato non previsto nel ripristino: {executable}.")
+            };
+
+            if (exitCode != 0)
+                throw new InvalidOperationException($"{executable} è terminato con codice {exitCode}.");
+        }
+
+        private async Task RunUserCommandAsync(string executable, IReadOnlyList<string> arguments, CancellationToken token)
+        {
+            if (!Path.GetFileName(executable).Equals("reg.exe", StringComparison.OrdinalIgnoreCase)
+                || arguments.Count != 4
+                || !arguments[0].Equals("export", StringComparison.OrdinalIgnoreCase)
+                || !arguments[1].Equals("HKCU", StringComparison.OrdinalIgnoreCase)
+                || !arguments[3].Equals("/y", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("È consentito solo esportare l'hive HKCU senza elevazione.");
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = Path.Combine(Environment.SystemDirectory, executable),
