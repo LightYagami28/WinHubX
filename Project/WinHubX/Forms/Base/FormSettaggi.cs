@@ -72,7 +72,7 @@ namespace WinHubX.Forms.Base
 
         private void btnPrivacy_Click(object sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Computer", "osehardware.json");
 
@@ -88,7 +88,7 @@ namespace WinHubX.Forms.Base
 
         private void btnUtility_Click(object sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Computer", "osehardware.json");
 
@@ -122,7 +122,7 @@ namespace WinHubX.Forms.Base
 
         private void btnPersonalizzazione_Click(object sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Computer", "osehardware.json");
 
@@ -185,7 +185,7 @@ namespace WinHubX.Forms.Base
                     ?? throw new InvalidOperationException("Nome assembly non disponibile.");
                 string resourcePath1 = $"{assemblyName1}.Resources.WinHubXWSL.ps1";
                 byte[] exeBytes1 = LoadEmbeddedResource1(resourcePath1);
-                scriptPath = Path.Combine(Path.GetTempPath(), $"WinHubXWSL-{Guid.NewGuid():N}.ps1");
+                scriptPath = Path.Join(Path.GetTempPath(), $"WinHubXWSL-{Guid.NewGuid():N}.ps1");
                 using (FileStream scriptFile = new(scriptPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 64 * 1024, FileOptions.SequentialScan))
                 {
                     scriptFile.Write(exeBytes1, 0, exeBytes1.Length);
@@ -229,7 +229,7 @@ namespace WinHubX.Forms.Base
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 Verb = "runas",
                 UseShellExecute = true,
                 CreateNoWindow = true,
@@ -291,7 +291,7 @@ namespace WinHubX.Forms.Base
                 RegistryPresetFileValidator.Validate(presetFile);
 
                 string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
-                string registryEditorPath = Path.Combine(systemDirectory, "reg.exe");
+                string registryEditorPath = Path.Join(systemDirectory, "reg.exe");
                 if (!File.Exists(registryEditorPath))
                     throw new FileNotFoundException("reg.exe non è disponibile nella cartella di sistema.", registryEditorPath);
 
@@ -408,7 +408,7 @@ namespace WinHubX.Forms.Base
 
             try
             {
-                string registryEditorPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe");
+                string registryEditorPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.System), "reg.exe");
                 if (!File.Exists(registryEditorPath))
                     throw new FileNotFoundException("reg.exe non è disponibile nella cartella di sistema.", registryEditorPath);
 

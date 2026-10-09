@@ -13,7 +13,7 @@ namespace WinHubX
         public bool LanguageManuallySet { get; set; } = false;
 
         private static readonly string ConfigPath =
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "WinHubX", "Impostazioni", "Tema.json");
 
         public static ThemeConfig Load() => Load(ConfigPath);
@@ -55,7 +55,7 @@ namespace WinHubX
             Directory.CreateDirectory(directory);
 
             string json = JsonConvert.SerializeObject(this, Formatting.Indented);
-            string temporaryPath = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+            string temporaryPath = Path.Join(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
 
             try
             {

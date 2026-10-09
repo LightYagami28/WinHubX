@@ -36,7 +36,7 @@ namespace WinHubX.Forms.Base
             ActiveControl = btn_browserBianco;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             FormClosed += OnFormClosedCleanupResourceSession;
-            string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            string downloadPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             labelpercorso.Text = $"{downloadPath}";
             percorsoCompletoISO = downloadPath;
             btn_CreaISOVerdi.Content = LanguageManager.CurrentLanguage switch
@@ -174,9 +174,9 @@ namespace WinHubX.Forms.Base
                 return;
             }
 
-            string zipFilePath = Path.Combine(resourceSessionPath, "RisorseCreaISO.zip");
-            string stagingPath = Path.Combine(resourceSessionPath, "staging");
-            string resourcePath = Path.Combine(resourceSessionPath, "RisorseCreaISO");
+            string zipFilePath = Path.Join(resourceSessionPath, "RisorseCreaISO.zip");
+            string stagingPath = Path.Join(resourceSessionPath, "staging");
+            string resourcePath = Path.Join(resourceSessionPath, "RisorseCreaISO");
             bool resourcePrepared = false;
             try
             {
@@ -375,8 +375,8 @@ namespace WinHubX.Forms.Base
         private static string? GetInstallImagePath(string driveLetter)
         {
             string basePath = $"{driveLetter}:\\sources";
-            string wimPath = Path.Combine(basePath, "install.wim");
-            string esdPath = Path.Combine(basePath, "install.esd");
+            string wimPath = Path.Join(basePath, "install.wim");
+            string esdPath = Path.Join(basePath, "install.esd");
 
             if (File.Exists(wimPath)) return wimPath;
             if (File.Exists(esdPath)) return esdPath;
@@ -442,7 +442,7 @@ namespace WinHubX.Forms.Base
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,

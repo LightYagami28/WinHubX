@@ -137,7 +137,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -156,7 +156,7 @@ namespace WinHubX.Forms.Settaggi
 
         private static void RunSystemTool(string executableName, params string[] arguments)
         {
-            string executablePath = Path.Combine(Environment.SystemDirectory, executableName);
+            string executablePath = Path.Join(Environment.SystemDirectory, executableName);
             var startInfo = new ProcessStartInfo
             {
                 FileName = executablePath,
@@ -200,7 +200,7 @@ namespace WinHubX.Forms.Settaggi
         }
         private void btnSuggeriti_Click(object? sender, EventArgs e)
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            string path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX\\Computer\\osehardware.json");
 
             string tipoDisk = "";
@@ -363,7 +363,7 @@ namespace WinHubX.Forms.Settaggi
 
         private static void RestartExplorer()
         {
-            string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            string explorerPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
             _ = System.Diagnostics.Process.Start(explorerPath);
         }
 
@@ -444,7 +444,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -467,7 +467,7 @@ namespace WinHubX.Forms.Settaggi
             var commandString = string.Join("; ", commands);
             var startInfo = new System.Diagnostics.ProcessStartInfo()
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -493,7 +493,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 var startInfo = new System.Diagnostics.ProcessStartInfo()
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "schtasks.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "schtasks.exe"),
                     UseShellExecute = true,
                     WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                     Verb = "runas"
@@ -736,7 +736,7 @@ namespace WinHubX.Forms.Settaggi
 
                     var startInfo = new ProcessStartInfo
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "taskkill.exe"),
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
@@ -1448,7 +1448,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new ProcessStartInfo
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "taskkill.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "taskkill.exe"),
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
@@ -1514,7 +1514,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "powercfg.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "powercfg.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"

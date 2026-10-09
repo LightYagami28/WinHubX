@@ -165,7 +165,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                                 {
                                     string appName = GetFriendlyAppName(app);
                                     string exeName = GetExeName(app);
-                                    string exePath = Path.Combine(basePath, exeName);
+                                    string exePath = Path.Join(basePath, exeName);
 
                                     if (File.Exists(exePath))
                                     {
@@ -202,7 +202,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                                         {
                                             string appName = GetFriendlyAppName(app);
                                             string exeName = GetExeName(app);
-                                            string exePath = Path.Combine(path, exeName);
+                                            string exePath = Path.Join(path, exeName);
 
                                             if (File.Exists(exePath))
                                             {
@@ -277,7 +277,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             {
                 foreach (var exe in exeNames)
                 {
-                    string exePath = Path.Combine(path, exe);
+                    string exePath = Path.Join(path, exe);
                     if (File.Exists(exePath))
                     {
                         string appName = exe switch

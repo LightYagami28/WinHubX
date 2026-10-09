@@ -443,7 +443,7 @@ namespace WinHubX.Forms.ImpostazioniApp
 
         private async Task DownloadAndUpdate(string updateUrl, string version, string? expectedSha256)
         {
-            string updateFilePath = Path.Combine(Path.GetTempPath(), $"WinHubX-{version}-{Guid.NewGuid():N}.exe");
+            string updateFilePath = Path.Join(Path.GetTempPath(), $"WinHubX-{version}-{Guid.NewGuid():N}.exe");
             using (var progressForm = new ProgressForm())
             {
                 progressForm.Show();

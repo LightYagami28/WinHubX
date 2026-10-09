@@ -72,7 +72,7 @@ namespace WinHubX.Forms.InstallaComponenti
                 ("https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx", "Microsoft.VCLibs.x64.14.00.Desktop.appx"),
                 ("https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx", "Microsoft.UI.Xaml.2.8.x64.appx")
             };
-            string componentFolder = Path.Combine(Path.GetTempPath(), "WinHubX", "Components");
+            string componentFolder = Path.Join(Path.GetTempPath(), "WinHubX", "Components");
             Directory.CreateDirectory(componentFolder);
             var localFiles = new List<string>(packages.Length);
 
@@ -80,7 +80,7 @@ namespace WinHubX.Forms.InstallaComponenti
             {
                 try
                 {
-                    string filePath = Path.Combine(componentFolder, name);
+                    string filePath = Path.Join(componentFolder, name);
                     await DownloadManager.DownloadFileAsync(url, filePath, CancellationToken.None, autoParallel: false);
                     localFiles.Add(filePath);
                 }
@@ -119,7 +119,7 @@ namespace WinHubX.Forms.InstallaComponenti
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     UseShellExecute = true,
                     Verb = "runas",
                     CreateNoWindow = true
@@ -139,7 +139,7 @@ namespace WinHubX.Forms.InstallaComponenti
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WSReset.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WSReset.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -167,7 +167,7 @@ namespace WinHubX.Forms.InstallaComponenti
 
         private async Task<HardwareInfo?> OttieniHardwareInfoAsync()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            string path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX", "Computer", "osehardware.json");
 
             if (!File.Exists(path))
@@ -199,9 +199,9 @@ namespace WinHubX.Forms.InstallaComponenti
 
             string url = Dipendenze.GitHubConfigUrl;
 
-            string workDirectory = Path.Combine(Path.GetTempPath(), $"WinHubX-DefNot-{Guid.NewGuid():N}");
-            string tempPath = Path.Combine(workDirectory, "DefNot.zip");
-            string extractPath = Path.Combine(workDirectory, "extracted");
+            string workDirectory = Path.Join(Path.GetTempPath(), $"WinHubX-DefNot-{Guid.NewGuid():N}");
+            string tempPath = Path.Join(workDirectory, "DefNot.zip");
+            string extractPath = Path.Join(workDirectory, "extracted");
 
             try
             {
@@ -244,7 +244,7 @@ namespace WinHubX.Forms.InstallaComponenti
                         throw new InvalidDataException("Hash SHA-256 dell'archivio DefendNot non valido.");
                 }
                 ExtractZipSafely(tempPath, extractPath);
-                string exePath = Path.Combine(extractPath, "defendnot-loader.exe");
+                string exePath = Path.Join(extractPath, "defendnot-loader.exe");
 
                 if (!File.Exists(exePath))
                 {

@@ -50,12 +50,12 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
             string archLabel = (arch == "64" || arch == "ARM64") ? "x64" : "x32";
             string xmlFileName = $"Configurazione{version.Replace(" ", "")}{archLabel}.xml";
-            string sessionDirectory = Path.Combine(
+            string sessionDirectory = Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WinHubX",
                 "OfficePersonalizzato",
                 Guid.NewGuid().ToString("N"));
-            string xmlFilePath = Path.Combine(sessionDirectory, xmlFileName);
+            string xmlFilePath = Path.Join(sessionDirectory, xmlFileName);
             try
             {
                 Directory.CreateDirectory(sessionDirectory);
@@ -122,7 +122,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         {
             try
             {
-                string path = Path.Combine(
+                string path = Path.Join(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "WinHubX", "Computer", "osehardware.json");
 
@@ -403,7 +403,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             try
             {
                 progressBar_office.Value = 0;
-                string binExePath = Path.Combine(sessionDirectory, "bin.exe");
+                string binExePath = Path.Join(sessionDirectory, "bin.exe");
                 ExtractAndSaveResource("bin.exe", binExePath);
 
                 progressBar_office.Value = 15;

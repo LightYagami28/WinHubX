@@ -108,7 +108,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 _repairBroker = await ElevatedProcessBrokerClient.StartAsync(token);
                 workspaceRoot = _repairBroker.WorkspaceRoot;
-                string repairDirectory = Path.Combine(workspaceRoot, "Repair");
+                string repairDirectory = Path.Join(workspaceRoot, "Repair");
                 Directory.CreateDirectory(repairDirectory);
 
                 int total = steps.Length + 1;
@@ -159,15 +159,15 @@ namespace WinHubX.Forms.Settaggi
             string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             if (string.IsNullOrWhiteSpace(desktop))
                 throw new IOException("Impossibile determinare la cartella Desktop per i backup del Registro.");
-            string pathHKLM = Path.Combine(repairDirectory, "RegistryBackup_HKLM.reg");
-            string pathHKCU = Path.Combine(repairDirectory, "RegistryBackup_HKCU.reg");
+            string pathHKLM = Path.Join(repairDirectory, "RegistryBackup_HKLM.reg");
+            string pathHKCU = Path.Join(repairDirectory, "RegistryBackup_HKCU.reg");
 
             await RunCommandAsync("reg.exe", ["export-hklm", pathHKLM], token);
             await RunUserCommandAsync("reg.exe", ["export", "HKCU", pathHKCU, "/y"], token);
 
             Directory.CreateDirectory(desktop);
-            File.Copy(pathHKLM, Path.Combine(desktop, Path.GetFileName(pathHKLM)), overwrite: true);
-            File.Copy(pathHKCU, Path.Combine(desktop, Path.GetFileName(pathHKCU)), overwrite: true);
+            File.Copy(pathHKLM, Path.Join(desktop, Path.GetFileName(pathHKLM)), overwrite: true);
+            File.Copy(pathHKCU, Path.Join(desktop, Path.GetFileName(pathHKCU)), overwrite: true);
 
             LogMessage($"Backup registro creato sul Desktop: RegistryBackup_HKLM.reg + RegistryBackup_HKCU.reg");
         }
@@ -224,7 +224,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, executable),
+                FileName = Path.Join(Environment.SystemDirectory, executable),
                 WorkingDirectory = Environment.SystemDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -648,7 +648,7 @@ namespace WinHubX.Forms.Settaggi
         }
         private string DiskSpeedTest(CancellationToken token)
         {
-            string tempFile = Path.Combine(Path.GetTempPath(), $"WinHubX-disk-test-{Guid.NewGuid():N}.tmp");
+            string tempFile = Path.Join(Path.GetTempPath(), $"WinHubX-disk-test-{Guid.NewGuid():N}.tmp");
             try
             {
                 const int testSizeMb = 50;

@@ -33,7 +33,7 @@ namespace WinHubX.Forms.Base
         private static readonly TimeSpan TempDirectoryRefreshInterval = TimeSpan.FromMinutes(1);
         private static readonly TimeSpan NetworkInterfaceRefreshInterval = TimeSpan.FromMinutes(1);
         private readonly string monitoraggioPath =
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+    Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Impostazioni", "Monitoraggio.json");
 
         private const uint PROCESS_SET_QUOTA = 0x0100;

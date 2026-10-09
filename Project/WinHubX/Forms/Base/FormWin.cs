@@ -42,7 +42,7 @@ namespace WinHubX
                 string windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                 var startInfo = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(windowsDirectory, "explorer.exe"),
+                    FileName = Path.Join(windowsDirectory, "explorer.exe"),
                     WorkingDirectory = windowsDirectory,
                     UseShellExecute = false
                 };
