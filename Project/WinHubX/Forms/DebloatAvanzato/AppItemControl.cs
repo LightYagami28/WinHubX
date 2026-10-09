@@ -5,6 +5,8 @@ namespace WinHubX.Forms.DebloatAvanzato
 {
     public partial class AppItemControl : UserControl
     {
+        private readonly ToolTip _toolTip = new();
+
         public string NomeTecnico { get; private set; } = string.Empty;
         public string? ImgUrl { get; private set; }
 
@@ -43,9 +45,7 @@ namespace WinHubX.Forms.DebloatAvanzato
             }
 
             // Tooltip
-            components ??= new System.ComponentModel.Container();
-            ToolTip tooltip = new(components);
-            tooltip.SetToolTip(lblNome, NomeTecnico);
+            _toolTip.SetToolTip(lblNome, NomeTecnico);
 
             // Tema
             BackColor = ThemeManager.GetBackColor(ThemeManager.IsDarkTheme);
