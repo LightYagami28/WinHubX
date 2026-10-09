@@ -409,13 +409,12 @@ namespace WinHubX.Forms.Personalizzazione_office
                 ExtractAndSaveResource("bin.exe", binExePath);
 
                 progressBar_office.Value = 15;
-                await Task.Delay(5000, cancellationToken);
 
                 if (!File.Exists(binExePath))
                     throw new FileNotFoundException("Executable not found.", binExePath);
 
                 progressBar_office.Value = 30;
-                await Task.Delay(3000, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -432,11 +431,14 @@ namespace WinHubX.Forms.Personalizzazione_office
                     progressBar_office.Value = 50;
                     // Il setup usa i file della sessione: attendere la sua uscita prima del cleanup.
                     await process.WaitForExitAsync(CancellationToken.None);
+                    if (process.ExitCode != 0)
+                    {
+                        throw new InvalidOperationException(
+                            $"Il programma di installazione di Office è terminato con codice {process.ExitCode}.");
+                    }
                 }
 
                 progressBar_office.Value = 75;
-                await Task.Delay(4000, cancellationToken);
-
                 progressBar_office.Value = 100;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -445,7 +447,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _ = MessageBox.Show($"Installazione Office non riuscita: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
