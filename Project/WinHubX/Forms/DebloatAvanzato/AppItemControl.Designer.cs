@@ -4,8 +4,6 @@ namespace WinHubX.Forms.DebloatAvanzato
 {
     partial class AppItemControl
     {
-        private System.ComponentModel.IContainer components = null;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -13,7 +11,6 @@ namespace WinHubX.Forms.DebloatAvanzato
                 pictureBox.LoadCompleted -= PictureBox_LoadCompleted;
                 pictureBox.CancelAsync();
                 _toolTip.Dispose();
-                components?.Dispose();
             }
             base.Dispose(disposing);
         }
