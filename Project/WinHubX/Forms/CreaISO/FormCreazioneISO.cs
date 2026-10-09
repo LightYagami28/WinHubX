@@ -13,6 +13,9 @@ namespace WinHubX.Forms.CreaISO
 {
     public partial class FormCreazioneISO : Form
     {
+        private const string ResourceFilesFolderName = "Risorse";
+        private const string PowerRunExecutableName = "PowerRun.exe";
+
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Dictionary<string, string> ParametriISO { get; set; } = new();
         private readonly Form1 form1;
@@ -521,16 +524,16 @@ namespace WinHubX.Forms.CreaISO
                     return;
                 }
 
-                string sourceUnattend = Path.Combine(ResourceRoot, "Risorse", "unattend.xml");
-                string sourceUnattendStock = Path.Combine(ResourceRoot, "Risorse", "unattendstock.xml");
+                string sourceUnattend = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattend.xml");
+                string sourceUnattendStock = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattendstock.xml");
                 string destUnattend = Path.Combine(IsoWorkingRoot, "sources", "$OEM$", "$$", "Panther", "unattend.xml");
                 string mountDir = InstallMountRoot;
                 string bootWimPath = Path.Combine(IsoWorkingRoot, "sources", "boot.wim");
                 string bootMountDir = BootMountRoot;
                 string appraiserPath = Path.Combine(IsoWorkingRoot, "sources", "appraiserres.dll");
                 string appraiserBakPath = appraiserPath + ".bak";
-                string sourceUnattend10 = Path.Combine(ResourceRoot, "Risorse", "unattend10.xml");
-                string sourceUnattendx32 = Path.Combine(ResourceRoot, "Risorse", "unattendx32.xml");
+                string sourceUnattend10 = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattend10.xml");
+                string sourceUnattendx32 = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattendx32.xml");
 
                 _ = Directory.CreateDirectory(Path.GetDirectoryName(destUnattend)
                     ?? throw new InvalidOperationException("Percorso unattend non valido."));
@@ -937,8 +940,8 @@ namespace WinHubX.Forms.CreaISO
 
                         File.Create(Path.Combine(targetDir, "noedge.pref")).Dispose();
 
-                        File.Copy(Path.Combine(ResourceRoot, "Risorse", "OperaGXSetup.exe"), Path.Combine(targetDir, "OperaGXSetup.exe"), true);
-                        File.Copy(Path.Combine(ResourceRoot, "Risorse", "PowerRun.exe"), Path.Combine(targetDir, "PowerRun.exe"), true);
+                        File.Copy(Path.Combine(ResourceRoot, ResourceFilesFolderName, "OperaGXSetup.exe"), Path.Combine(targetDir, "OperaGXSetup.exe"), true);
+                        File.Copy(Path.Combine(ResourceRoot, ResourceFilesFolderName, PowerRunExecutableName), Path.Combine(targetDir, PowerRunExecutableName), true);
 
                         IncrementProgress();
                     }
@@ -1100,7 +1103,7 @@ namespace WinHubX.Forms.CreaISO
                     filesToCopy = new List<string>
         {
             "lower-ram-usage.reg",
-            "PowerRun.exe",
+            PowerRunExecutableName,
             "tweaks10.bat",
             "start10.ps1",
             "unpin_start_tiles.ps1"
@@ -1113,7 +1116,7 @@ namespace WinHubX.Forms.CreaISO
             "tweaks.bat",
             "lower-ram-usage.reg",
             "start.ps1",
-            "PowerRun.exe"
+            PowerRunExecutableName
         };
                 }
             }
@@ -1131,7 +1134,7 @@ namespace WinHubX.Forms.CreaISO
                 }));
 
                 string exportPath = Path.Combine(resourceSessionPath, "config.dat");
-                string targetExportPath = Path.Combine(ResourceRoot, "Risorse", "config.dat");
+                string targetExportPath = Path.Combine(ResourceRoot, ResourceFilesFolderName, "config.dat");
                 string keyToExport = @"HKEY_CURRENT_USER\Software\WinHubX";
 
                 try
@@ -1179,7 +1182,7 @@ namespace WinHubX.Forms.CreaISO
                 }
             }
 
-            string sourceFolder = Path.Combine(ResourceRoot, "Risorse");
+            string sourceFolder = Path.Combine(ResourceRoot, ResourceFilesFolderName);
             string targetFolder = Path.Combine(InstallMountRoot, "Windows");
 
             Invoke(new Action(() =>
@@ -1299,7 +1302,7 @@ namespace WinHubX.Forms.CreaISO
         {
             string sourcePath = IsoWorkingRoot;
             string isoOutputPath = formcreaiso.labelpercorso.Text;
-            string oscdimgPath = Path.Combine(ResourceRoot, "Risorse", "oscdimg");
+            string oscdimgPath = Path.Combine(ResourceRoot, ResourceFilesFolderName, "oscdimg");
             string destinationPath = isoOutputPath;
 
             try
