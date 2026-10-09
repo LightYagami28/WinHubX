@@ -387,9 +387,6 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
             }
 
             ElevatedProcessBrokerClient client = new(pipe, reader, writer, brokerProcess, workspaceRoot);
-            reader = null;
-            writer = null;
-            brokerProcess = null;
             return client;
         }
         catch
