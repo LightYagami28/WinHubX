@@ -188,7 +188,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
             {
-                return;
+                Debug.WriteLine("Caricamento impostazioni monitoraggio annullato durante la chiusura.");
             }
             catch (Exception ex)
             {
@@ -1269,6 +1269,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
             {
+                Debug.WriteLine("Salvataggio impostazioni monitoraggio annullato durante la chiusura.");
             }
             catch (Exception ex)
             {
