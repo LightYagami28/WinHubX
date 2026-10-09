@@ -84,7 +84,12 @@ namespace WinHubX.Forms.InstallaComponenti
                     await DownloadManager.DownloadFileAsync(url, filePath, CancellationToken.None, autoParallel: false);
                     localFiles.Add(filePath);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is HttpRequestException
+                    or IOException
+                    or UnauthorizedAccessException
+                    or OperationCanceledException
+                    or InvalidOperationException
+                    or ArgumentException)
                 {
                     _ = MessageBox.Show($"Error: {name}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -93,7 +98,11 @@ namespace WinHubX.Forms.InstallaComponenti
             foreach (string file in localFiles)
             {
                 try { await AddAppxPackageAsync(file); }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                    or IOException
+                    or UnauthorizedAccessException
+                    or OperationCanceledException
+                    or InvalidOperationException)
                 {
                     _ = MessageBox.Show($"Error: {Path.GetFileName(file)}\n{ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -252,7 +261,13 @@ namespace WinHubX.Forms.InstallaComponenti
                     await process.WaitForExitAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or OperationCanceledException
+                or InvalidOperationException
+                or ArgumentException)
             {
                 Debug.WriteLine($"DefendNot non avviato: {ex}");
                 MessageBox.Show($"DefendNot non è stato avviato.\n{ex.Message}", "WinHubX",
@@ -269,7 +284,10 @@ namespace WinHubX.Forms.InstallaComponenti
                         Directory.Delete(workDirectory, recursive: true);
                     SetDefenderRegedit(false);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException
+                    or UnauthorizedAccessException
+                    or System.Security.SecurityException
+                    or InvalidOperationException)
                 {
                     Debug.WriteLine($"Pulizia temporanei DefendNot non completata: {ex}");
                 }
@@ -284,7 +302,7 @@ namespace WinHubX.Forms.InstallaComponenti
             using ZipArchive archive = ZipFile.OpenRead(archivePath);
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                string target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
+                string target = SafePathResolver.ResolveContainedPath(destination, entry.FullName);
                 if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("Archivio DefendNot non valido: percorso ZIP non sicuro.");
 
@@ -308,7 +326,10 @@ namespace WinHubX.Forms.InstallaComponenti
                     key.SetValue("DefenderDisabled", isDisabled ? 1 : 0, RegistryValueKind.DWord);
                 }
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or ArgumentException)
             {
                 Debug.WriteLine("Impossibile salvare lo stato della funzionalità Defender nel registro.");
             }
@@ -330,7 +351,10 @@ namespace WinHubX.Forms.InstallaComponenti
                 Debug.WriteLine("WMI non ha restituito Win32_OperatingSystem; DefendNot viene bloccato per sicurezza.");
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.Management.ManagementException
+                or UnauthorizedAccessException
+                or System.Runtime.InteropServices.COMException
+                or InvalidOperationException)
             {
                 Debug.WriteLine($"Rilevamento Windows Server non riuscito; DefendNot viene bloccato: {ex}");
                 return true;
