@@ -235,9 +235,11 @@ namespace WinHubX.Forms.Base
             {
                 if (hardware.HardwareType == hardwareType)
                 {
-                    var sensor = hardware.Sensors
-                        .FirstOrDefault(s => s.SensorType == SensorType.Temperature);
-                    return sensor?.Value;
+                    IEnumerable<float?> readings = hardware.Sensors
+                        .Where(sensor => sensor.SensorType == SensorType.Temperature)
+                        .OrderBy(sensor => sensor.IsDefaultHidden)
+                        .Select(sensor => sensor.Value);
+                    return HardwareSensorReading.SelectTemperature(readings);
                 }
             }
             return null;
@@ -720,15 +722,17 @@ namespace WinHubX.Forms.Base
                     hardware.HardwareType == HardwareType.GpuAmd ||
                     hardware.HardwareType == HardwareType.GpuIntel)
                 {
-                    var loadSensor = hardware.Sensors.FirstOrDefault(s =>
+                    IEnumerable<float?> readings = hardware.Sensors.Where(s =>
                         s.SensorType == SensorType.Load &&
                         (s.Name.Contains("Core") ||
                          s.Name.Contains("GPU Core") ||
                          s.Name.Contains("D3D 3D") ||
-                         s.Name.Contains("Utilization")));
+                         s.Name.Contains("Utilization")))
+                        .Select(sensor => sensor.Value);
 
-                    if (loadSensor != null && loadSensor.Value.HasValue)
-                        return loadSensor.Value;
+                    float? usage = HardwareSensorReading.SelectPercentage(readings);
+                    if (usage.HasValue)
+                        return usage.Value;
                 }
             }
             return null;
@@ -742,8 +746,9 @@ namespace WinHubX.Forms.Base
                 return;
             }
 
-            BarGPU.ProgressValue = (int)Math.Round(gpuUsage);
-            BarGPUtext.Text = $"{gpuUsage:0}%";
+            double normalizedUsage = double.IsFinite(gpuUsage) ? Math.Clamp(gpuUsage, 0d, 100d) : 0d;
+            BarGPU.ProgressValue = (int)Math.Round(normalizedUsage);
+            BarGPUtext.Text = $"{normalizedUsage:0}%";
         }
         private async Task StartReteMonitoring()
         {
