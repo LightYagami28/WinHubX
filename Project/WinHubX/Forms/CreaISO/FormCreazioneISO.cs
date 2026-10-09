@@ -23,12 +23,12 @@ namespace WinHubX.Forms.CreaISO
         private ElevatedProcessBrokerClient? _elevatedBroker;
         private string WorkspaceRoot => _elevatedBroker?.WorkspaceRoot
             ?? throw new InvalidOperationException("Workspace ISO non inizializzato.");
-        private string IsoWorkingRoot => Path.Combine(WorkspaceRoot, "ISO", "WinISO");
-        private string InstallMountRoot => Path.Combine(WorkspaceRoot, "Mount", "mount");
-        private string BootMountRoot => Path.Combine(WorkspaceRoot, "Mount", "boot");
+        private string IsoWorkingRoot => Path.Join(WorkspaceRoot, "ISO", "WinISO");
+        private string InstallMountRoot => Path.Join(WorkspaceRoot, "Mount", "mount");
+        private string BootMountRoot => Path.Join(WorkspaceRoot, "Mount", "boot");
         private readonly FormCreaISO formcreaiso;
         private readonly string resourceSessionPath;
-        private string ResourceRoot => Path.Combine(resourceSessionPath, "RisorseCreaISO");
+        private string ResourceRoot => Path.Join(resourceSessionPath, "RisorseCreaISO");
 
         public FormCreazioneISO(Form1 form1, FormCreaISO formcreaiso, string resourceSessionPath)
         {
@@ -290,7 +290,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 token.ThrowIfCancellationRequested();
 
-                string destPath = Path.Combine(targetPath, file.Name);
+                string destPath = SafePathResolver.ResolveContainedPath(targetPath, file.Name);
                 using (var source = file.OpenRead())
                 using (var dest = File.Create(destPath))
                 {
@@ -305,7 +305,7 @@ namespace WinHubX.Forms.CreaISO
             foreach (var subDir in directory.GetDirectories())
             {
                 token.ThrowIfCancellationRequested();
-                ExtractDirectory(subDir, Path.Combine(targetPath, subDir.Name), ref extractedFiles, totalFiles,
+                ExtractDirectory(subDir, SafePathResolver.ResolveContainedPath(targetPath, subDir.Name), ref extractedFiles, totalFiles,
                     progress ?? throw new InvalidOperationException("Progress reporter non inizializzato."), token);
             }
         }
@@ -320,10 +320,10 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task VerificaWIMoESD(CancellationToken token)
         {
-            string sourcesPath = Path.Combine(IsoWorkingRoot, "sources");
-            string esdPath = Path.Combine(sourcesPath, "install.esd");
-            string wimPath = Path.Combine(sourcesPath, "install.wim");
-            string wimProPath = Path.Combine(sourcesPath, "install_pro.wim");
+            string sourcesPath = Path.Join(IsoWorkingRoot, "sources");
+            string esdPath = Path.Join(sourcesPath, "install.esd");
+            string wimPath = Path.Join(sourcesPath, "install.wim");
+            string wimProPath = Path.Join(sourcesPath, "install_pro.wim");
 
             try
             {
@@ -490,7 +490,7 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task MontaggioInstall(CancellationToken token)
         {
-                string wimPath = Path.Combine(IsoWorkingRoot, "sources", "install.wim");
+                string wimPath = Path.Join(IsoWorkingRoot, "sources", "install.wim");
                 string mountDir = InstallMountRoot;
 
             try
@@ -545,16 +545,16 @@ namespace WinHubX.Forms.CreaISO
                     return;
                 }
 
-                string sourceUnattend = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattend.xml");
-                string sourceUnattendStock = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattendstock.xml");
-                string destUnattend = Path.Combine(IsoWorkingRoot, "sources", "$OEM$", "$$", "Panther", "unattend.xml");
+                string sourceUnattend = Path.Join(ResourceRoot, ResourceFilesFolderName, "unattend.xml");
+                string sourceUnattendStock = Path.Join(ResourceRoot, ResourceFilesFolderName, "unattendstock.xml");
+                string destUnattend = Path.Join(IsoWorkingRoot, "sources", "$OEM$", "$$", "Panther", "unattend.xml");
                 string mountDir = InstallMountRoot;
-                string bootWimPath = Path.Combine(IsoWorkingRoot, "sources", "boot.wim");
+                string bootWimPath = Path.Join(IsoWorkingRoot, "sources", "boot.wim");
                 string bootMountDir = BootMountRoot;
-                string appraiserPath = Path.Combine(IsoWorkingRoot, "sources", "appraiserres.dll");
+                string appraiserPath = Path.Join(IsoWorkingRoot, "sources", "appraiserres.dll");
                 string appraiserBakPath = appraiserPath + ".bak";
-                string sourceUnattend10 = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattend10.xml");
-                string sourceUnattendx32 = Path.Combine(ResourceRoot, ResourceFilesFolderName, "unattendx32.xml");
+                string sourceUnattend10 = Path.Join(ResourceRoot, ResourceFilesFolderName, "unattend10.xml");
+                string sourceUnattendx32 = Path.Join(ResourceRoot, ResourceFilesFolderName, "unattendx32.xml");
 
                 _ = Directory.CreateDirectory(Path.GetDirectoryName(destUnattend)
                     ?? throw new InvalidOperationException("Percorso unattend non valido."));
@@ -939,7 +939,7 @@ namespace WinHubX.Forms.CreaISO
         {
             try
             {
-                string targetDir = Path.Combine(InstallMountRoot, "Windows");
+                string targetDir = Path.Join(InstallMountRoot, "Windows");
 
                 progressBar2.Invoke(new Action(() =>
                 {
@@ -959,10 +959,10 @@ namespace WinHubX.Forms.CreaISO
                     {
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazionefileedge"));
 
-                        File.Create(Path.Combine(targetDir, "noedge.pref")).Dispose();
+                        File.Create(Path.Join(targetDir, "noedge.pref")).Dispose();
 
-                        File.Copy(Path.Combine(ResourceRoot, ResourceFilesFolderName, "OperaGXSetup.exe"), Path.Combine(targetDir, "OperaGXSetup.exe"), true);
-                        File.Copy(Path.Combine(ResourceRoot, ResourceFilesFolderName, PowerRunExecutableName), Path.Combine(targetDir, PowerRunExecutableName), true);
+                        File.Copy(Path.Join(ResourceRoot, ResourceFilesFolderName, "OperaGXSetup.exe"), Path.Join(targetDir, "OperaGXSetup.exe"), true);
+                        File.Copy(Path.Join(ResourceRoot, ResourceFilesFolderName, PowerRunExecutableName), Path.Join(targetDir, PowerRunExecutableName), true);
 
                         IncrementProgress();
                     }
@@ -975,7 +975,7 @@ namespace WinHubX.Forms.CreaISO
                     }
                     if (windowsVersion == "11" && ParametriISO.TryGetValue("Unattend", out var unattendType) && unattendType == "Bypass")
                     {
-                        File.Create(Path.Combine(targetDir, "bypass.pref")).Dispose();
+                        File.Create(Path.Join(targetDir, "bypass.pref")).Dispose();
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazionefilebypass"));
                         IncrementProgress();
                     }
@@ -984,7 +984,7 @@ namespace WinHubX.Forms.CreaISO
 
                     if (ParametriISO.TryGetValue("DebloatApp", out var debloat) && debloat == "Debloat")
                     {
-                        File.Create(Path.Combine(targetDir, "debloatapp.pref")).Dispose();
+                        File.Create(Path.Join(targetDir, "debloatapp.pref")).Dispose();
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazionefiledebloat"));
                         IncrementProgress();
                     }
@@ -1002,7 +1002,7 @@ namespace WinHubX.Forms.CreaISO
 
                         if (fileName != null)
                         {
-                            string path = Path.Combine(targetDir, fileName);
+                            string path = Path.Join(targetDir, fileName);
                             if (!File.Exists(path))
                             {
                                 File.Create(path).Dispose();
@@ -1015,7 +1015,7 @@ namespace WinHubX.Forms.CreaISO
                     if (token.IsCancellationRequested) return;
                     if (ParametriISO.TryGetValue("defenderPreference", out var defender) && defender == "DisableWindowsDefender")
                     {
-                        File.Create(Path.Combine(targetDir, "nodefender.pref")).Dispose();
+                        File.Create(Path.Join(targetDir, "nodefender.pref")).Dispose();
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazionefiledefender"));
                         IncrementProgress();
                     }
@@ -1054,7 +1054,7 @@ namespace WinHubX.Forms.CreaISO
                             }
                             else if (driverPref == "DriverQuestoPC")
                             {
-                                    string tempDriverDir = Path.Combine(WorkspaceRoot, "DriverExport", Guid.NewGuid().ToString("N"));
+                                    string tempDriverDir = Path.Join(WorkspaceRoot, "DriverExport", Guid.NewGuid().ToString("N"));
                                     Directory.CreateDirectory(tempDriverDir);
 
                                 try
@@ -1154,14 +1154,14 @@ namespace WinHubX.Forms.CreaISO
                     Log($"\n[INFO] {LanguageManager.GetTranslation("FormCreazioneISO", "importazionesettaggiabilitata")}");
                 }));
 
-                string exportPath = Path.Combine(resourceSessionPath, "config.dat");
-                string targetExportPath = Path.Combine(ResourceRoot, ResourceFilesFolderName, "config.dat");
+                string exportPath = Path.Join(resourceSessionPath, "config.dat");
+                string targetExportPath = Path.Join(ResourceRoot, ResourceFilesFolderName, "config.dat");
                 string keyToExport = @"HKEY_CURRENT_USER\Software\WinHubX";
 
                 try
                 {
                     using Process process = new();
-                    process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "reg.exe");
+                    process.StartInfo.FileName = Path.Join(Environment.SystemDirectory, "reg.exe");
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.ArgumentList.Add("export");
@@ -1208,8 +1208,8 @@ namespace WinHubX.Forms.CreaISO
                 }
             }
 
-            string sourceFolder = Path.Combine(ResourceRoot, ResourceFilesFolderName);
-            string targetFolder = Path.Combine(InstallMountRoot, "Windows");
+            string sourceFolder = Path.Join(ResourceRoot, ResourceFilesFolderName);
+            string targetFolder = Path.Join(InstallMountRoot, "Windows");
 
             Invoke(new Action(() =>
             {
@@ -1225,8 +1225,8 @@ namespace WinHubX.Forms.CreaISO
                     {
                         if (token.IsCancellationRequested) return;
 
-                        string sourceFilePath = Path.Combine(sourceFolder, file);
-                        string targetFilePath = Path.Combine(targetFolder, file);
+                        string sourceFilePath = SafePathResolver.ResolveContainedPath(sourceFolder, file);
+                        string targetFilePath = SafePathResolver.ResolveContainedPath(targetFolder, file);
 
                         if (File.Exists(sourceFilePath))
                         {
@@ -1278,7 +1278,7 @@ namespace WinHubX.Forms.CreaISO
                     return;
                 }
 
-                string deletedFolderPath = Path.Combine(mountDir, "[DELETED]");
+                string deletedFolderPath = Path.Join(mountDir, "[DELETED]");
 
                 if (Directory.Exists(deletedFolderPath))
                 {
@@ -1328,7 +1328,7 @@ namespace WinHubX.Forms.CreaISO
         {
             string sourcePath = IsoWorkingRoot;
             string isoOutputPath = formcreaiso.labelpercorso.Text;
-            string oscdimgPath = Path.Combine(ResourceRoot, ResourceFilesFolderName, "oscdimg");
+            string oscdimgPath = Path.Join(ResourceRoot, ResourceFilesFolderName, "oscdimg");
 
             try
             {
@@ -1360,7 +1360,7 @@ namespace WinHubX.Forms.CreaISO
                             "-m",
                             "-o",
                             "-u2",
-                            $"-bootdata:2#p0,e,b{Path.Combine(sourcePath, "boot", "etfsboot.com")}#pEF,e,b{Path.Combine(sourcePath, "efi", "microsoft", "boot", "efisys.bin")}",
+                            $"-bootdata:2#p0,e,b{Path.Join(sourcePath, "boot", "etfsboot.com")}#pEF,e,b{Path.Join(sourcePath, "efi", "microsoft", "boot", "efisys.bin")}",
                             sourcePath,
                             isoOutputPath
                         ];

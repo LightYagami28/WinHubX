@@ -7,6 +7,28 @@ namespace WinHubX.Tests;
 
 public sealed class SafeZipExtractorTests
 {
+    [Theory]
+    [InlineData("../outside.txt")]
+    [InlineData("nested/../../outside.txt")]
+    [InlineData("C:/outside.txt")]
+    [InlineData("/outside.txt")]
+    public void ResolveContainedPath_RejectsRootedAndTraversingPaths(string relativePath)
+    {
+        using TemporaryDirectory temporary = new();
+
+        Assert.Throws<InvalidDataException>(() => SafePathResolver.ResolveContainedPath(temporary.Path, relativePath));
+    }
+
+    [Fact]
+    public void ResolveContainedPath_CombinesNestedRelativePathUnderRoot()
+    {
+        using TemporaryDirectory temporary = new();
+
+        string result = SafePathResolver.ResolveContainedPath(temporary.Path, "Risorse/unattend.xml");
+
+        Assert.Equal(Path.GetFullPath(Path.Join(temporary.Path, "Risorse", "unattend.xml")), result);
+    }
+
     [Fact]
     public void ExtractToFreshDirectory_ExtractsNestedFiles()
     {

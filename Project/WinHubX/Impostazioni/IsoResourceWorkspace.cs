@@ -15,14 +15,14 @@ internal static class IsoResourceWorkspace
         if (string.IsNullOrWhiteSpace(localAppData))
             throw new IOException("Impossibile determinare la cartella dati locale dell'utente.");
 
-        string appRoot = Path.Combine(localAppData, "WinHubX");
+        string appRoot = Path.Join(localAppData, "WinHubX");
         Directory.CreateDirectory(appRoot);
         EnsureNotReparsePoint(appRoot);
-        string parentPath = Path.Combine(appRoot, "IsoResourceSessions");
+        string parentPath = Path.Join(appRoot, "IsoResourceSessions");
         Directory.CreateDirectory(parentPath);
         EnsureNotReparsePoint(parentPath);
 
-        string sessionPath = Path.Combine(parentPath, Guid.NewGuid().ToString("N"));
+        string sessionPath = Path.Join(parentPath, Guid.NewGuid().ToString("N"));
         SecurityIdentifier userSid = WindowsIdentity.GetCurrent().User
             ?? throw new UnauthorizedAccessException("Impossibile determinare l'identità Windows corrente.");
         DirectorySecurity security = new();
@@ -54,7 +54,7 @@ internal static class IsoResourceWorkspace
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (string.IsNullOrWhiteSpace(localAppData))
             throw new IOException("Impossibile determinare la cartella dati locale dell'utente.");
-        string parentPath = Path.GetFullPath(Path.Combine(localAppData, WorkspaceFolderName));
+        string parentPath = Path.GetFullPath(Path.Join(localAppData, WorkspaceFolderName));
         string fullPath = Path.GetFullPath(sessionPath);
         if (!string.Equals(Path.GetDirectoryName(fullPath), parentPath, StringComparison.OrdinalIgnoreCase)
             || !Guid.TryParseExact(Path.GetFileName(fullPath), "N", out _))

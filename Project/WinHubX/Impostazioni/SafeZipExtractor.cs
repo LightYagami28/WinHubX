@@ -17,9 +17,6 @@ internal static class SafeZipExtractor
         if (Directory.Exists(root) || File.Exists(root))
             throw new IOException("La directory di estrazione deve essere nuova.");
 
-        string rootWithSeparator = Path.EndsInDirectorySeparator(root)
-            ? root
-            : root + Path.DirectorySeparatorChar;
         using ZipArchive archive = ZipFile.OpenRead(archivePath);
         if (archive.Entries.Count > MaximumEntryCount)
             throw new InvalidDataException("L'archivio contiene troppe voci.");
@@ -33,13 +30,15 @@ internal static class SafeZipExtractor
             if (entry.Length > MaximumEntryLength || expandedLength > MaximumExpandedLength)
                 throw new InvalidDataException("L'archivio supera i limiti di estrazione consentiti.");
 
-            string relativePath = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
-            string destinationPath = Path.GetFullPath(Path.Combine(root, relativePath));
-            StringComparison comparison = OperatingSystem.IsWindows()
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-            if (!destinationPath.StartsWith(rootWithSeparator, comparison))
-                throw new InvalidDataException($"Percorso ZIP non consentito: {entry.FullName}");
+            string destinationPath;
+            try
+            {
+                destinationPath = SafePathResolver.ResolveContainedPath(root, entry.FullName);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new InvalidDataException($"Percorso ZIP non consentito: {entry.FullName}", ex);
+            }
 
             if (entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\'))
             {

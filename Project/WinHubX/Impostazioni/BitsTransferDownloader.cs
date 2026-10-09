@@ -106,7 +106,7 @@ internal static class BitsTransferDownloader
 
     private static async Task RunPowerShellAsync(string encodedScript, Action<int>? onProgress, CancellationToken cancellationToken)
     {
-        string executablePath = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        string executablePath = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
         ProcessStartInfo startInfo = new(executablePath)
         {
             WorkingDirectory = Environment.SystemDirectory,
@@ -172,7 +172,7 @@ internal static class BitsTransferDownloader
             string script = "Get-BitsTransfer -Name '" + jobName
                 + "' -ErrorAction SilentlyContinue | Remove-BitsTransfer -Confirm:$false -ErrorAction SilentlyContinue";
             string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-            string executablePath = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+            string executablePath = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
             ProcessStartInfo startInfo = new(executablePath)
             {
                 WorkingDirectory = Environment.SystemDirectory,
