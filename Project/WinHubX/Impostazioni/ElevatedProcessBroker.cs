@@ -351,6 +351,8 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
         NamedPipeServerStream pipe = NamedPipeServerStreamAcl.Create(pipeName, PipeDirection.InOut, 1,
             PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, pipeSecurity);
         Process? brokerProcess = null;
+        StreamReader? reader = null;
+        StreamWriter? writer = null;
 
         try
         {
@@ -371,8 +373,8 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
                 ?? throw new InvalidOperationException("Impossibile avviare il broker privilegiato.");
 
             await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            StreamReader reader = new(pipe, leaveOpen: true);
-            StreamWriter writer = new(pipe, leaveOpen: true) { AutoFlush = true };
+            reader = new StreamReader(pipe, leaveOpen: true);
+            writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
             await writer.WriteLineAsync(JsonSerializer.Serialize(new BrokerHandshake(token, workspaceRoot, userSid.Value)).AsMemory(), cancellationToken)
                 .ConfigureAwait(false);
             string? acknowledgement = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
@@ -384,10 +386,32 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
                 throw new UnauthorizedAccessException("Il broker privilegiato non ha autenticato il canale IPC.");
             }
 
-            return new ElevatedProcessBrokerClient(pipe, reader, writer, brokerProcess, workspaceRoot);
+            ElevatedProcessBrokerClient client = new(pipe, reader, writer, brokerProcess, workspaceRoot);
+            reader = null;
+            writer = null;
+            brokerProcess = null;
+            return client;
         }
         catch
         {
+            try
+            {
+                reader?.Dispose();
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            {
+                Debug.WriteLine($"Chiusura reader del broker fallita: {ex.Message}");
+            }
+
+            try
+            {
+                writer?.Dispose();
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            {
+                Debug.WriteLine($"Chiusura writer del broker fallita: {ex.Message}");
+            }
+
             if (brokerProcess is not null)
             {
                 try
@@ -399,9 +423,21 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
                 {
                     Debug.WriteLine($"Impossibile terminare il broker dopo un errore di avvio: {ex.Message}");
                 }
-                brokerProcess.Dispose();
+                finally
+                {
+                    brokerProcess.Dispose();
+                }
             }
-            await pipe.DisposeAsync().ConfigureAwait(false);
+
+            try
+            {
+                await pipe.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (IOException ex)
+            {
+                Debug.WriteLine($"Chiusura pipe del broker fallita: {ex.Message}");
+            }
+
             throw;
         }
     }
