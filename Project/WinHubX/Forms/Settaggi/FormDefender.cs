@@ -291,7 +291,7 @@ namespace WinHubX.Forms.Settaggi
             string encodedScript = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -313,7 +313,7 @@ namespace WinHubX.Forms.Settaggi
         {
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 Verb = "runas",
                 UseShellExecute = true,
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
@@ -386,7 +386,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
@@ -669,7 +669,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"

@@ -270,14 +270,14 @@ if ($existingRestorePoints.Count -eq 0) {
 }
 ";
 
-                    string tempScriptPath = Path.Combine(Path.GetTempPath(), $"WinHubX-RestorePoint-{Guid.NewGuid():N}.ps1");
+                    string tempScriptPath = Path.Join(Path.GetTempPath(), $"WinHubX-RestorePoint-{Guid.NewGuid():N}.ps1");
                     try
                     {
                         System.IO.File.WriteAllText(tempScriptPath, script);
 
                         ProcessStartInfo psi = new ProcessStartInfo
                         {
-                            FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                            FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                             UseShellExecute = true,
                             Verb = "runas",
                             WindowStyle = ProcessWindowStyle.Hidden
@@ -301,11 +301,11 @@ if ($existingRestorePoints.Count -eq 0) {
                         catch (UnauthorizedAccessException ex) { Debug.WriteLine($"Accesso negato durante la rimozione dello script temporaneo: {ex}"); }
                     }
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                    string regBackupPath = Path.Combine(desktopPath, $"BackupRegistroWinHubX_{DateTime.Now:yyyyMMdd_HHmmss}.reg");
+                    string regBackupPath = Path.Join(desktopPath, $"BackupRegistroWinHubX_{DateTime.Now:yyyyMMdd_HHmmss}.reg");
 
                     ProcessStartInfo regExport = new ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "reg.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "reg.exe"),
                         UseShellExecute = true,
                         Verb = "runas"
                     };
@@ -390,7 +390,7 @@ if ($existingRestorePoints.Count -eq 0) {
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,

@@ -101,14 +101,14 @@ namespace WinHubX
         }
         private string PrepareJsonPath()
         {
-            string folderPath = Path.Combine(
+            string folderPath = Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WinHubX",
                 "Computer"
             );
 
             Directory.CreateDirectory(folderPath);
-            return Path.Combine(folderPath, "osehardware.json");
+            return Path.Join(folderPath, "osehardware.json");
         }
         private void InitializeProgressTracker()
         {
@@ -414,14 +414,14 @@ namespace WinHubX
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "cscript.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "cscript.exe"),
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
                 psi.ArgumentList.Add("//nologo");
-                psi.ArgumentList.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "slmgr.vbs"));
+                psi.ArgumentList.Add(Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "slmgr.vbs"));
                 psi.ArgumentList.Add("/xpr");
 
                 using var process = Process.Start(psi)

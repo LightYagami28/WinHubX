@@ -167,7 +167,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -205,7 +205,7 @@ namespace WinHubX.Forms.Settaggi
 
         private void btnSuggeriti_Click(object sender, EventArgs e)
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            string path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX\\Computer\\osehardware.json");
 
             string tipoDisk = "";
@@ -1465,7 +1465,7 @@ namespace WinHubX.Forms.Settaggi
         {
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 Verb = "runas",
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden

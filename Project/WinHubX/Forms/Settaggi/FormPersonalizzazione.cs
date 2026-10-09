@@ -13,7 +13,7 @@ namespace WinHubX.Forms.Settaggi
     {
         private readonly Form1 form1;
         private FormSettaggi formSettaggi;
-        private readonly string tempFolder = Path.Combine(Path.GetTempPath(), "WinHubX");
+        private readonly string tempFolder = Path.Join(Path.GetTempPath(), "WinHubX");
         private static readonly HttpClient ResourceClient = CreateResourceClient();
         private int totalSteps = 0;
 
@@ -213,7 +213,7 @@ namespace WinHubX.Forms.Settaggi
         {
             var processInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "dism.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "dism.exe"),
                 Verb = "runas",
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Normal
@@ -249,7 +249,7 @@ namespace WinHubX.Forms.Settaggi
                 "exit $LASTEXITCODE");
             var processInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 Verb = "runas",
                 WindowStyle = ProcessWindowStyle.Normal
@@ -368,7 +368,7 @@ namespace WinHubX.Forms.Settaggi
             try
             {
                 string zipFileUrl = await OttieniUrlRegFile(Dipendenze.GitHubConfigUrl);
-                string zipFilePath = Path.Combine(tempFolder, "resources.zip");
+                string zipFilePath = Path.Join(tempFolder, "resources.zip");
                 await ScaricaFile(zipFileUrl, zipFilePath);
                 string? regFilePath = EstraiFileReg(zipFilePath, regFileName);
                 if (regFilePath is null)
@@ -404,7 +404,7 @@ namespace WinHubX.Forms.Settaggi
         private string? EstraiFileReg(string zipFilePath, string regFileName)
         {
             string extractionRoot = Path.GetFullPath(tempFolder) + Path.DirectorySeparatorChar;
-            string extractedRegFilePath = Path.GetFullPath(Path.Combine(tempFolder, regFileName));
+            string extractedRegFilePath = Path.GetFullPath(Path.Join(tempFolder, regFileName));
             if (!extractedRegFilePath.StartsWith(extractionRoot, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Percorso di estrazione non valido.");
             using (ZipArchive archive = ZipFile.OpenRead(zipFilePath))
@@ -424,7 +424,7 @@ namespace WinHubX.Forms.Settaggi
 
         private void EseguiFileReg(string filePath)
         {
-            string systemRegeditPath = Path.Combine(Environment.SystemDirectory, "regedit.exe");
+            string systemRegeditPath = Path.Join(Environment.SystemDirectory, "regedit.exe");
             ImportRegistryFile(systemRegeditPath, filePath);
 
             if (Environment.Is64BitOperatingSystem)
@@ -432,7 +432,7 @@ namespace WinHubX.Forms.Settaggi
                 string? windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                 if (!string.IsNullOrWhiteSpace(windowsDirectory))
                 {
-                    string regedit32Path = Path.Combine(windowsDirectory, "SysWOW64", "regedit.exe");
+                    string regedit32Path = Path.Join(windowsDirectory, "SysWOW64", "regedit.exe");
                     if (File.Exists(regedit32Path))
                     {
                         ImportRegistryFile(regedit32Path, filePath);
@@ -581,7 +581,7 @@ namespace WinHubX.Forms.Settaggi
                         process.Kill();
                 }
             }
-            string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            string explorerPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
             _ = Process.Start(new ProcessStartInfo(explorerPath) { UseShellExecute = true })
                 ?? throw new InvalidOperationException("Impossibile riavviare Esplora file.");
         }

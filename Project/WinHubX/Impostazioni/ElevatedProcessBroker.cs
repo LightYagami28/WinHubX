@@ -76,8 +76,8 @@ internal static class ElevatedProcessCommandValidator
         if (offlineDriverOperation)
         {
             string imageMountPath = Path.GetFullPath(arguments[0]["/Image:".Length..]);
-            string installMount = Path.GetFullPath(Path.Combine(root, "Mount", "mount"));
-            string bootMount = Path.GetFullPath(Path.Combine(root, "Mount", "boot"));
+            string installMount = Path.GetFullPath(Path.Join(root, "Mount", "mount"));
+            string bootMount = Path.GetFullPath(Path.Join(root, "Mount", "boot"));
             string[] driverArguments = arguments.Skip(1).ToArray();
             if (driverArguments.Length == 3
                 && driverArguments.Contains("/Add-Driver", StringComparer.OrdinalIgnoreCase)
@@ -183,7 +183,7 @@ internal static class ElevatedProcessCommandValidator
             && AllowedSystemDlls.Contains(arguments[2], StringComparer.OrdinalIgnoreCase))
             return;
 
-        string expectedBackupPath = Path.GetFullPath(Path.Combine(workspaceRoot, "Repair", "RegistryBackup_HKLM.reg"));
+        string expectedBackupPath = Path.GetFullPath(Path.Join(workspaceRoot, "Repair", "RegistryBackup_HKLM.reg"));
         if (arguments[0].Equals("export-hklm", StringComparison.OrdinalIgnoreCase)
             && arguments.Count == 2
             && Path.GetFullPath(arguments[1]).Equals(expectedBackupPath, StringComparison.OrdinalIgnoreCase))
@@ -356,7 +356,7 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
 
         try
         {
-            string executablePath = Path.Combine(AppContext.BaseDirectory, "WinHubX.exe");
+            string executablePath = Path.Join(AppContext.BaseDirectory, "WinHubX.exe");
             if (!File.Exists(executablePath))
                 throw new FileNotFoundException("Eseguibile WinHubX necessario per il broker UAC non trovato.", executablePath);
 
@@ -584,7 +584,7 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
             },
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
-        string executablePath = Path.Combine(Environment.SystemDirectory, executableName);
+        string executablePath = Path.Join(Environment.SystemDirectory, executableName);
         IEnumerable<string> processArguments = kind == ElevatedProcessKind.SystemUtility
             ? GetSystemUtilityArguments(arguments)
             : arguments;
@@ -681,7 +681,7 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
             throw new IOException("Non è disponibile alcun disco fisso locale per il workspace ISO.");
 
         string root = readyFixedDrives[0].RootDirectory.FullName;
-        return Path.GetFullPath(Path.Combine(root, "WinHubX", "IsoSessions", Guid.NewGuid().ToString("N")));
+        return Path.GetFullPath(Path.Join(root, "WinHubX", "IsoSessions", Guid.NewGuid().ToString("N")));
     }
 
     private static string PrepareWorkspace(string workspaceRoot, string userSidValue)
@@ -704,8 +704,8 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
         }
 
         SecurityIdentifier userSid = new(userSidValue);
-        string parentPath = Path.Combine(driveRoot, segments[0], segments[1]);
-        string firstParent = Path.Combine(driveRoot, segments[0]);
+        string parentPath = Path.Join(driveRoot, segments[0], segments[1]);
+        string firstParent = Path.Join(driveRoot, segments[0]);
         Directory.CreateDirectory(firstParent);
         EnsureNotReparsePoint(firstParent);
         Directory.CreateDirectory(parentPath);

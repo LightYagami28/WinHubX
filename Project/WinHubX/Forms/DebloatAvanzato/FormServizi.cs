@@ -136,7 +136,7 @@ public partial class FormServizi : Form
 
     private async Task ApplyServiceChangesAsync(IReadOnlyCollection<Servizio> changes)
     {
-        string reportPath = Path.Combine(Path.GetTempPath(), $"WinHubX-ServiceChanges-{Guid.NewGuid():N}.json");
+        string reportPath = Path.Join(Path.GetTempPath(), $"WinHubX-ServiceChanges-{Guid.NewGuid():N}.json");
 
         try
         {
@@ -147,7 +147,7 @@ public partial class FormServizi : Form
             string encodedCommand = ServiceConfigurationScriptBuilder.BuildEncodedCommand(changes, reportPath);
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 Verb = "runas",
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden

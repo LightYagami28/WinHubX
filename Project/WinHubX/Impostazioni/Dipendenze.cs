@@ -52,11 +52,11 @@ namespace WinHubX.Impostazioni
         public static bool CheckUpdatesOnStartup { get; set; } = true;
 
         private static string SettingsFolder =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                          "WinHubX", "Impostazioni");
 
         private static string SettingsFile =>
-            Path.Combine(SettingsFolder, "Aggiornamenti.json");
+            Path.Join(SettingsFolder, "Aggiornamenti.json");
 
         // -------------------------
         // SALVATAGGIO IMPOSTAZIONI

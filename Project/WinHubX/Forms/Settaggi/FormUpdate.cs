@@ -243,7 +243,7 @@ namespace WinHubX.Forms.Settaggi
                 script += Environment.NewLine + additionalScript;
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -377,8 +377,8 @@ namespace WinHubX.Forms.Settaggi
         private void ModificaNotificheUpdate(bool enable)
         {
             string windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-            string musNotification = Path.Combine(windowsDirectory, "System32", "MusNotification.exe");
-            string musNotificationUx = Path.Combine(windowsDirectory, "System32", "MusNotificationUx.exe");
+            string musNotification = Path.Join(windowsDirectory, "System32", "MusNotification.exe");
+            string musNotificationUx = Path.Join(windowsDirectory, "System32", "MusNotificationUx.exe");
             string escapedNotification = EscapePowerShellLiteral(musNotification);
             string escapedNotificationUx = EscapePowerShellLiteral(musNotificationUx);
             string accessControlCommand = enable
@@ -389,7 +389,7 @@ namespace WinHubX.Forms.Settaggi
 
             var startInfo = new ProcessStartInfo()
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -462,7 +462,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
@@ -596,7 +596,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo()
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         UseShellExecute = true,
                         WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                         Verb = "runas"
