@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using WinHubX.Forms.CreaISO;
 using WinHubX.Impostazioni;
@@ -25,6 +24,7 @@ namespace WinHubX.Forms.Base
         private string percorsoCompletoISO = string.Empty;
         private string? _pendingResourceSessionPath;
         private bool _resourceSessionTransferred;
+        private CancellationTokenSource? _resourcePreparationCancellation;
         public FormCreaISO(Form1 form1)
         {
             InitializeComponent();
@@ -62,49 +62,77 @@ namespace WinHubX.Forms.Base
         string IsoMountLetter = string.Empty;
         string? installwimpath;
 
-        private async Task ScaricaFileAsync(string url, string destinazione)
+        private async Task ScaricaFileAsync(string url, string destinazione, CancellationToken cancellationToken)
         {
-            await BitsTransferDownloader.DownloadFileAsync(url, destinazione, null, CancellationToken.None);
+            await BitsTransferDownloader.DownloadFileAsync(url, destinazione, null, cancellationToken);
         }
 
-        private async Task<string> GetZipUrlFromJsonAsync(string jsonUrl)
+        private async Task<string> GetZipUrlFromGitHubConfigAsync(CancellationToken cancellationToken)
         {
             try
             {
-                Uri configUri = TrustedHttpsClient.ValidateUri(jsonUrl, "configurazione ISO");
+                string json = await TrustedHttpsClient.GetStringAsync(
+                    ResourceClient,
+                    Dipendenze.GitHubConfigUrl,
+                    cancellationToken);
+                JObject obj = JObject.Parse(json);
+                string? url = obj["FormWin"]?["creaISOzip"]?.ToString();
 
-                string jsonResponse = await TrustedHttpsClient.GetStringAsync(ResourceClient, configUri.AbsoluteUri);
-                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                JsonElement root = doc.RootElement;
-                string? zipUrl = root.GetProperty("CreaISOWIN").GetProperty("creaiso").GetString();
-                return zipUrl ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(url))
+                    throw new InvalidDataException("URL ZIP non trovato in Dipendenze.json");
+
+                return url;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _ = MessageBox.Show($"Error: {ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return string.Empty;
-            }
-        }
-        private async Task<string> GetZipUrlFromGitHubConfigAsync()
-        {
-            try
-            {
-                    var json = await TrustedHttpsClient.GetStringAsync(ResourceClient, Dipendenze.GitHubConfigUrl);
-                    var obj = JObject.Parse(json);
-                    string? url = obj["FormWin"]?["creaISOzip"]?.ToString();
-
-                    if (string.IsNullOrWhiteSpace(url))
-                        throw new Exception("URL ZIP non trovato in Dipendenze.json");
-
-                    return url;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Impossibile ottenere zipUrl: " + ex.Message);
+                throw new InvalidDataException("Impossibile ottenere zipUrl.", ex);
             }
         }
 
         private async void btn_CreaISO_Click(object? sender, EventArgs e)
+        {
+            if (_resourcePreparationCancellation is not null)
+                return;
+
+            using var cancellation = new CancellationTokenSource();
+            _resourcePreparationCancellation = cancellation;
+            btn_CreaISOVerdi.Enabled = false;
+            try
+            {
+                await CreateIsoAsync(cancellation.Token);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                // Closing the form cancels resource acquisition without showing a spurious error.
+            }
+            finally
+            {
+                if (ReferenceEquals(_resourcePreparationCancellation, cancellation))
+                    _resourcePreparationCancellation = null;
+
+                if (!_resourceSessionTransferred && _pendingResourceSessionPath is { } sessionPath)
+                {
+                    try
+                    {
+                        IsoResourceWorkspace.DeleteSession(sessionPath);
+                        _pendingResourceSessionPath = null;
+                    }
+                    catch (Exception cleanupException) when (cleanupException is IOException or UnauthorizedAccessException or InvalidDataException)
+                    {
+                        Debug.WriteLine($"Pulizia workspace risorse ISO non riuscita: {cleanupException}");
+                    }
+                }
+
+                if (!IsDisposed)
+                    btn_CreaISOVerdi.Enabled = true;
+            }
+        }
+
+        private async Task CreateIsoAsync(CancellationToken cancellationToken)
         {
             string comboxstr = comboBox1.Text.Trim();
             bool selezioniValide =
@@ -152,12 +180,18 @@ namespace WinHubX.Forms.Base
             bool resourcePrepared = false;
             try
             {
-                string zipUrl = await GetZipUrlFromGitHubConfigAsync();
-                await ScaricaFileAsync(zipUrl, zipFilePath);
+                string zipUrl = await GetZipUrlFromGitHubConfigAsync(cancellationToken);
+                await ScaricaFileAsync(zipUrl, zipFilePath, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 SafeZipExtractor.ExtractToFreshDirectory(zipFilePath, stagingPath);
                 Directory.Move(stagingPath, resourcePath);
+                cancellationToken.ThrowIfCancellationRequested();
                 resourcePrepared = true;
                 _pendingResourceSessionPath = resourceSessionPath;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -184,6 +218,7 @@ namespace WinHubX.Forms.Base
 
             _ = await RunPowerShellAsync(
                 $"$ErrorActionPreference = 'Stop'; Dismount-DiskImage -ImagePath '{EscapePowerShellLiteral(selectedFile)}'");
+            cancellationToken.ThrowIfCancellationRequested();
             AppState.IsoMontata = false;
             AppState.IsoPath = null;
 
@@ -250,6 +285,10 @@ namespace WinHubX.Forms.Base
 
         private void OnFormClosedCleanupResourceSession(object? sender, FormClosedEventArgs e)
         {
+            _resourcePreparationCancellation?.Cancel();
+            if (_resourcePreparationCancellation is not null)
+                return;
+
             if (_resourceSessionTransferred || _pendingResourceSessionPath is not { } sessionPath)
                 return;
 
