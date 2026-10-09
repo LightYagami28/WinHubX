@@ -156,7 +156,6 @@ namespace WinHubX
         private void swap_pnlNav(Button activeButton, bool darkTheme)
         {
             Color baseColor = darkTheme ? Color.FromArgb(64, 60, 59) : Color.FromArgb(245, 245, 245);
-            Color activeColor = darkTheme ? Color.FromArgb(80, 80, 80) : Color.FromArgb(220, 220, 220);
 
             foreach (var button in bottoni)
             {
@@ -430,7 +429,7 @@ if ($existingRestorePoints.Count -eq 0) {
             if (AppConfig.CheckUpdatesOnStartup)
             {
                 using var impostazioni = new FormImpostazioniApp();
-                bool updateAvailable = await impostazioni.VerificaAggiornamentiAutomaticiAsync();
+                await impostazioni.VerificaAggiornamentiAutomaticiAsync();
                 if (impostazioni.UpdateDetectedAtStartup)
                 {
                     MostraNotificaAggiornamento();
