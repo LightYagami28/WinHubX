@@ -12,7 +12,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         public string platform = string.Empty;
         public string product = string.Empty;
         public string culture = string.Empty;
-        private Dictionary<string, string> officeApps = new Dictionary<string, string>()
+        private readonly Dictionary<string, string> officeApps = new Dictionary<string, string>()
         {
             {"word", "Word"},
             {"excel", "Excel"},
@@ -352,8 +352,8 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
         }
 
-        private List<string> selectedAppsInstall = new List<string>();
-        private List<string> selectedAppsRemove = new List<string>();  
+        private readonly List<string> selectedAppsInstall = new List<string>();
+        private readonly List<string> selectedAppsRemove = new List<string>();
 
         private void DisplayInstalledOfficeApps(string product)
         {
