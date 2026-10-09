@@ -22,7 +22,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 ## Architettura e performance
 
 - [ ] 9. Separare servizi, stato applicativo e presentazione WinForms.
-- [ ] 10. Introdurre lifecycle e cancellazione coerenti per tutte le operazioni async. Migliorata la chiusura di `FormMonitoraggio` (I/O preferenze, avvio e pulizie in coda con token) e di `FormOffice` (catalogo/dati scrubber cancellabili, token lifetime smaltito dopo le operazioni attive, processi già avviati attesi prima del cleanup); dispose dei token in `FormCreazioneISO`. Restano le altre schermate e una verifica UI interattiva.
+- [ ] 10. Introdurre lifecycle e cancellazione coerenti per tutte le operazioni async. Migliorata la chiusura di `FormMonitoraggio` (I/O preferenze, avvio e pulizie in coda con token) e di `FormOffice` (catalogo/dati scrubber cancellabili, token lifetime smaltito dopo le operazioni attive, processi già avviati attesi prima del cleanup). `FormCreazioneISO` annulla anche l'attesa iniziale e ora restituisce `Task` per l'operazione; token smaltito dopo il cleanup. Restano le altre schermate e una verifica UI interattiva.
 - [ ] 11. Eliminare scansioni ricorsive e I/O sincrono dal thread UI. Nel Monitoraggio, lettura delle preferenze resa asincrona e scritture serializzate su file temporaneo con sostituzione atomica; restano da auditare le altre schermate e scansioni.
 - [ ] 12. Rendere cache e snapshot hardware con scadenza e invalidazione esplicite.
 - [ ] 13. Completare la riscrittura del Monitoraggio con un modello di snapshot unico.

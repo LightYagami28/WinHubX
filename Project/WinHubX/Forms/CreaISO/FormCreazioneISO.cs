@@ -38,20 +38,38 @@ namespace WinHubX.Forms.CreaISO
             this.formcreaiso = formcreaiso;
             this.resourceSessionPath = IsoResourceWorkspace.ValidateSessionPath(resourceSessionPath);
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
+            FormClosed += FormCreazioneISO_FormClosed;
         }
         private async void FormCreazioneISO_Shown(object? sender, EventArgs e)
         {
-            await Task.Delay(2000);
-            Start();
+            var cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = cancellationTokenSource;
+            try
+            {
+                await Task.Delay(2000, cancellationTokenSource.Token);
+                await StartAsync(cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+            {
+                Debug.WriteLine("Avvio creazione ISO annullato durante la chiusura della finestra.");
+            }
+            finally
+            {
+                if (ReferenceEquals(_cancellationTokenSource, cancellationTokenSource))
+                    _cancellationTokenSource = null;
+                cancellationTokenSource.Dispose();
+            }
         }
 
         private List<Task> taskList = new();
 
-        private async void Start()
+        private void FormCreazioneISO_FormClosed(object? sender, FormClosedEventArgs e)
         {
-            var cancellationTokenSource = new CancellationTokenSource();
-            _cancellationTokenSource = cancellationTokenSource;
-            var token = cancellationTokenSource.Token;
+            _cancellationTokenSource?.Cancel();
+        }
+
+        private async Task StartAsync(CancellationToken token)
+        {
             SetButtonsEnabled(false);
             btnStopVerdi.Visible = btnStopVerdi.Enabled = true;
 
@@ -109,10 +127,11 @@ namespace WinHubX.Forms.CreaISO
                 finally
                 {
                     _elevatedBroker = null;
-                    cancellationTokenSource.Dispose();
-                    _cancellationTokenSource = null;
-                    SetButtonsEnabled(true);
-                    btnStopVerdi.Visible = false;
+                    if (!IsDisposed && !Disposing)
+                    {
+                        SetButtonsEnabled(true);
+                        btnStopVerdi.Visible = false;
+                    }
                     try
                     {
                         IsoResourceWorkspace.DeleteSession(resourceSessionPath);
