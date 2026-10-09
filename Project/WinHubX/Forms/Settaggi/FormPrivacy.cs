@@ -12,6 +12,20 @@ namespace WinHubX.Forms.Settaggi
     {
         private sealed record PrivacySelection(HashSet<string> Disable, HashSet<string> Enable);
 
+        private static bool IsExpectedPrivacyOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or TaskSchedulerException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException
+                or System.Text.Json.JsonException;
+
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private int tIndex = -1;
@@ -318,7 +332,7 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("HttpAcceptLanguageOptOut", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -389,7 +403,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -495,7 +509,7 @@ namespace WinHubX.Forms.Settaggi
                         key.SetValue("ScoobeSystemSettingEnabled", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -526,7 +540,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -552,7 +566,7 @@ namespace WinHubX.Forms.Settaggi
                     ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
                     [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: false)]));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -578,7 +592,7 @@ namespace WinHubX.Forms.Settaggi
                     ConfigureServices(registryChanges,
                         new PrivacyServiceChange("DiagTrack", "Disabled", StartAfterConfiguration: false));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -604,7 +618,7 @@ namespace WinHubX.Forms.Settaggi
                     ConfigureServices(registryChanges,
                         new PrivacyServiceChange("dmwappushservice", "Disabled", StartAfterConfiguration: false));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -631,7 +645,7 @@ namespace WinHubX.Forms.Settaggi
                         new PrivacyServiceChange("HomeGroupListener", "Disabled", StartAfterConfiguration: false),
                         new PrivacyServiceChange("HomeGroupProvider", "Disabled", StartAfterConfiguration: false));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -656,7 +670,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -676,7 +690,7 @@ namespace WinHubX.Forms.Settaggi
                         PrivacyScheduledTaskScriptBuilder.BuildScript(
                             [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Defrag\ScheduledDefrag", Enable: false)]));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -712,7 +726,7 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -737,7 +751,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -765,7 +779,7 @@ namespace WinHubX.Forms.Settaggi
                         + registryChanges.BuildCommand();
                     RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -799,7 +813,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -827,7 +841,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -867,7 +881,7 @@ namespace WinHubX.Forms.Settaggi
                     }
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -905,7 +919,7 @@ namespace WinHubX.Forms.Settaggi
                         key32?.SetValue("ToastEnabled", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -926,7 +940,7 @@ namespace WinHubX.Forms.Settaggi
                         key?.SetValue("HttpAcceptLanguageOptOut", 0, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -969,7 +983,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -999,7 +1013,7 @@ namespace WinHubX.Forms.Settaggi
                         new PrivacyServiceChange("DiagTrack", "Automatic", StartAfterConfiguration: true),
                         new PrivacyServiceChange("dmwappushservice", "Automatic", StartAfterConfiguration: true));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1027,7 +1041,7 @@ namespace WinHubX.Forms.Settaggi
                         "Status", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                     ApplyElevatedRegistryMutations(registryChanges);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1051,7 +1065,7 @@ namespace WinHubX.Forms.Settaggi
                     ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
                     [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: true)]));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1077,7 +1091,7 @@ namespace WinHubX.Forms.Settaggi
                     ConfigureServices(registryChanges,
                         new PrivacyServiceChange("DiagTrack", "Automatic", StartAfterConfiguration: true));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1103,7 +1117,7 @@ namespace WinHubX.Forms.Settaggi
                     ConfigureServices(registryChanges,
                         new PrivacyServiceChange("dmwappushservice", "Automatic", StartAfterConfiguration: true));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1123,7 +1137,7 @@ namespace WinHubX.Forms.Settaggi
                         new PrivacyServiceChange("HomeGroupListener", "Manual", StartAfterConfiguration: false),
                         new PrivacyServiceChange("HomeGroupProvider", "Manual", StartAfterConfiguration: false));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1152,7 +1166,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1182,7 +1196,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1231,7 +1245,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1259,7 +1273,7 @@ namespace WinHubX.Forms.Settaggi
                         + registryChanges.BuildCommand();
                     RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1297,7 +1311,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1329,7 +1343,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1373,7 +1387,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -1416,7 +1430,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
