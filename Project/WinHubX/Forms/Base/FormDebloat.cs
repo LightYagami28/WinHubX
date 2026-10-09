@@ -19,7 +19,7 @@ namespace WinHubX.Forms.Base
         private static readonly HttpClient ResourceClient = CreateResourceClient();
         private List<string> appxNames = new List<string>();
         public static Dictionary<string, string> appNameMappings = new Dictionary<string, string>();
-        private Dictionary<string, string> imageUrls = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> imageUrls = new Dictionary<string, string>();
         private int totalSteps = 0;
 
         private static HttpClient CreateResourceClient()
