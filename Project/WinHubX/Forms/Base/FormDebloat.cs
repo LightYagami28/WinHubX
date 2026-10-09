@@ -147,7 +147,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -211,7 +211,7 @@ namespace WinHubX.Forms.Base
                 {
                     ProcessStartInfo psi = new ProcessStartInfo
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
@@ -310,7 +310,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     Verb = "runas",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden
@@ -338,7 +338,7 @@ namespace WinHubX.Forms.Base
             {
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     Verb = "runas",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden
@@ -417,7 +417,7 @@ namespace WinHubX.Forms.Base
         {
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 Verb = "runas"
@@ -501,7 +501,7 @@ namespace WinHubX.Forms.Base
 
         private async Task<HardwareInfo> OttieniHardwareInfoAsync()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            string path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                                        "WinHubX", "Computer", "osehardware.json");
 
             if (!File.Exists(path))
@@ -553,9 +553,9 @@ namespace WinHubX.Forms.Base
 
             string url = Dipendenze.GitHubConfigUrl;
 
-            string workDirectory = Path.Combine(Path.GetTempPath(), $"WinHubX-DefNot-{Guid.NewGuid():N}");
-            string tempPath = Path.Combine(workDirectory, "DefNot.zip");
-            string extractPath = Path.Combine(workDirectory, "extracted");
+            string workDirectory = Path.Join(Path.GetTempPath(), $"WinHubX-DefNot-{Guid.NewGuid():N}");
+            string tempPath = Path.Join(workDirectory, "DefNot.zip");
+            string extractPath = Path.Join(workDirectory, "extracted");
 
             try
             {
@@ -594,7 +594,7 @@ namespace WinHubX.Forms.Base
                         throw new InvalidDataException("Hash SHA-256 dell'archivio DefendNot non valido.");
                 }
                 ExtractZipSafely(tempPath, extractPath);
-                string exePath = Path.Combine(extractPath, "defendnot-loader.exe");
+                string exePath = Path.Join(extractPath, "defendnot-loader.exe");
 
                 if (!File.Exists(exePath))
                     throw new FileNotFoundException("Loader DefendNot non presente nell'archivio verificato.", exePath);
@@ -640,14 +640,18 @@ namespace WinHubX.Forms.Base
         private static void ExtractZipSafely(string archivePath, string destination)
         {
             Directory.CreateDirectory(destination);
-            string root = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-
             using ZipArchive archive = ZipFile.OpenRead(archivePath);
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                string target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
-                if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Archivio DefendNot non valido: percorso ZIP non sicuro.");
+                string target;
+                try
+                {
+                    target = SafePathResolver.ResolveContainedPath(destination, entry.FullName);
+                }
+                catch (InvalidDataException ex)
+                {
+                    throw new InvalidDataException("Archivio DefendNot non valido: percorso ZIP non sicuro.", ex);
+                }
 
                 if (string.IsNullOrEmpty(entry.Name))
                 {
@@ -714,7 +718,7 @@ namespace WinHubX.Forms.Base
 
         private async void cuiSwitch1_CheckedChanged(object sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WinHubX", "Computer", "osehardware.json");
 

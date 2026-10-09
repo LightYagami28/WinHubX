@@ -53,7 +53,7 @@ namespace WinHubX
             FormClosed += FormOffice_FormClosed;
 
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
-            string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            string downloadPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             labelpercorso.Text = $"{downloadPath}";
             toolTip1.SetToolTip(labelpercorso, downloadPath);
             percorsoCompleto = downloadPath;
@@ -266,14 +266,14 @@ namespace WinHubX
                     );
                     return;
                 }
-                tempFolder = Path.Combine(Path.GetTempPath(), $"WinHubX-OfficeScrubber-{Guid.NewGuid():N}");
-                string tempZipPath = Path.Combine(tempFolder, "OfficeScrubber.zip");
+                tempFolder = Path.Join(Path.GetTempPath(), $"WinHubX-OfficeScrubber-{Guid.NewGuid():N}");
+                string tempZipPath = Path.Join(tempFolder, "OfficeScrubber.zip");
 
                 Directory.CreateDirectory(tempFolder);
                 await DownloadManager.DownloadFileAsync(zipFileUrl, tempZipPath,
                     cancellationToken, autoParallel: false);
                 ExtractZipSafely(tempZipPath, tempFolder);
-                string cmdPath = Path.Combine(tempFolder, "OfficeScrubber.cmd");
+                string cmdPath = Path.Join(tempFolder, "OfficeScrubber.cmd");
 
                 if (!File.Exists(cmdPath))
                 {
@@ -290,7 +290,7 @@ namespace WinHubX
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
+                        FileName = Path.Join(Environment.SystemDirectory, "cmd.exe"),
                         WorkingDirectory = tempFolder,
                         Verb = "runas",
                         UseShellExecute = true
@@ -345,14 +345,18 @@ namespace WinHubX
         private static void ExtractZipSafely(string archivePath, string destination)
         {
             Directory.CreateDirectory(destination);
-            string root = Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
-
             using ZipArchive archive = ZipFile.OpenRead(archivePath);
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
-                string target = Path.GetFullPath(Path.Combine(destination, entry.FullName));
-                if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("Archivio Office Scrubber non valido: percorso ZIP non sicuro.");
+                string target;
+                try
+                {
+                    target = SafePathResolver.ResolveContainedPath(destination, entry.FullName);
+                }
+                catch (InvalidDataException ex)
+                {
+                    throw new InvalidDataException("Archivio Office Scrubber non valido: percorso ZIP non sicuro.", ex);
+                }
 
                 if (string.IsNullOrEmpty(entry.Name))
                 {
@@ -536,7 +540,7 @@ namespace WinHubX
         {
             try
             {
-                string hwPath = Path.Combine(
+                string hwPath = Path.Join(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "WinHubX", "Computer", "osehardware.json");
 
@@ -564,7 +568,7 @@ namespace WinHubX
 
         private async void btnDownload_Click(object? sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WinHubX", "Computer", "osehardware.json");
 
@@ -644,7 +648,7 @@ namespace WinHubX
                     bool installa = Checkbox_Installa.Checked;
                     if (!salva && !installa)
                         throw new Exception("Seleziona almeno una delle opzioni: Salva o Installa.");
-                    savePath = Path.Combine(percorsoCompleto, Path.GetFileName(url));
+                    savePath = Path.Join(percorsoCompleto, Path.GetFileName(url));
                     await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, savePath, downloadCancellation.Token);
                     downloadCancellation.Token.ThrowIfCancellationRequested();
                     if (installa)
@@ -658,7 +662,7 @@ namespace WinHubX
 
                 else
                 {
-                    string tempDir = Path.Combine(Path.GetTempPath());
+                    string tempDir = Path.GetTempPath();
                     Directory.CreateDirectory(tempDir);
                     string platform = arch == "x32" ? "x86" : "x64";
 
@@ -677,7 +681,7 @@ namespace WinHubX
                     string version = parameters["version"] ?? "O16GA";
 
                     string cleanFileName = $"OfficeSetup_{product}_{platform}_{lang}_{version}.exe";
-                    tempFile = Path.Combine(tempDir, cleanFileName);
+                    tempFile = SafePathResolver.ResolveContainedPath(tempDir, cleanFileName);
                     await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, tempFile, downloadCancellation.Token);
                     downloadCancellation.Token.ThrowIfCancellationRequested();
                     WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = tempFile;
@@ -1026,7 +1030,7 @@ namespace WinHubX
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -1166,7 +1170,7 @@ namespace WinHubX
 
         private void btnPersonalizzaOffice_Click(object? sender, EventArgs e)
         {
-            string hardwarePath = Path.Combine(
+            string hardwarePath = Path.Join(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Computer", "osehardware.json");
 
