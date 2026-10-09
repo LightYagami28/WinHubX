@@ -38,12 +38,12 @@
             }
         }
 
-        public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4)
+        public static async Task DownloadFileAsync(string url, string savePath, CancellationToken token, bool autoParallel = true, int maxChunks = 4, bool useBits = true)
         {
             _ = TrustedHttpsClient.ValidateUri(url, "download");
             if (string.IsNullOrWhiteSpace(savePath))
                 throw new ArgumentException("Il percorso di destinazione è obbligatorio.", nameof(savePath));
-            maxChunks = Math.Clamp(maxChunks, 2, 8);
+            _ = Math.Clamp(maxChunks, 2, 8);
             string? directory = Path.GetDirectoryName(Path.GetFullPath(savePath));
             if (directory is not null)
                 Directory.CreateDirectory(directory);
@@ -64,8 +64,7 @@
                     _totalDownloadedBytes = 0;
                 }
 
-                using var operationTimeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token, operationTimeout.Token);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
                 CancellationToken linkedToken = linkedCts.Token;
                 stateAnnounced = true;
                 PublishDownloadState(true);
@@ -75,7 +74,19 @@
                 {
                     linkedToken.ThrowIfCancellationRequested();
 
-                    if (autoParallel && await SupportsParallelDownload(url, linkedToken))
+                    if (useBits)
+                    {
+                        await BitsTransferDownloader.DownloadFileAsync(
+                            url,
+                            temporaryPath,
+                            progress =>
+                            {
+                                ProgressPercentage = progress;
+                                PublishProgress(progress);
+                            },
+                            linkedToken);
+                    }
+                    else if (autoParallel && await SupportsParallelDownload(url, linkedToken))
                     {
                         await DownloadParallelAutoAsync(url, temporaryPath, linkedToken, maxChunks);
                     }

@@ -61,17 +61,7 @@ namespace WinHubX.Forms.Base
 
         private async Task ScaricaFileAsync(string url, string destinazione)
         {
-            Uri uri = TrustedHttpsClient.ValidateUri(url, "ISO");
-            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-
-            using (HttpResponseMessage response = await TrustedHttpsClient.GetAsync(ResourceClient, uri.AbsoluteUri, timeout.Token))
-            {
-                _ = response.EnsureSuccessStatusCode();
-                await using (FileStream fs = new(destinazione, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
-                {
-                    await response.Content.CopyToAsync(fs, timeout.Token);
-                }
-            }
+            await BitsTransferDownloader.DownloadFileAsync(url, destinazione, null, CancellationToken.None);
         }
 
         private async Task<string> GetZipUrlFromJsonAsync(string jsonUrl)
