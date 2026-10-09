@@ -78,10 +78,9 @@ namespace WinHubX.Forms.Personalizzazione_office
                     { checkBox_access, "Access" }
                 };
 
-                foreach (var kvp in apps)
+                foreach (var kvp in apps.Where(static pair => pair.Key.Checked))
                 {
-                    if (kvp.Key.Checked)
-                        RemoveElementFromXml(xmlFilePath, "ExcludeApp", kvp.Value);
+                    RemoveElementFromXml(xmlFilePath, "ExcludeApp", kvp.Value);
                 }
             }
             catch (Exception ex)

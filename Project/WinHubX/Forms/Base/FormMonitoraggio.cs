@@ -655,12 +655,10 @@ namespace WinHubX.Forms.Base
         {
             lock (_hardwareSync)
             {
-                foreach (IHardware hardware in _computer.Hardware)
+                foreach (IHardware hardware in _computer.Hardware.Where(static hardware =>
+                    hardware.HardwareType is HardwareType.Cpu or HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel))
                 {
-                    if (hardware.HardwareType is HardwareType.Cpu or HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
-                    {
-                        hardware.Update();
-                    }
+                    hardware.Update();
                 }
 
                 string cpuTemperature = GetTemperature(HardwareType.Cpu)?.ToString("0") ?? "N/A";
@@ -672,24 +670,20 @@ namespace WinHubX.Forms.Base
 
         private double? GetGpuLoadPercentage()
         {
-            foreach (var hardware in _computer.Hardware)
+            foreach (var hardware in _computer.Hardware.Where(static hardware =>
+                hardware.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel))
             {
-                if (hardware.HardwareType == HardwareType.GpuNvidia ||
-                    hardware.HardwareType == HardwareType.GpuAmd ||
-                    hardware.HardwareType == HardwareType.GpuIntel)
-                {
-                    IEnumerable<float?> readings = hardware.Sensors.Where(s =>
-                        s.SensorType == SensorType.Load &&
-                        (s.Name.Contains("Core") ||
-                         s.Name.Contains("GPU Core") ||
-                         s.Name.Contains("D3D 3D") ||
-                         s.Name.Contains("Utilization")))
-                        .Select(sensor => sensor.Value);
+                IEnumerable<float?> readings = hardware.Sensors.Where(s =>
+                    s.SensorType == SensorType.Load &&
+                    (s.Name.Contains("Core") ||
+                     s.Name.Contains("GPU Core") ||
+                     s.Name.Contains("D3D 3D") ||
+                     s.Name.Contains("Utilization")))
+                    .Select(sensor => sensor.Value);
 
-                    float? usage = HardwareSensorReading.SelectPercentage(readings);
-                    if (usage.HasValue)
-                        return usage.Value;
-                }
+                float? usage = HardwareSensorReading.SelectPercentage(readings);
+                if (usage.HasValue)
+                    return usage.Value;
             }
             return null;
         }
@@ -762,9 +756,8 @@ namespace WinHubX.Forms.Base
             long currentBytesSent = 0;
             long currentBytesReceived = 0;
 
-            foreach (var netInterface in networkInterfaces)
+            foreach (var stats in networkInterfaces.Select(static netInterface => netInterface.GetIPv4Statistics()))
             {
-                var stats = netInterface.GetIPv4Statistics();
                 currentBytesSent += stats.BytesSent;
                 currentBytesReceived += stats.BytesReceived;
             }

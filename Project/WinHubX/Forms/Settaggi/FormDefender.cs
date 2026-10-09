@@ -1002,11 +1002,9 @@ namespace WinHubX.Forms.Settaggi
             for (int i = 0; i < DisabilitaDefender.Items.Count; i++)
                 DisabilitaDefender.SetItemChecked(i, false);
 
-            foreach (string nome in daDisabilitare)
+            foreach (int index in daDisabilitare.Select(nome => DisabilitaDefender.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = DisabilitaDefender.Items.IndexOf(nome);
-                if (index != -1)
-                    DisabilitaDefender.SetItemChecked(index, true);
+                DisabilitaDefender.SetItemChecked(index, true);
             }
         }
 

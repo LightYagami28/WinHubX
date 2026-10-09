@@ -349,10 +349,8 @@ namespace WinHubX.Forms.Base
 
             try
             {
-                foreach (Func<IImportedSettingsForm> createForm in createForms)
+                foreach (Form form in createForms.Select(static createForm => (Form)createForm()))
                 {
-                    IImportedSettingsForm importedForm = createForm();
-                    Form form = (Form)importedForm;
                     form.TopLevel = false;
                     form.FormBorderStyle = FormBorderStyle.None;
                     form.Dock = DockStyle.Fill;
@@ -361,7 +359,7 @@ namespace WinHubX.Forms.Base
 
                     try
                     {
-                        await importedForm.ApplyImportedSettingsAsync();
+                        await ((IImportedSettingsForm)form).ApplyImportedSettingsAsync();
                     }
                     finally
                     {

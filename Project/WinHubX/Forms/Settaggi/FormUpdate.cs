@@ -763,11 +763,9 @@ namespace WinHubX.Forms.Settaggi
     };
             for (int i = 0; i < DisabilitaUpdate.Items.Count; i++)
                 DisabilitaUpdate.SetItemChecked(i, false);
-            foreach (string nome in daDisabilitare)
+            foreach (int index in daDisabilitare.Select(nome => DisabilitaUpdate.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = DisabilitaUpdate.Items.IndexOf(nome);
-                if (index != -1)
-                    DisabilitaUpdate.SetItemChecked(index, true);
+                DisabilitaUpdate.SetItemChecked(index, true);
             }
         }
 
