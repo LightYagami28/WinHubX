@@ -49,8 +49,9 @@ namespace WinHubX.Forms.CreaISO
 
         private async void Start()
         {
-            _cancellationTokenSource = new CancellationTokenSource();
-            var token = _cancellationTokenSource.Token;
+            var cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = cancellationTokenSource;
+            var token = cancellationTokenSource.Token;
             SetButtonsEnabled(false);
             btnStopVerdi.Visible = btnStopVerdi.Enabled = true;
 
@@ -108,6 +109,8 @@ namespace WinHubX.Forms.CreaISO
                 finally
                 {
                     _elevatedBroker = null;
+                    cancellationTokenSource.Dispose();
+                    _cancellationTokenSource = null;
                     SetButtonsEnabled(true);
                     btnStopVerdi.Visible = false;
                     try

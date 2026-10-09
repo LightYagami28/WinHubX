@@ -21,7 +21,6 @@ public sealed class UpdateManifestValidatorTests
     [Theory]
     [InlineData(null, ValidUrl, ValidSha256)]
     [InlineData("not-a-version", ValidUrl, ValidSha256)]
-    [InlineData("1.2.3", "http://github.com/owner/repo/releases/download/v1/file.exe", ValidSha256)]
     [InlineData("1.2.3", "https://github.com.evil.example/owner/repo/releases/download/v1/file.exe", ValidSha256)]
     [InlineData("1.2.3", "https://user@github.com/owner/repo/releases/download/v1/file.exe", ValidSha256)]
     [InlineData("1.2.3", "https://github.com/owner/repo/releases/tag/v1/file.exe", ValidSha256)]
@@ -30,5 +29,16 @@ public sealed class UpdateManifestValidatorTests
     public void Validate_RejectsInvalidManifest(string? version, string? url, string? sha256)
     {
         Assert.Throws<InvalidDataException>(() => UpdateManifestValidator.Validate(version, url, sha256));
+    }
+
+    [Fact]
+    public void Validate_RejectsHttpReleaseUrl()
+    {
+        string url = new UriBuilder(Uri.UriSchemeHttp, "github.com")
+        {
+            Path = "owner/repo/releases/download/v1/file.exe"
+        }.Uri.AbsoluteUri;
+
+        Assert.Throws<InvalidDataException>(() => UpdateManifestValidator.Validate("1.2.3", url, ValidSha256));
     }
 }

@@ -138,6 +138,7 @@ namespace WinHubX
 
         private void FormOffice_FormClosed(object? sender, FormClosedEventArgs e)
         {
+            _cts?.Cancel();
             WinHubX.Impostazioni.DownloadManager.ProgressChanged -= _downloadProgressHandler;
             WinHubX.Impostazioni.DownloadManager.DownloadStateChanged -= _downloadStateHandler;
             notifyIcon.Dispose();
@@ -630,28 +631,41 @@ namespace WinHubX
             }
             finally
             {
-                progressBar1.Visible = false;
-                label2.Visible = false;
-                SetDownloadButtonStyle(false);
                 try
                 {
-                    if (!string.IsNullOrEmpty(tempFile) && File.Exists(tempFile))
-                        File.Delete(tempFile);
-                    if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath) &&
-                        !WinHubX.Impostazioni.DownloadManager.IsDownloading &&
-                        selectedInstallationType.Contains("Offline"))
+                    if (!IsDisposed && !Disposing)
                     {
-                        bool salva = Checkbox_Salva.Checked;
-                        bool installa = Checkbox_Installa.Checked;
-                        if (!salva && !installa)
+                        progressBar1.Visible = false;
+                        label2.Visible = false;
+                        SetDownloadButtonStyle(false);
+                    }
+
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(tempFile) && File.Exists(tempFile))
+                            File.Delete(tempFile);
+                        if (!IsDisposed && !Disposing &&
+                            !string.IsNullOrEmpty(savePath) && File.Exists(savePath) &&
+                            !WinHubX.Impostazioni.DownloadManager.IsDownloading &&
+                            selectedInstallationType.Contains("Offline"))
                         {
-                            File.Delete(savePath);
+                            bool salva = Checkbox_Salva.Checked;
+                            bool installa = Checkbox_Installa.Checked;
+                            if (!salva && !installa)
+                            {
+                                File.Delete(savePath);
+                            }
                         }
                     }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Debug.WriteLine($"Pulizia file temporaneo/destinazione Office non riuscita: {ex}");
+                    }
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                finally
                 {
-                    Debug.WriteLine($"Pulizia file temporaneo/destinazione Office non riuscita: {ex}");
+                    _cts?.Dispose();
+                    _cts = null;
                 }
             }
         }
