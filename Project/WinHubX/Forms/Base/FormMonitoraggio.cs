@@ -711,7 +711,7 @@ namespace WinHubX.Forms.Base
             try
             {
                 SubscribeToNetworkChanges();
-                RefreshNetworkInterfaces();
+                await Task.Run(RefreshNetworkInterfaces, _monitoringToken);
 
                 if (networkInterfaces.Length == 0)
                 {
@@ -756,7 +756,7 @@ namespace WinHubX.Forms.Base
                     refreshCheckTimestamp,
                     NetworkInterfaceRefreshInterval))
             {
-                RefreshNetworkInterfaces();
+                await Task.Run(RefreshNetworkInterfaces, _monitoringToken);
             }
 
             long currentBytesSent = 0;
