@@ -729,16 +729,16 @@ namespace WinHubX.Forms.Personalizzazione_office
                 if (installedVersion >= requiredVersion)
                 {
                     versionText =
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "versione_office"), officeVersion) + "\n" +
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "piattaforma"), platform) + "\n" +
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "prodotto"), product) + "\n" +
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "lingua"), culture);
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_office", officeVersion) + "\n" +
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "piattaforma", platform) + "\n" +
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "prodotto", product) + "\n" +
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "lingua", culture);
                 }
                 else
                 {
                     versionText =
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "versione_non_compatibile"), officeVersion) + "\n" +
-                        string.Format(LanguageManager.GetTranslation("FormOfficeAggiungiRimuovi", "versione_richiesta"), requiredVersion.ToString());
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_non_compatibile", officeVersion) + "\n" +
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_richiesta", requiredVersion.ToString());
                 }
             }
 

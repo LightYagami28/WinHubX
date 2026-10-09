@@ -169,9 +169,8 @@ namespace WinHubX.Forms.CreaISO
                 _ = Invoke((MethodInvoker)delegate
                 {
                     string successo1 = LanguageManager.GetTranslation("FormCreazioneISO", "successo1");
-                    string successo2Template = LanguageManager.GetTranslation("FormCreazioneISO", "successo2");
                     string percorsoISO = formcreaiso.labelpercorso.Text;
-                    string successo2 = string.Format(successo2Template, percorsoISO);
+                    string successo2 = LanguageManager.FormatTranslation("FormCreazioneISO", "successo2", percorsoISO);
 
                     Color originalColor = richTextBox1.SelectionColor;
                     richTextBox1.SelectionColor = Color.Orange;

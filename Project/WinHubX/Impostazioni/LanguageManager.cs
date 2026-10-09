@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 
 public static class LanguageManager
 {
@@ -71,6 +72,26 @@ public static class LanguageManager
         }
 
         return key;
+    }
+
+    public static string FormatTranslation(string formName, string key, params object?[] arguments)
+    {
+        return Format(GetTranslation(formName, key), arguments);
+    }
+
+    public static string Format(string format, params object?[] arguments)
+    {
+        ArgumentNullException.ThrowIfNull(format);
+        ArgumentNullException.ThrowIfNull(arguments);
+
+        CompositeFormat compositeFormat = CompositeFormat.Parse(format);
+        if (compositeFormat.MinimumArgumentCount != arguments.Length)
+        {
+            throw new FormatException(
+                $"Format string expects {compositeFormat.MinimumArgumentCount} arguments, but received {arguments.Length}.");
+        }
+
+        return string.Format(CultureInfo.CurrentCulture, compositeFormat, arguments);
     }
 
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> LoadEmbeddedCatalog(string language)
