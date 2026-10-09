@@ -79,21 +79,21 @@ namespace WinHubX.Forms.Base
 
             _monitoringStarted = true;
             Cursor = Cursors.WaitCursor;
-            await Task.Delay(50);
-            if (IsDisposed || !IsHandleCreated)
-            {
-                return;
-            }
-
             try
             {
+                await Task.Delay(50, _monitoringToken);
+                if (_shutdownRequested || IsDisposed || !IsHandleCreated)
+                {
+                    return;
+                }
+
                 LanguageManager.LoadLanguageFromSettings();
 
                 btnPulisciCPU.Content = LanguageManager.CurrentLanguage == "it" ? "  Pulizia" : "  Clean";
                 btnPulisciRam.Content = LanguageManager.CurrentLanguage == "it" ? "  Pulizia" : "  Clean";
                 btnSvuotaTemp.Content = LanguageManager.CurrentLanguage == "it" ? "  Svuota" : "  Empty";
 
-                _initializationTask = Task.Run(InitializeComputer);
+                _initializationTask = Task.Run(InitializeComputer, _monitoringToken);
                 await _initializationTask;
                 if (_shutdownRequested || IsDisposed || !IsHandleCreated)
                 {
@@ -113,6 +113,9 @@ namespace WinHubX.Forms.Base
                     StartTEMPMonitoring()
                 ];
                 await LoadMonitoraggioSettingsAsync();
+            }
+            catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -949,8 +952,11 @@ namespace WinHubX.Forms.Base
                 {
                     CleanMemory();
                     OptimizeMemory();
-                });
+                }, _monitoringToken);
                 await _manualRamCleanupTask;
+            }
+            catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -971,8 +977,11 @@ namespace WinHubX.Forms.Base
             btnPulisciCPU.Enabled = false;
             try
             {
-                _manualCpuCleanupTask = Task.Run(CpuReduce);
+                _manualCpuCleanupTask = Task.Run(CpuReduce, _monitoringToken);
                 await _manualCpuCleanupTask;
+            }
+            catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
