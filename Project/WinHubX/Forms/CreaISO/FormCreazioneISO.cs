@@ -791,8 +791,9 @@ namespace WinHubX.Forms.CreaISO
                     return key != null;
                 }
             }
-            catch
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
+                Debug.WriteLine($"Verifica chiave del Registro non riuscita: {ex}");
                 return false;
             }
         }

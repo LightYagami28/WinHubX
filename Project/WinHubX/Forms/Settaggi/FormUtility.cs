@@ -577,12 +577,15 @@ namespace WinHubX.Forms.Settaggi
                     {
                         if (baseKey != null)
                         {
-                            foreach (string subKeyName in baseKey.GetSubKeyNames()
-                                .Where(static subKeyName => !subKeyName.StartsWith("Microsoft.Windows.Cortana", StringComparison.Ordinal)))
+                            foreach (RegistryKey? subKey in baseKey.GetSubKeyNames()
+                                .Where(static subKeyName => !subKeyName.StartsWith("Microsoft.Windows.Cortana", StringComparison.Ordinal))
+                                .Select(subKeyName => baseKey.OpenSubKey(subKeyName, true)))
                             {
-                                using RegistryKey? subKey = baseKey.OpenSubKey(subKeyName, true);
+                                using (subKey)
+                                {
                                 subKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
                                 subKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
+                                }
                             }
                         }
                     }

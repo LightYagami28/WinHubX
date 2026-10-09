@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Runtime.InteropServices;
 using System.Security.Policy;
 using System.Windows.Forms;
 using WinHubX.Forms.Base;
@@ -13,14 +12,10 @@ namespace WinHubX
 {
     public partial class Form1 : Form
     {
-        [DllImport("user32.dll")]
-        private static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
-        private const int WM_NCLBUTTONDOWN = 0xA1;
-        private const int HT_CAPTION = 0x2;
-        [DllImport("user32.dll")]
-        private static extern bool ReleaseCapture();
-
         private readonly List<Button> bottoni = new();
+        private bool _isDraggingWindow;
+        private Point _dragCursorOrigin;
+        private Point _dragWindowOrigin;
 
         private const int HTLEFT = 10;
         private const int HTRIGHT = 11;
@@ -143,9 +138,25 @@ namespace WinHubX
             {
                 if (e.Button == MouseButtons.Left)
                 {
-                    _ = ReleaseCapture();
-                    _ = SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                    _isDraggingWindow = true;
+                    _dragCursorOrigin = Cursor.Position;
+                    _dragWindowOrigin = Location;
                 }
+            };
+            control.MouseMove += (s, e) =>
+            {
+                if (_isDraggingWindow && e.Button.HasFlag(MouseButtons.Left))
+                {
+                    Point cursorPosition = Cursor.Position;
+                    Location = new Point(
+                        _dragWindowOrigin.X + cursorPosition.X - _dragCursorOrigin.X,
+                        _dragWindowOrigin.Y + cursorPosition.Y - _dragCursorOrigin.Y);
+                }
+            };
+            control.MouseUp += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                    _isDraggingWindow = false;
             };
             foreach (Control child in control.Controls.Cast<Control>().ToList())
             {

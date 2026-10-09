@@ -966,9 +966,7 @@ namespace WinHubX.Forms.Settaggi
                     : text.Substring("Disabilita ".Length);
 
                 foreach (CheckBox chk in panel77.Controls.OfType<CheckBox>().Where(chk =>
-                    chk != current &&
-                    ((isAbilita && chk.Text.StartsWith("Disabilita ", StringComparison.Ordinal) && chk.Text["Disabilita ".Length..] == baseText) ||
-                     (isDisabilita && chk.Text.StartsWith("Abilita ", StringComparison.Ordinal) && chk.Text["Abilita ".Length..] == baseText))))
+                    chk != current && IsOppositeSetting(chk.Text, isAbilita, baseText, "Abilita ", "Disabilita ")))
                 {
                     chk.Checked = false;
                 }
@@ -993,15 +991,19 @@ namespace WinHubX.Forms.Settaggi
                     : text.Substring("Rimuovi ".Length);
 
                 foreach (CheckBox chk in panel76.Controls.OfType<CheckBox>().Where(chk =>
-                    chk != current &&
-                    ((isAggiungi && chk.Text.StartsWith("Rimuovi ", StringComparison.Ordinal) && chk.Text["Rimuovi ".Length..] == baseText) ||
-                     (isRimuovi && chk.Text.StartsWith("Aggiungi ", StringComparison.Ordinal) && chk.Text["Aggiungi ".Length..] == baseText))))
+                    chk != current && IsOppositeSetting(chk.Text, isAggiungi, baseText, "Aggiungi ", "Rimuovi ")))
                 {
                     chk.Checked = false;
                 }
             }
         }
 
+        private static bool IsOppositeSetting(string candidateText, bool enabling, string baseText, string enablePrefix, string disablePrefix)
+        {
+            string expectedPrefix = enabling ? disablePrefix : enablePrefix;
+            return candidateText.StartsWith(expectedPrefix, StringComparison.Ordinal)
+                && string.Equals(candidateText[expectedPrefix.Length..], baseText, StringComparison.Ordinal);
+        }
 
     }
 }
