@@ -97,7 +97,9 @@ namespace WinHubX
                         return v == 0; // 0 = dark, 1 = light
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException)
             {
                 Debug.WriteLine($"Lettura del tema Windows non riuscita; verrà usato il tema predefinito: {ex}");
             }

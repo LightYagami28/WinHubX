@@ -76,7 +76,11 @@ namespace WinHubX.Impostazioni
                 string json = JsonConvert.SerializeObject(data, Formatting.Indented);
                 File.WriteAllText(SettingsFile, json);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or ArgumentException
+                or NotSupportedException)
             {
                 MessageBox.Show($"Errore nel salvataggio delle impostazioni: {ex.Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -97,7 +101,13 @@ namespace WinHubX.Impostazioni
                 Newtonsoft.Json.Linq.JObject? data = Newtonsoft.Json.JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);
                 CheckUpdatesOnStartup = data?["CheckUpdatesOnStartup"]?.ToObject<bool>() ?? true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or Newtonsoft.Json.JsonException
+                or ArgumentException
+                or NotSupportedException
+                or FormatException)
             {
                 MessageBox.Show($"Errore nel caricamento delle impostazioni: {ex.Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
