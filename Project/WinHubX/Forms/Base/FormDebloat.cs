@@ -15,6 +15,19 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormDebloat : Form
     {
+        private static bool IsExpectedDebloatFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private readonly Form1 form1;
         private static readonly HttpClient ResourceClient = CreateResourceClient();
         private List<string> appxNames = new List<string>();
@@ -85,7 +98,7 @@ namespace WinHubX.Forms.Base
 
                 await Task.WhenAll(appNameTask, imageTask, appxTask);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 MessageBox.Show($"Errore durante il caricamento: {ex.Message}");
             }
@@ -119,7 +132,7 @@ namespace WinHubX.Forms.Base
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
             }
@@ -135,7 +148,7 @@ namespace WinHubX.Forms.Base
                         ?? new Dictionary<string, string>();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Error: {ex.Message}");
             }
@@ -170,7 +183,7 @@ namespace WinHubX.Forms.Base
                 if (!IsDisposed)
                     Invoke(new Action(() => AggiornaUI(appxNames)));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 if (!IsDisposed)
                     MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -242,7 +255,7 @@ namespace WinHubX.Forms.Base
                 if (IsHandleCreated)
                     Invoke(() => AggiornaUI(appxNames));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 if (IsHandleCreated)
                     MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -326,7 +339,7 @@ namespace WinHubX.Forms.Base
                     process.WaitForExit();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -354,7 +367,7 @@ namespace WinHubX.Forms.Base
                     process.WaitForExit();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 _ = MessageBox.Show($"Error: {nomeApp}: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -527,7 +540,7 @@ namespace WinHubX.Forms.Base
                 using (operatingSystem)
                     return Convert.ToInt32(operatingSystem["ProductType"]) != 1;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 Debug.WriteLine($"Rilevamento Windows Server non riuscito; DefendNot viene bloccato: {ex}");
                 return true;
@@ -613,7 +626,7 @@ namespace WinHubX.Forms.Base
                 }
                 SetDefenderRegedit(true);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 Debug.WriteLine($"DefendNot non avviato: {ex}");
                 MessageBox.Show($"DefendNot non è stato avviato.\n{ex.Message}", "WinHubX",
@@ -630,7 +643,7 @@ namespace WinHubX.Forms.Base
                     if (Directory.Exists(workDirectory))
                         Directory.Delete(workDirectory, true);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDebloatFailure(ex))
                 {
                     Debug.WriteLine($"Pulizia temporanei DefendNot non completata: {ex}");
                 }
@@ -673,7 +686,7 @@ namespace WinHubX.Forms.Base
                     key.SetValue("DefenderDisabled", isDisabled ? 1 : 0, RegistryValueKind.DWord);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 Debug.WriteLine($"Salvataggio stato Defender non riuscito: {ex}");
             }
@@ -692,7 +705,7 @@ namespace WinHubX.Forms.Base
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 Debug.WriteLine($"Lettura stato Defender non riuscita: {ex}");
             }

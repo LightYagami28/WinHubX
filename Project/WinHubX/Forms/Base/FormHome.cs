@@ -9,6 +9,18 @@ namespace WinHubX
 {
     public partial class FormHome : Form
     {
+        private static bool IsExpectedSystemInformationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or TimeoutException
+                or ArgumentException;
+
         private static readonly TimeSpan HardwareSnapshotLifetime = TimeSpan.FromHours(1);
         private readonly string jsonPath;
         private bool verificationStarted;
@@ -69,7 +81,7 @@ namespace WinHubX
                 {
                     await VerificaSistemaAsync();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
                 {
                     Debug.WriteLine($"Verifica hardware non riuscita: {ex}");
                 }
@@ -168,7 +180,7 @@ namespace WinHubX
                 ShowResultsUI();
                 AggiornaRiassunto();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 MessageBox.Show($"Errore durante la verifica: {ex.Message}",
                     "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -208,7 +220,7 @@ namespace WinHubX
 
                 labeloffice.Text = "      " + LanguageManager.FormatTranslation("FormHome", "office", office);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 string errore = $"{LanguageManager.GetTranslation("FormHome", "ErroreCaricamento")}:\n{ex.Message}";
                 labelcpu.Text = errore;
@@ -298,7 +310,7 @@ namespace WinHubX
                     return $"{caption} (Versione {version}, Build {build}, {arch})";
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Lettura informazioni OS tramite WMI non riuscita: {ex}");
             }
@@ -325,7 +337,7 @@ namespace WinHubX
 
                 return CpuInfoFormatter.Format(processorInfo);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Lettura nome CPU tramite WMI non riuscita: {ex}");
             }
@@ -347,7 +359,7 @@ namespace WinHubX
                 double totalGiB = totalBytes / (1024d * 1024 * 1024);
                 return $"{totalGiB:0.0} GB";
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Lettura memoria RAM tramite WMI non riuscita: {ex}");
                 return "Sconosciuta";
@@ -400,7 +412,7 @@ namespace WinHubX
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Lettura tipo disco tramite WMI non riuscita: {ex}");
             }
@@ -450,7 +462,7 @@ namespace WinHubX
                 if (output.Contains("not activated") || output.Contains("non attivato"))
                     return "Non attivato";
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Verifica licenza Windows con cscript non riuscita; provo WMI: {ex}");
             }
@@ -474,7 +486,7 @@ namespace WinHubX
                     };
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 return $"Errore durante la verifica: {ex.Message}";
             }
@@ -505,7 +517,7 @@ namespace WinHubX
 
 
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Verifica attivazione Office tramite WMI non riuscita: {ex}");
             }
@@ -569,7 +581,7 @@ namespace WinHubX
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 Debug.WriteLine($"Ricerca installazione Office nel registro non riuscita: {ex}");
             }
@@ -587,7 +599,7 @@ namespace WinHubX
                     UseShellExecute = true
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 MessageBox.Show($"Error: {ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -604,7 +616,7 @@ namespace WinHubX
                     UseShellExecute = true
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemInformationFailure(ex))
             {
                 MessageBox.Show($"Error: {ex.Message}", "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

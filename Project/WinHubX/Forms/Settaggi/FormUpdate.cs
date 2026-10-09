@@ -8,6 +8,17 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormUpdate : Form, IImportedSettingsForm
     {
+        private static bool IsExpectedUpdateOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or InvalidOperationException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private sealed record UpdateSelection(HashSet<string> Disable, HashSet<string> Enable);
 
         private readonly Form1 form1;
@@ -209,7 +220,7 @@ namespace WinHubX.Forms.Settaggi
                     MessageBoxIcon.Information
                 );
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
             {
                 ShowOperationError(ex);
             }
@@ -308,7 +319,7 @@ namespace WinHubX.Forms.Settaggi
                     MessageBoxIcon.Information
                 );
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
             {
                 pendingRegistryMutations = null;
                 ShowOperationError(ex);
@@ -440,7 +451,7 @@ namespace WinHubX.Forms.Settaggi
                     ModificaDownloadAutomatico(RegistryView.Registry32);
                     ModificaDownloadAutomatico(RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Download automatico: {ex.GetBaseException().Message}");
                 }
@@ -480,7 +491,7 @@ namespace WinHubX.Forms.Settaggi
                             throw new InvalidOperationException($"Rimozione del servizio Microsoft Update terminata con codice {process.ExitCode}.");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Microsoft Update: {ex.GetBaseException().Message}");
                 }
@@ -503,7 +514,7 @@ namespace WinHubX.Forms.Settaggi
                     ModificaChiaveRegistro(RegistryView.Registry32);
                     ModificaChiaveRegistro(RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Driver Windows Update: {ex.GetBaseException().Message}");
                 }
@@ -530,7 +541,7 @@ namespace WinHubX.Forms.Settaggi
                         batch.SetValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "AUPowerManagement", 0, RegistryValueKind.DWord, view);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Riavvio automatico: {ex.GetBaseException().Message}");
                 }
@@ -552,7 +563,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     ModificaNotificheUpdate(false);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Notifiche Windows Update: {ex.GetBaseException().Message}");
                 }
@@ -574,7 +585,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     RimuoviAUOptions();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Ripristino download automatico: {ex.GetBaseException().Message}");
                 }
@@ -616,7 +627,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Servizio Microsoft Update: {ex.GetBaseException().Message}");
                 }
@@ -638,7 +649,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     RimuoviDriverUpdate();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Ripristino driver Windows Update: {ex.GetBaseException().Message}");
                 }
@@ -660,7 +671,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     RimuoviRiavvioAutomatico();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Ripristino riavvio automatico: {ex.GetBaseException().Message}");
                 }
@@ -682,7 +693,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     ModificaNotificheUpdate(true);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
                     failures.Add($"Ripristino notifiche Windows Update: {ex.GetBaseException().Message}");
                 }
@@ -700,7 +711,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 ApplyPendingRegistryMutations();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
             {
                 failures.Add($"Modifiche Registro Windows Update (UAC): {ex.GetBaseException().Message}");
             }
