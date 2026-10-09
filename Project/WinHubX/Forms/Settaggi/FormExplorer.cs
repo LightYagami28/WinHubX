@@ -10,7 +10,6 @@ namespace WinHubX.Forms.Settaggi
         {
             InitializeComponent();
             LoadExplorerSettings();
-            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             btnApplyVerdi.Content = LanguageManager.CurrentLanguage switch
             {
                 "it" => "  Avvia",
@@ -22,6 +21,7 @@ namespace WinHubX.Forms.Settaggi
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
 

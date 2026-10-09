@@ -25,7 +25,6 @@ namespace WinHubX.Forms.InstallaComponenti
         public FormInstallaComponenti()
         {
             InitializeComponent();
-            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             btnInstallaVerdi.Content = LanguageManager.CurrentLanguage switch
             {
                 "it" => "  Installa",
@@ -37,6 +36,7 @@ namespace WinHubX.Forms.InstallaComponenti
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
 
