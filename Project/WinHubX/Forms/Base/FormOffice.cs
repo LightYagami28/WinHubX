@@ -19,6 +19,10 @@ namespace WinHubX
         private string selectedInstallationType = string.Empty;
         private string percorsoCompleto = string.Empty;
         private CancellationTokenSource? _cts;
+        private readonly CancellationTokenSource _lifetimeCancellation = new();
+        private int _activeLifetimeOperations;
+        private int _lifetimeDisposalRequested;
+        private int _lifetimeDisposed;
         private static readonly HttpClient ResourceClient = CreateResourceClient();
         private readonly Action<int> _downloadProgressHandler;
         private readonly Action<bool> _downloadStateHandler;
@@ -138,10 +142,38 @@ namespace WinHubX
 
         private void FormOffice_FormClosed(object? sender, FormClosedEventArgs e)
         {
+            if (Interlocked.Exchange(ref _lifetimeDisposalRequested, 1) == 0)
+                _lifetimeCancellation.Cancel();
             _cts?.Cancel();
             WinHubX.Impostazioni.DownloadManager.ProgressChanged -= _downloadProgressHandler;
             WinHubX.Impostazioni.DownloadManager.DownloadStateChanged -= _downloadStateHandler;
             notifyIcon.Dispose();
+            DisposeLifetimeCancellationIfIdle();
+        }
+
+        private CancellationToken BeginLifetimeOperation()
+        {
+            if (Volatile.Read(ref _lifetimeDisposalRequested) != 0)
+                throw new OperationCanceledException("La finestra Office è in chiusura.");
+
+            Interlocked.Increment(ref _activeLifetimeOperations);
+            return _lifetimeCancellation.Token;
+        }
+
+        private void EndLifetimeOperation()
+        {
+            if (Interlocked.Decrement(ref _activeLifetimeOperations) == 0)
+                DisposeLifetimeCancellationIfIdle();
+        }
+
+        private void DisposeLifetimeCancellationIfIdle()
+        {
+            if (Volatile.Read(ref _lifetimeDisposalRequested) != 0 &&
+                Volatile.Read(ref _activeLifetimeOperations) == 0 &&
+                Interlocked.Exchange(ref _lifetimeDisposed, 1) == 0)
+            {
+                _lifetimeCancellation.Dispose();
+            }
         }
         private void UpdateProgress(int progress)
         {
@@ -164,14 +196,21 @@ namespace WinHubX
             }
         }
 
-        private static async Task<bool> IsInternetAvailableAsync()
+        private static async Task<bool> IsInternetAvailableAsync(CancellationToken cancellationToken)
         {
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken,
+                    timeout.Token);
                 using HttpResponseMessage result = await TrustedHttpsClient.GetAsync(
-                    ResourceClient, "https://www.microsoft.com/", timeout.Token);
+                    ResourceClient, "https://www.microsoft.com/", linkedToken.Token);
                 return result.IsSuccessStatusCode;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -182,9 +221,9 @@ namespace WinHubX
 
         #endregion
 
-        private async Task<string> OttieniURL(string jsonUrl)
+        private async Task<string> OttieniURL(string jsonUrl, CancellationToken cancellationToken)
         {
-            var response = await TrustedHttpsClient.GetStringAsync(ResourceClient, jsonUrl);
+            var response = await TrustedHttpsClient.GetStringAsync(ResourceClient, jsonUrl, cancellationToken);
             var json = JObject.Parse(response);
             string url = json["FormOffice"]?["scrubber"]?.Value<string>()
                 ?? throw new InvalidOperationException("URL scrubber non presente nella configurazione.");
@@ -196,13 +235,23 @@ namespace WinHubX
         private async void btnScrubber_Click(object? sender, EventArgs e)
         {
             string? tempFolder = null;
+            CancellationToken cancellationToken;
+            try
+            {
+                cancellationToken = BeginLifetimeOperation();
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
             try
             {
                 string zipFileUrl = string.Empty;
 
-                if (await IsInternetAvailableAsync())
+                if (await IsInternetAvailableAsync(cancellationToken))
                 {
-                    zipFileUrl = await OttieniURL(Dipendenze.GitHubConfigUrl);
+                    zipFileUrl = await OttieniURL(Dipendenze.GitHubConfigUrl, cancellationToken);
 
                     if (string.IsNullOrEmpty(zipFileUrl))
                         throw new Exception(LanguageManager.GetTranslation("FormOffice", "url_non_trovato_github"));
@@ -222,7 +271,7 @@ namespace WinHubX
 
                 Directory.CreateDirectory(tempFolder);
                 await DownloadManager.DownloadFileAsync(zipFileUrl, tempZipPath,
-                    _cts?.Token ?? CancellationToken.None, autoParallel: false);
+                    cancellationToken, autoParallel: false);
                 ExtractZipSafely(tempZipPath, tempFolder);
                 string cmdPath = Path.Combine(tempFolder, "OfficeScrubber.cmd");
 
@@ -252,8 +301,13 @@ namespace WinHubX
                 process.StartInfo.ArgumentList.Add(cmdPath);
 
                 process.Start();
-                await process.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
-                await AttendiScrubberConTitolo("Office Scrubber v12");
+                // Il processo usa gli script estratti: attendi prima di rimuovere la directory temporanea.
+                await process.WaitForExitAsync(CancellationToken.None);
+                await AttendiScrubberConTitolo("Office Scrubber v12", CancellationToken.None);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Debug.WriteLine("Operazione Scrubber annullata durante la chiusura della finestra Office.");
             }
             catch (Exception ex)
             {
@@ -266,17 +320,24 @@ namespace WinHubX
             }
             finally
             {
-                if (tempFolder is not null)
+                try
                 {
-                    try
+                    if (tempFolder is not null)
                     {
-                        if (Directory.Exists(tempFolder))
-                            Directory.Delete(tempFolder, recursive: true);
+                        try
+                        {
+                            if (Directory.Exists(tempFolder))
+                                Directory.Delete(tempFolder, recursive: true);
+                        }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                        {
+                            Debug.WriteLine($"Directory temporanea Scrubber non rimossa: {ex}");
+                        }
                     }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        Debug.WriteLine($"Directory temporanea Scrubber non rimossa: {ex}");
-                    }
+                }
+                finally
+                {
+                    EndLifetimeOperation();
                 }
             }
         }
@@ -304,18 +365,23 @@ namespace WinHubX
             }
         }
 
-        private async Task AttendiScrubberConTitolo(string titolo, int timeoutMs = 10 * 60 * 1000)
+        private async Task AttendiScrubberConTitolo(
+            string titolo,
+            CancellationToken cancellationToken,
+            int timeoutMs = 10 * 60 * 1000)
         {
             var stopwatch = Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < timeoutMs)
             {
-                int? processId = await Task.Run(() => FindScrubberProcessId(titolo));
+                int? processId = await Task.Run(
+                    () => FindScrubberProcessId(titolo),
+                    cancellationToken);
                 if (processId is int id)
                 {
                     try
                     {
                         using Process scrubberProcess = Process.GetProcessById(id);
-                        await scrubberProcess.WaitForExitAsync();
+                        await scrubberProcess.WaitForExitAsync(cancellationToken);
                     }
                     catch (ArgumentException)
                     {
@@ -324,7 +390,7 @@ namespace WinHubX
                     return;
                 }
 
-                await Task.Delay(1000);
+                await Task.Delay(1000, cancellationToken);
             }
 
             throw new TimeoutException($"Il processo {titolo} non è comparso entro il tempo previsto.");
@@ -366,12 +432,17 @@ namespace WinHubX
             mainForm.LoadForm(new FormOffice(mainForm), mainForm.btnOffice, "Office");
         }
 
-        private async Task<List<OfficeVersion>> CaricaOfficeVersions(string jsonUrl)
+        private async Task<List<OfficeVersion>> CaricaOfficeVersions(
+            string jsonUrl,
+            CancellationToken cancellationToken)
         {
             List<OfficeVersion> officeVersions = new List<OfficeVersion>();
 
             {
-                string jsonResponse = await TrustedHttpsClient.GetStringAsync(ResourceClient, jsonUrl);
+                string jsonResponse = await TrustedHttpsClient.GetStringAsync(
+                    ResourceClient,
+                    jsonUrl,
+                    cancellationToken);
                 var jsonObject = JObject.Parse(jsonResponse);
                 foreach (var prop in jsonObject.Properties().Where(p => p.Name.StartsWith("Office")))
                 {
@@ -515,7 +586,7 @@ namespace WinHubX
             {
                 _cts?.Cancel();
                 WinHubX.Impostazioni.DownloadManager.ForceStopDownload();
-                await Task.Delay(1000);
+                await Task.Delay(1000, CancellationToken.None);
                 SetDownloadButtonStyle(false);
                 return;
             }
@@ -711,7 +782,8 @@ namespace WinHubX
                     UseShellExecute = true,
                     WorkingDirectory = Path.GetDirectoryName(setupExe)
                 }) ?? throw new InvalidOperationException("Impossibile avviare il setup trovato nell'immagine.");
-                await setupProcess.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
+                // Non interrompere l'attesa dopo l'avvio: il processo può continuare e usare il supporto montato.
+                await setupProcess.WaitForExitAsync(CancellationToken.None);
                 if (setupProcess.ExitCode != 0)
                     throw new InvalidOperationException($"Il setup è terminato con codice {setupProcess.ExitCode}.");
 
@@ -783,7 +855,8 @@ namespace WinHubX
             {
                 using Process setup = Process.Start(new ProcessStartInfo(tempFile) { UseShellExecute = true })
                     ?? throw new InvalidOperationException("Impossibile avviare il programma di installazione di Office.");
-                await setup.WaitForExitAsync(_cts?.Token ?? CancellationToken.None);
+                // Mantieni il file disponibile finché il setup avviato non è realmente terminato.
+                await setup.WaitForExitAsync(CancellationToken.None);
                 if (setup.ExitCode != 0)
                     throw new InvalidOperationException($"Il setup Office è terminato con codice {setup.ExitCode}.");
 
@@ -851,8 +924,9 @@ namespace WinHubX
             WinHubX.Impostazioni.OfficeSettings.Installa = Checkbox_Installa.Checked;
         }
 
-        private async Task CheckPendingInstallation()
+        private async Task CheckPendingInstallation(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation &&
                 !string.IsNullOrEmpty(WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile) &&
                 File.Exists(WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile))
@@ -867,7 +941,11 @@ namespace WinHubX
                 if (result == DialogResult.Yes)
                 {
                     SetDownloadButtonStyle(true); 
-
+                    using CancellationTokenSource pendingInstallationCancellation =
+                        CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    if (_cts is not null)
+                        throw new InvalidOperationException("È già in corso un'operazione Office.");
+                    _cts = pendingInstallationCancellation;
                     try
                     {
                         if (WinHubX.Impostazioni.OfficeSettings.InstallationType == "Offline")
@@ -882,7 +960,9 @@ namespace WinHubX
                     }
                     finally
                     {
-                        SetDownloadButtonStyle(false);
+                        _cts = null;
+                        if (!IsDisposed && !Disposing)
+                            SetDownloadButtonStyle(false);
                     }
                 }
                 else
@@ -982,28 +1062,65 @@ namespace WinHubX
 
         private async void FormOffice_Load(object? sender, EventArgs e)
         {
+            CancellationToken cancellationToken;
             try
             {
-                officeVersions = await CaricaOfficeVersions(Dipendenze.GitHubConfigUrl);
+                cancellationToken = BeginLifetimeOperation();
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            try
+            {
+                try
+                {
+                    officeVersions = await CaricaOfficeVersions(
+                        Dipendenze.GitHubConfigUrl,
+                        cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Caricamento catalogo Office non riuscito: {ex}");
+                    if (!IsDisposed && !Disposing)
+                    {
+                        MessageBox.Show(
+                            $"Impossibile caricare il catalogo Office. Verifica la connessione e riprova.\n{ex.Message}",
+                            "WinHubX",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                    }
+
+                    return;
+                }
+
+                if (cancellationToken.IsCancellationRequested || IsDisposed || Disposing)
+                    return;
+
                 comboBoxVerOffice.Items.Clear();
 
                 foreach (var office in officeVersions)
                 {
                     comboBoxVerOffice.Items.Add(office.Nome);
                 }
+
+                Checkbox_Salva.Checked = WinHubX.Impostazioni.OfficeSettings.SalvaFile;
+                Checkbox_Installa.Checked = WinHubX.Impostazioni.OfficeSettings.Installa;
+                await CheckPendingInstallation(cancellationToken);
             }
-            catch (Exception ex)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                Debug.WriteLine($"Caricamento catalogo Office non riuscito: {ex}");
-                MessageBox.Show(
-                    $"Impossibile caricare il catalogo Office. Verifica la connessione e riprova.\n{ex.Message}",
-                    "WinHubX",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                Debug.WriteLine("Caricamento Office annullato durante la chiusura della finestra.");
             }
-            Checkbox_Salva.Checked = WinHubX.Impostazioni.OfficeSettings.SalvaFile;
-            Checkbox_Installa.Checked = WinHubX.Impostazioni.OfficeSettings.Installa;
-            await CheckPendingInstallation();
+            finally
+            {
+                EndLifetimeOperation();
+            }
         }
 
         private void AggiornaPercorsoLabel(string downloadPath)
