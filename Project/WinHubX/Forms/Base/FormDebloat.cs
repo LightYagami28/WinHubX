@@ -190,11 +190,9 @@ namespace WinHubX.Forms.Base
         private void AggiungiElemento(string nomeTecnico)
         {
             string nomeLeggibile = OttieniNomeLeggibile(nomeTecnico);
-            string? imgUrl = imageUrls.ContainsKey(nomeLeggibile) ? imageUrls[nomeLeggibile] : null;
-            if (string.IsNullOrEmpty(imgUrl) && imageUrls.ContainsKey("Generale"))
-            {
-                imgUrl = imageUrls["Generale"];
-            }
+            imageUrls.TryGetValue(nomeLeggibile, out string? imgUrl);
+            if (string.IsNullOrEmpty(imgUrl))
+                imageUrls.TryGetValue("Generale", out imgUrl);
             var itemControl = new AppItemControl(nomeTecnico, imgUrl)
             {
                 Width = (flowLayoutPanel1.ClientSize.Width / 2) - 20,
@@ -254,10 +252,8 @@ namespace WinHubX.Forms.Base
 
         private string OttieniNomeLeggibile(string nomeTecnico)
         {
-            if (appNameMappings.ContainsKey(nomeTecnico))
-            {
-                return appNameMappings[nomeTecnico];
-            }
+            if (appNameMappings.TryGetValue(nomeTecnico, out string? nomeLeggibile))
+                return nomeLeggibile;
             return nomeTecnico.Replace("Microsoft.", "").Replace("_", " ");
         }
 

@@ -64,8 +64,8 @@ namespace WinHubX.Forms.DebloatAvanzato
 
         private string OttieniNomeLeggibile(string nomeTecnico)
         {
-            if (FormDebloat.appNameMappings.ContainsKey(nomeTecnico))
-                return FormDebloat.appNameMappings[nomeTecnico];
+            if (FormDebloat.appNameMappings.TryGetValue(nomeTecnico, out string? nomeLeggibile))
+                return nomeLeggibile;
 
             return nomeTecnico.Replace("Microsoft.", "").Replace("_", " ");
         }
