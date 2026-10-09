@@ -196,35 +196,17 @@ namespace WinHubX
                 JsonElement activation = root.GetProperty("Activation");
                 string windows = activation.GetProperty("Windows").GetString() ?? nd;
                 string office = activation.GetProperty("Office").GetString() ?? nd;
-                labelcpu.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "cpu"),
-                    cpu
-                );
+                labelcpu.Text = "      " + LanguageManager.FormatTranslation("FormHome", "cpu", cpu);
 
-                labelram.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "ram"),
-                    ram
-                );
+                labelram.Text = "      " + LanguageManager.FormatTranslation("FormHome", "ram", ram);
 
-                labeldisco.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "disco"),
-                    disco
-                );
+                labeldisco.Text = "      " + LanguageManager.FormatTranslation("FormHome", "disco", disco);
 
-                labelos.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "os"),
-                    os
-                );
+                labelos.Text = "      " + LanguageManager.FormatTranslation("FormHome", "os", os);
 
-                labelwindows.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "windows"),
-                    windows
-                );
+                labelwindows.Text = "      " + LanguageManager.FormatTranslation("FormHome", "windows", windows);
 
-                labeloffice.Text = "      " + string.Format(
-                    LanguageManager.GetTranslation("FormHome", "office"),
-                    office
-                );
+                labeloffice.Text = "      " + LanguageManager.FormatTranslation("FormHome", "office", office);
             }
             catch (Exception ex)
             {

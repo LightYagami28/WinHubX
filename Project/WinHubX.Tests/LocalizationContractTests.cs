@@ -85,6 +85,47 @@ public sealed class LocalizationContractTests
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
+    [Theory]
+    [InlineData("FormHome", "cpu", 1)]
+    [InlineData("FormHome", "ram", 1)]
+    [InlineData("FormHome", "disco", 1)]
+    [InlineData("FormHome", "os", 1)]
+    [InlineData("FormHome", "windows", 1)]
+    [InlineData("FormHome", "office", 1)]
+    [InlineData("FormMonitoraggio", "upload", 1)]
+    [InlineData("FormMonitoraggio", "download", 1)]
+    [InlineData("FormMonitoraggio", "velocita", 1)]
+    [InlineData("FormCreazioneISO", "successo2", 1)]
+    [InlineData("FormImpostazioni", "aggiornamento_disponibile_msg", 2)]
+    [InlineData("FormImpostazioni", "labelversione", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "versione_office", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "piattaforma", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "prodotto", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "lingua", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "versione_non_compatibile", 1)]
+    [InlineData("FormOfficeAggiungiRimuovi", "versione_richiesta", 1)]
+    [InlineData("FormRipristinoSO", "scansioneInCorsoConTempo", 1)]
+    [InlineData("FormRipristinoSO", "tempoRimanente", 1)]
+    [InlineData("FormSettaggi", "exportsuccess", 1)]
+    [InlineData("FormSettaggi", "exporterrorcode", 1)]
+    [InlineData("FormSettaggi", "exportexception", 1)]
+    public void FormatTranslation_UsesAllArgumentsInBothCatalogs(string section, string key, int argumentCount)
+    {
+        foreach (string language in new[] { "it", "en" })
+        {
+            LanguageManager.SetLanguage(language);
+            object?[] arguments = Enumerable.Range(0, argumentCount).Select(index => (object?)$"value-{index}").ToArray();
+
+            string formatted = LanguageManager.FormatTranslation(section, key, arguments);
+
+            Assert.DoesNotContain("{0}", formatted, StringComparison.Ordinal);
+            if (argumentCount > 1)
+                Assert.DoesNotContain("{1}", formatted, StringComparison.Ordinal);
+        }
+
+        LanguageManager.SetLanguage("it");
+    }
+
     private static Dictionary<string, Dictionary<string, string>> LoadCatalog(string language)
     {
         string resourceName = $"WinHubX.Resources.{language}.json";

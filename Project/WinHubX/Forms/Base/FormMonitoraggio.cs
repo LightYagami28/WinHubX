@@ -860,20 +860,11 @@ namespace WinHubX.Forms.Base
 
             try
             {
-                lblUpload.Text = "        " + string.Format(
-                    LanguageManager.GetTranslation("FormMonitoraggio", "upload"),
-                    sentKB.ToString("0.00")
-                );
+                lblUpload.Text = "        " + LanguageManager.FormatTranslation("FormMonitoraggio", "upload", sentKB.ToString("0.00"));
 
-                lblDonwload.Text = "        " + string.Format(
-                    LanguageManager.GetTranslation("FormMonitoraggio", "download"),
-                    receivedKB.ToString("0.00")
-                );
+                lblDonwload.Text = "        " + LanguageManager.FormatTranslation("FormMonitoraggio", "download", receivedKB.ToString("0.00"));
 
-                labelVelocitaRete.Text = "        " + string.Format(
-                    LanguageManager.GetTranslation("FormMonitoraggio", "velocita"),
-                    totalSpeedKB.ToString("0.00")
-                );
+                labelVelocitaRete.Text = "        " + LanguageManager.FormatTranslation("FormMonitoraggio", "velocita", totalSpeedKB.ToString("0.00"));
 
                 labelReteUtilizzo.Text = networkInterfaces.Length == 0
                     ? "Nessuna interfaccia attiva"

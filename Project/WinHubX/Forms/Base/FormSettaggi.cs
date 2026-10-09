@@ -437,7 +437,7 @@ namespace WinHubX.Forms.Base
                 if (process.ExitCode == 0)
                 {
                     _ = MessageBox.Show(
-                        string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportsuccess"), dialog.FileName),
+                        LanguageManager.FormatTranslation("FormSettaggi", "exportsuccess", dialog.FileName),
                         LanguageManager.GetTranslation("FormSettaggi", "exportdone"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
@@ -446,7 +446,7 @@ namespace WinHubX.Forms.Base
 
                 string details = string.Join(Environment.NewLine,
                     new[] { error, output }.Where(static text => !string.IsNullOrWhiteSpace(text)).Select(static text => text.Trim()));
-                string message = string.Format(LanguageManager.GetTranslation("FormSettaggi", "exporterrorcode"), process.ExitCode);
+                string message = LanguageManager.FormatTranslation("FormSettaggi", "exporterrorcode", process.ExitCode);
                 if (!string.IsNullOrWhiteSpace(details))
                     message += Environment.NewLine + details;
                 _ = MessageBox.Show(message, LanguageManager.GetTranslation("FormSettaggi", "error"),
@@ -455,7 +455,7 @@ namespace WinHubX.Forms.Base
             catch (Exception ex)
             {
                 _ = MessageBox.Show(
-                    string.Format(LanguageManager.GetTranslation("FormSettaggi", "exportexception"), ex.GetBaseException().Message),
+                    LanguageManager.FormatTranslation("FormSettaggi", "exportexception", ex.GetBaseException().Message),
                     LanguageManager.GetTranslation("FormSettaggi", "exception"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);

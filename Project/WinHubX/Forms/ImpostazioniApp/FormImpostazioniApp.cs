@@ -590,11 +590,8 @@ namespace WinHubX.Forms.ImpostazioniApp
                     btnAggiornamento.Content = "  " + LanguageManager.GetTranslation("FormImpostazioni", "aggiornamento_disponibile");
                     btnAggiornamento.Image = Properties.Resources.pngScaricaOffice;
                     MessageBox.Show(
-                        string.Format(
-                            LanguageManager.GetTranslation("FormImpostazioni", "aggiornamento_disponibile_msg"),
-                            latestVersion,
-                            latestReleaseNotes
-                        ),
+                        LanguageManager.FormatTranslation(
+                            "FormImpostazioni", "aggiornamento_disponibile_msg", latestVersion, latestReleaseNotes),
                         LanguageManager.GetTranslation("FormImpostazioni", "aggiornamento_disponibile"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information
@@ -609,10 +606,7 @@ namespace WinHubX.Forms.ImpostazioniApp
             {
                 versioneTesto += " - " + LanguageManager.GetTranslation("FormImpostazioni", "nessun_aggiornamento");
             }
-            labelversione.Text = string.Format(
-                LanguageManager.GetTranslation("FormImpostazioni", "labelversione"),
-                versioneTesto
-            );
+            labelversione.Text = LanguageManager.FormatTranslation("FormImpostazioni", "labelversione", versioneTesto);
         }
     }
 }

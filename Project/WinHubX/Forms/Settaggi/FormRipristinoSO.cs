@@ -299,7 +299,7 @@ namespace WinHubX.Forms.Settaggi
             remainingTime = checked(testDurationMinutes * 60);
             progressBar1.Visible = true;
             labeltempo.Visible = true;
-            labeltempo.Text = string.Format(LanguageManager.GetTranslation("FormRipristinoSO", "scansioneInCorsoConTempo"), testDurationMinutes);
+            labeltempo.Text = LanguageManager.FormatTranslation("FormRipristinoSO", "scansioneInCorsoConTempo", testDurationMinutes);
             richTextBox1.Clear();
             cancellationTokenSource?.CancelAfter(TimeSpan.FromMinutes(testDurationMinutes));
 
@@ -351,7 +351,7 @@ namespace WinHubX.Forms.Settaggi
                 string formattedTime = timeSpan.ToString(@"hh\:mm\:ss");
 
                 labeltempo.Text = LanguageManager.GetTranslation("FormRipristinoSO", "scansioneInCorso");
-                label3.Text = string.Format(LanguageManager.GetTranslation("FormRipristinoSO", "tempoRimanente"), formattedTime);
+                label3.Text = LanguageManager.FormatTranslation("FormRipristinoSO", "tempoRimanente", formattedTime);
             }
             else
             {

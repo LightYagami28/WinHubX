@@ -88,7 +88,7 @@ public partial class FormServizi : Form
             "You are about to stop and change the startup configuration of {0} Windows services with administrator privileges. This may interrupt Windows or application features. Continue?");
         if (MessageBox.Show(
                 this,
-                string.Format(System.Globalization.CultureInfo.CurrentCulture, confirmation, selectedNames.Length),
+                LanguageManager.Format(confirmation, selectedNames.Length),
                 Translate("confirmTitle", "Conferma modifica servizi", "Confirm service changes"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning,
@@ -177,10 +177,10 @@ public partial class FormServizi : Form
             foreach (ServiceConfigurationResult result in results)
             {
                 string line = result.Success
-                    ? string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    ? LanguageManager.Format(
                         Translate("serviceSuccess", "Servizio \"{0}\": modificato correttamente", "Service \"{0}\": changed successfully"),
                         result.ServiceName)
-                    : string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                    : LanguageManager.Format(
                         Translate("serviceFailure", "Servizio \"{0}\": {1}", "Service \"{0}\": {1}"),
                         result.ServiceName,
                         result.Error ?? "Errore non specificato.");
@@ -191,8 +191,7 @@ public partial class FormServizi : Form
 
             if (process.ExitCode != 0)
             {
-                richTextBox1.AppendText(string.Format(
-                    System.Globalization.CultureInfo.CurrentCulture,
+                richTextBox1.AppendText(LanguageManager.Format(
                     Translate("serviceSummaryFailure", "Alcune modifiche non sono riuscite (codice {0}).", "Some changes failed (exit code {0})."),
                     process.ExitCode) + Environment.NewLine);
             }
