@@ -245,7 +245,8 @@ namespace WinHubX.Forms.Settaggi
 
         private void DeleteRegistryValue(string keyPath, string valueName)
         {
-            DeleteRegistryValue(keyPath, valueName);
+            DeleteRegistryValue(keyPath, valueName, RegistryView.Registry64);
+            DeleteRegistryValue(keyPath, valueName, RegistryView.Registry32);
         }
 
         private void SetDwordRegistryValue(string keyPath, string valueName, int value, RegistryView registryView)
@@ -256,7 +257,8 @@ namespace WinHubX.Forms.Settaggi
 
         private void SetDwordRegistryValue(string keyPath, string valueName, int value)
         {
-            SetDwordRegistryValue(keyPath, valueName, value);
+            SetDwordRegistryValue(keyPath, valueName, value, RegistryView.Registry64);
+            SetDwordRegistryValue(keyPath, valueName, value, RegistryView.Registry32);
         }
 
         void GrantRegistryTakeOwnershipRight(string keyPath, RegistryView registryView)
