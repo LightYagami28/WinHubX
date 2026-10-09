@@ -128,7 +128,11 @@ public sealed class LocalizationContractTests
         return string.Join(", ", duplicates);
     }
 
-    private static string[] GetPlaceholders(string value) => Regex.Matches(value, @"\{\d+\}")
+    private static string[] GetPlaceholders(string value) => Regex.Matches(
+            value,
+            @"\{\d+\}",
+            RegexOptions.None,
+            TimeSpan.FromSeconds(1))
         .Select(match => match.Value)
         .OrderBy(placeholder => placeholder, StringComparer.Ordinal)
         .ToArray();

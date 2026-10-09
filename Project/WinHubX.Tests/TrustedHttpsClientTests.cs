@@ -20,7 +20,6 @@ public sealed class TrustedHttpsClientTests
     }
 
     [Theory]
-    [InlineData("http://raw.githubusercontent.com/owner/repo/file")]
     [InlineData("https://github.com.evil.example/owner/repo/file")]
     [InlineData("https://user@github.com/owner/repo/file")]
     [InlineData("https://github.com:8443/owner/repo/file")]
@@ -28,6 +27,17 @@ public sealed class TrustedHttpsClientTests
     [InlineData("not a url")]
     public void ValidateUri_RejectsUntrustedAddresses(string address)
     {
+        Assert.Throws<InvalidDataException>(() => TrustedHttpsClient.ValidateUri(address, "test"));
+    }
+
+    [Fact]
+    public void ValidateUri_RejectsHttpEvenWhenTheHostIsAllowlisted()
+    {
+        string address = new UriBuilder(Uri.UriSchemeHttp, "raw.githubusercontent.com")
+        {
+            Path = "owner/repo/file"
+        }.Uri.AbsoluteUri;
+
         Assert.Throws<InvalidDataException>(() => TrustedHttpsClient.ValidateUri(address, "test"));
     }
 
@@ -55,11 +65,34 @@ public sealed class TrustedHttpsClientTests
     }
 
     [Theory]
-    [InlineData("http://raw.githubusercontent.com/file.exe")]
     [InlineData("https://evil.example/file.exe")]
     public async Task SendAsync_RejectsUnsafeRedirectBeforeRequestingDestination(string destination)
     {
         int requests = 0;
+        using var handler = new StubHandler(_ =>
+        {
+            requests++;
+            return Redirect(destination);
+        });
+        using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://github.com/owner/repo/file.exe");
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => TrustedHttpsClient.SendAsync(
+            client,
+            request,
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal(1, requests);
+    }
+
+    [Fact]
+    public async Task SendAsync_RejectsHttpRedirectBeforeRequestingDestination()
+    {
+        int requests = 0;
+        string destination = new UriBuilder(Uri.UriSchemeHttp, "raw.githubusercontent.com")
+        {
+            Path = "file.exe"
+        }.Uri.AbsoluteUri;
         using var handler = new StubHandler(_ =>
         {
             requests++;

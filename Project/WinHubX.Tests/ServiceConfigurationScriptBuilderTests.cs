@@ -21,7 +21,11 @@ public sealed class ServiceConfigurationScriptBuilderTests
             reportPath);
 
         string script = Encoding.Unicode.GetString(Convert.FromBase64String(command));
-        Match payloadMatch = Regex.Match(script, "FromBase64String\\('(?<payload>[A-Za-z0-9+/=]+)'\\)");
+        Match payloadMatch = Regex.Match(
+            script,
+            "FromBase64String\\('(?<payload>[A-Za-z0-9+/=]+)'\\)",
+            RegexOptions.None,
+            TimeSpan.FromSeconds(1));
 
         Assert.True(payloadMatch.Success);
         Assert.DoesNotContain("BITS", script, StringComparison.Ordinal);
@@ -41,7 +45,7 @@ public sealed class ServiceConfigurationScriptBuilderTests
     public void BuildEncodedCommand_RejectsEmptySelection()
     {
         Assert.Throws<ArgumentException>(() =>
-            ServiceConfigurationScriptBuilder.BuildEncodedCommand([], Path.GetTempFileName()));
+            ServiceConfigurationScriptBuilder.BuildEncodedCommand([], Path.GetFullPath("report.json")));
     }
 
     [Fact]
