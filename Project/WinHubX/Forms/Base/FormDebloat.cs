@@ -581,7 +581,7 @@ namespace WinHubX.Forms.Base
                     || !resourceUri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("La risorsa DefendNot deve provenire da GitHub tramite HTTPS.");
                 await DownloadManager.DownloadFileAsync(resourceUri.ToString(), tempPath,
-                    CancellationToken.None, autoParallel: false);
+                    CancellationToken.None, autoParallel: false, useBits: false);
                 string expectedHash = arch switch
                 {
                     "64" => "A7BC789268A8933ACACACA2D0E7BBC8D6C1AAD5560FBCA2D4F8C152A4D4493",

@@ -107,6 +107,16 @@ public static class TrustedHttpsClient
         return await response.Content.ReadAsStringAsync(operationToken.Token);
     }
 
+    internal static async Task<Uri> ResolveDownloadUriAsync(
+        HttpClient client,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        using HttpResponseMessage response = await GetAsync(client, url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return ValidateUri(response.RequestMessage?.RequestUri?.AbsoluteUri, "download BITS");
+    }
+
     private static bool IsTrustedHost(string host) =>
         TrustedHosts.Contains(host)
         || host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase);

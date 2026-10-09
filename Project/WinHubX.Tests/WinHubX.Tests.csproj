@@ -38,6 +38,7 @@
     <Compile Include="..\WinHubX\Impostazioni\UpdateManifestValidator.cs" Link="Impostazioni\UpdateManifestValidator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\UpdateInstaller.cs" Link="Impostazioni\UpdateInstaller.cs" />
     <Compile Include="..\WinHubX\Impostazioni\TrustedHttpsClient.cs" Link="Impostazioni\TrustedHttpsClient.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\BitsTransferDownloader.cs" Link="Impostazioni\BitsTransferDownloader.cs" />
     <Compile Include="..\WinHubX\Impostazioni\SafeZipExtractor.cs" Link="Impostazioni\SafeZipExtractor.cs" />
     <Compile Include="..\WinHubX\Impostazioni\NetworkUsageCalculator.cs" Link="Impostazioni\NetworkUsageCalculator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ThemeConfig.cs" Link="Impostazioni\ThemeConfig.cs" />
