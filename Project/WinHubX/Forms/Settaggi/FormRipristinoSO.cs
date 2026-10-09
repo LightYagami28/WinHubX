@@ -9,6 +9,19 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormRipristinoSO : Form
     {
+        private static bool IsExpectedRepairOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or ArgumentException
+                or OperationCanceledException
+                or TimeoutException;
+
         private long _cpuStressResultBits;
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
@@ -71,7 +84,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "operazioneAnnullata"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 LogMessage($"Errore durante il ripristino: {ex.Message}");
                 _ = MessageBox.Show(this, ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -143,7 +156,7 @@ namespace WinHubX.Forms.Settaggi
                     {
                         await broker.DisposeAsync();
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
                     {
                         AppendSafe($"Chiusura del broker UAC non riuscita: {ex.Message}");
                     }
@@ -407,7 +420,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 LogError($"Errore test CPU: {ex.Message}");
                 throw;
@@ -450,7 +463,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     throw;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
                 {
                     LogError($"Errore monitoraggio CPU: {ex.Message}");
                 }
@@ -479,7 +492,7 @@ namespace WinHubX.Forms.Settaggi
                 double tempK = Convert.ToDouble(zone["CurrentTemperature"]);
                 return (float)((tempK - 2732) / 10.0);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 Debug.WriteLine($"Lettura temperatura CPU non disponibile: {ex}");
             }
@@ -539,7 +552,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 LogError($"Errore test RAM: {ex.Message}");
                 throw;
@@ -554,7 +567,7 @@ namespace WinHubX.Forms.Settaggi
                 using ManagementObject? system = systems.Cast<ManagementObject>().FirstOrDefault();
                 return system is null ? 0 : Convert.ToInt64(system["TotalPhysicalMemory"]);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 Debug.WriteLine($"Errore lettura RAM: {ex.Message}");
             }
@@ -573,7 +586,7 @@ namespace WinHubX.Forms.Settaggi
                     ? 0
                     : checked(Convert.ToInt64(operatingSystem["FreePhysicalMemory"]) * 1024);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 Debug.WriteLine($"Lettura della RAM disponibile non riuscita: {ex}");
             }
@@ -625,7 +638,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 LogError($"Errore verifica disco: {ex.Message}");
                 throw;
@@ -689,7 +702,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedRepairOperationFailure(ex))
             {
                 LogError($"Errore test velocità disco: {ex.Message}");
                 return "Errore test velocità disco";
