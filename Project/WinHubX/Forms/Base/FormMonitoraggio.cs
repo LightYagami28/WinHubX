@@ -172,10 +172,11 @@ namespace WinHubX.Forms.Base
                         ?? throw new InvalidOperationException("Percorso monitoraggio non valido."));
                     await File.WriteAllTextAsync(
                         monitoraggioPath,
-                        "{ \"LimiteGB\": 2, \"ShowFahrenheitcpu\": false, \"ShowFahrenheitgpu\": false }");
+                        "{ \"LimiteGB\": 2, \"ShowFahrenheitcpu\": false, \"ShowFahrenheitgpu\": false }",
+                        _monitoringToken);
                 }
 
-                string json = await File.ReadAllTextAsync(monitoraggioPath);
+                string json = await File.ReadAllTextAsync(monitoraggioPath, _monitoringToken);
                 var obj = System.Text.Json.JsonSerializer.Deserialize<MonitoraggioConfig>(json)
                     ?? new MonitoraggioConfig();
                 domainUpDown1.Text = $"{obj.LimiteGB} GB";
@@ -184,6 +185,10 @@ namespace WinHubX.Forms.Base
 
                 MonitorSettings.ShowFahrenheitgpu = obj.ShowFahrenheitgpu;
                 cuiSwitch_gputemperatura.Checked = obj.ShowFahrenheitgpu;
+            }
+            catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -1253,12 +1258,17 @@ namespace WinHubX.Forms.Base
                 ?? throw new InvalidOperationException("Percorso monitoraggio non valido.");
             string temporaryPath = $"{monitoraggioPath}.{Guid.NewGuid():N}.tmp";
 
-            await _monitorSettingsWriteLock.WaitAsync();
+            bool lockAcquired = false;
             try
             {
+                await _monitorSettingsWriteLock.WaitAsync(_monitoringToken);
+                lockAcquired = true;
                 Directory.CreateDirectory(directory);
-                await File.WriteAllTextAsync(temporaryPath, json);
+                await File.WriteAllTextAsync(temporaryPath, json, _monitoringToken);
                 File.Move(temporaryPath, monitoraggioPath, overwrite: true);
+            }
+            catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -1279,7 +1289,10 @@ namespace WinHubX.Forms.Base
                 }
                 finally
                 {
-                    _monitorSettingsWriteLock.Release();
+                    if (lockAcquired)
+                    {
+                        _monitorSettingsWriteLock.Release();
+                    }
                 }
             }
         }
