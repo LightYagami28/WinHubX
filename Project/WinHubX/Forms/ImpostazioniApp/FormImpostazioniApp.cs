@@ -16,6 +16,19 @@ namespace WinHubX.Forms.ImpostazioniApp
 {
     public partial class FormImpostazioniApp : Form
     {
+        private static bool IsExpectedApplicationUpdateFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or HttpRequestException
+                or System.Text.Json.JsonException
+                or System.Security.Cryptography.CryptographicException
+                or InvalidOperationException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private string selectedTheme = "";
         private string lingua = "";
         private static readonly HttpClient client = CreateHttpClient();
@@ -397,7 +410,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                     Sha256 = manifest.Sha256
                 };
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedApplicationUpdateFailure(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Controllo aggiornamenti non riuscito: {ex}");
                 if (reportErrors && !IsDisposed)
@@ -466,7 +479,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                         StartUpdatedProcessAndWaitForWindowAsync);
                     Application.Exit();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedApplicationUpdateFailure(ex))
                 {
                     _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }

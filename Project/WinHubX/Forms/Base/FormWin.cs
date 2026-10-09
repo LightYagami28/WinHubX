@@ -50,7 +50,10 @@ namespace WinHubX
                 _ = Process.Start(startInfo)
                     ?? throw new InvalidOperationException("Impossibile avviare Esplora file.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or InvalidOperationException
+                or System.Security.SecurityException
+                or ArgumentException)
             {
                 _ = MessageBox.Show($"Impossibile aprire le impostazioni di attivazione: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -69,7 +72,10 @@ namespace WinHubX
                 _ = Process.Start(new ProcessStartInfo("https://massgrave.dev/") { UseShellExecute = true })
                     ?? throw new InvalidOperationException("Il browser predefinito non è stato avviato.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or InvalidOperationException
+                or System.Security.SecurityException
+                or ArgumentException)
             {
                 _ = MessageBox.Show($"Impossibile aprire massgrave.dev: {ex.Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -110,7 +116,10 @@ namespace WinHubX
                 };
                 Process.Start(psi);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or InvalidOperationException
+                or System.Security.SecurityException
+                or ArgumentException)
             {
                 MessageBox.Show($"Impossibile aprire il browser: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

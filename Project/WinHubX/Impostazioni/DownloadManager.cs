@@ -136,7 +136,7 @@
                 {
                     handler(progress);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
                 {
                     System.Diagnostics.Debug.WriteLine($"Handler progresso download non riuscito: {ex}");
                 }
@@ -154,7 +154,7 @@
                 {
                     handler(isDownloading);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
                 {
                     System.Diagnostics.Debug.WriteLine($"Handler stato download non riuscito: {ex}");
                 }

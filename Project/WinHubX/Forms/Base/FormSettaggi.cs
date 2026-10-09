@@ -194,7 +194,12 @@ namespace WinHubX.Forms.Base
 
                 await StartPowerShell1Async(scriptPath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or InvalidOperationException
+                or OperationCanceledException)
             {
                 Debug.WriteLine($"Attivazione WSL non riuscita: {ex}");
                 MessageBox.Show($"Impossibile completare l'attivazione WSL.\n{ex.Message}", "WinHubX",
@@ -328,7 +333,15 @@ namespace WinHubX.Forms.Base
 
                 await ApplicaFormSelezionatiAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Text.Json.JsonException
+                or InvalidDataException
+                or InvalidOperationException
+                or OperationCanceledException
+                or ArgumentException)
             {
                 _ = MessageBox.Show($"Importazione o applicazione non completata:\n{ex.GetBaseException().Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -452,7 +465,14 @@ namespace WinHubX.Forms.Base
                 _ = MessageBox.Show(message, LanguageManager.GetTranslation("FormSettaggi", "error"),
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Text.Json.JsonException
+                or InvalidDataException
+                or InvalidOperationException
+                or ArgumentException)
             {
                 _ = MessageBox.Show(
                     LanguageManager.FormatTranslation("FormSettaggi", "exportexception", ex.GetBaseException().Message),

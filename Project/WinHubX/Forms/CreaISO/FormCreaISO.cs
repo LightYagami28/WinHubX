@@ -9,6 +9,20 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormCreaISO : Form
     {
+        private static bool IsExpectedIsoResourceFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or HttpRequestException
+                or System.Text.Json.JsonException
+                or InvalidDataException
+                or InvalidOperationException
+                or NotSupportedException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private static readonly HttpClient ResourceClient = new(new SocketsHttpHandler
         {
             AllowAutoRedirect = false,
@@ -87,7 +101,7 @@ namespace WinHubX.Forms.Base
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoResourceFailure(ex))
             {
                 throw new InvalidDataException("Impossibile ottenere zipUrl.", ex);
             }
@@ -193,7 +207,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoResourceFailure(ex))
             {
                 _ = MessageBox.Show(this, $"Impossibile verificare o estrarre le risorse ISO: {ex.Message}",
                     "WinHubX — risorse ISO", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -210,7 +224,7 @@ namespace WinHubX.Forms.Base
                     if (!resourcePrepared)
                         IsoResourceWorkspace.DeleteSession(resourceSessionPath);
                 }
-                catch (Exception cleanupException)
+                catch (Exception cleanupException) when (IsExpectedIsoResourceFailure(cleanupException))
                 {
                     Debug.WriteLine($"Pulizia risorse ISO temporanee non completata: {cleanupException}");
                 }
@@ -348,7 +362,7 @@ namespace WinHubX.Forms.Base
 
                 await LoadWimInfoAsync(installwimpath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoResourceFailure(ex))
             {
                 MessageBox.Show($"Errore: {ex.Message}");
             }

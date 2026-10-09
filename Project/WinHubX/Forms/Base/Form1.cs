@@ -320,7 +320,12 @@ if ($existingRestorePoints.Count -eq 0) {
                     if (exportProcess.ExitCode != 0)
                         throw new InvalidOperationException($"Esportazione del registro terminata con codice {exportProcess.ExitCode}.");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException
+                    or UnauthorizedAccessException
+                    or System.Security.SecurityException
+                    or System.ComponentModel.Win32Exception
+                    or InvalidOperationException
+                    or OperationCanceledException)
                 {
                     _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -356,7 +361,11 @@ if ($existingRestorePoints.Count -eq 0) {
                 {
                     await formMonitoraggio.CleanupResourcesAsync();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException
+                    or UnauthorizedAccessException
+                    or System.Security.SecurityException
+                    or InvalidOperationException
+                    or OperationCanceledException)
                 {
                     MessageBox.Show($"Errore nella pulizia di FormMonitoraggio: {ex.Message}");
                 }
@@ -373,7 +382,12 @@ if ($existingRestorePoints.Count -eq 0) {
                     AppState.IsoDriveLetter = null;
                     AppState.IsoPath = null;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException
+                    or UnauthorizedAccessException
+                    or System.Security.SecurityException
+                    or System.ComponentModel.Win32Exception
+                    or InvalidOperationException
+                    or OperationCanceledException)
                 {
                     MessageBox.Show($"Errore nello smontare ISO: {ex.Message}");
                 }
