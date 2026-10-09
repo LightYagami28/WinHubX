@@ -338,6 +338,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 while (operationFailures.TryDequeue(out _))
                 {
+                    // Scarta tutti i risultati del tentativo precedente prima di iniziare il nuovo.
                 }
 
                 backgroundWorker1.RunWorkerAsync(selection);

@@ -1330,7 +1330,6 @@ namespace WinHubX.Forms.CreaISO
             string sourcePath = IsoWorkingRoot;
             string isoOutputPath = formcreaiso.labelpercorso.Text;
             string oscdimgPath = Path.Combine(ResourceRoot, ResourceFilesFolderName, "oscdimg");
-            string destinationPath = isoOutputPath;
 
             try
             {
