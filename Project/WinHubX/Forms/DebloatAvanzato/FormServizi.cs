@@ -45,9 +45,9 @@ public partial class FormServizi : Form
             DisabilitaServizi.BeginUpdate();
             try
             {
-                foreach (Servizio service in catalog.service)
+                foreach (string serviceName in catalog.service.Select(static service => service.Name))
                 {
-                    int index = DisabilitaServizi.Items.Add(service.Name);
+                    int index = DisabilitaServizi.Items.Add(serviceName);
                     DisabilitaServizi.SetItemChecked(index, true);
                 }
             }
@@ -174,17 +174,15 @@ public partial class FormServizi : Form
                 throw new InvalidDataException("Il report non contiene l'esito di tutti i servizi selezionati.");
             }
 
-            foreach (ServiceConfigurationResult result in results)
+            foreach (string line in results.Select(result => result.Success
+                ? LanguageManager.Format(
+                    Translate("serviceSuccess", "Servizio \"{0}\": modificato correttamente", "Service \"{0}\": changed successfully"),
+                    result.ServiceName)
+                : LanguageManager.Format(
+                    Translate("serviceFailure", "Servizio \"{0}\": {1}", "Service \"{0}\": {1}"),
+                    result.ServiceName,
+                    result.Error ?? "Errore non specificato.")))
             {
-                string line = result.Success
-                    ? LanguageManager.Format(
-                        Translate("serviceSuccess", "Servizio \"{0}\": modificato correttamente", "Service \"{0}\": changed successfully"),
-                        result.ServiceName)
-                    : LanguageManager.Format(
-                        Translate("serviceFailure", "Servizio \"{0}\": {1}", "Service \"{0}\": {1}"),
-                        result.ServiceName,
-                        result.Error ?? "Errore non specificato.");
-
                 richTextBox1.AppendText(line + Environment.NewLine);
                 progressBar1.Value = Math.Min(progressBar1.Value + 1, progressBar1.Maximum);
             }

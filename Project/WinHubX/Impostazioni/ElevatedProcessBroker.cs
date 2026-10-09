@@ -208,9 +208,9 @@ internal static class ElevatedProcessCommandValidator
                 installedPackages.Add(identity);
         }
 
-        foreach (string rawLine in dismOutput.Split(["\r\n", "\n"], StringSplitOptions.None))
+        foreach (string line in dismOutput.Split(["\r\n", "\n"], StringSplitOptions.None)
+            .Select(static rawLine => rawLine.Trim()))
         {
-            string line = rawLine.Trim();
             if (line.StartsWith("Package Identity", StringComparison.OrdinalIgnoreCase))
             {
                 AddCurrentPackage();

@@ -232,11 +232,9 @@ namespace WinHubX.Forms.Settaggi
             }
             for (int i = 0; i < DisabilitaUtility.Items.Count; i++)
                 DisabilitaUtility.SetItemChecked(i, false);
-            foreach (string nome in daDisabilitare)
+            foreach (int index in daDisabilitare.Select(nome => DisabilitaUtility.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = DisabilitaUtility.Items.IndexOf(nome);
-                if (index != -1)
-                    DisabilitaUtility.SetItemChecked(index, true);
+                DisabilitaUtility.SetItemChecked(index, true);
             }
 
             var daAbilitare = new List<string>
@@ -257,11 +255,9 @@ namespace WinHubX.Forms.Settaggi
             }
             for (int i = 0; i < AbilitaUtility.Items.Count; i++)
                 AbilitaUtility.SetItemChecked(i, false);
-            foreach (string nome in daAbilitare)
+            foreach (int index in daAbilitare.Select(nome => AbilitaUtility.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = AbilitaUtility.Items.IndexOf(nome);
-                if (index != -1)
-                    AbilitaUtility.SetItemChecked(index, true);
+                AbilitaUtility.SetItemChecked(index, true);
             }
         }
 
@@ -566,16 +562,12 @@ namespace WinHubX.Forms.Settaggi
                     {
                         if (baseKey != null)
                         {
-                            foreach (string subKeyName in baseKey.GetSubKeyNames())
+                            foreach (string subKeyName in baseKey.GetSubKeyNames()
+                                .Where(static subKeyName => !subKeyName.StartsWith("Microsoft.Windows.Cortana", StringComparison.Ordinal)))
                             {
-                                if (!subKeyName.StartsWith("Microsoft.Windows.Cortana"))
-                                {
-                                    using (RegistryKey? subKey = baseKey.OpenSubKey(subKeyName, true))
-                                    {
-                                        subKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
-                                        subKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
-                                    }
-                                }
+                                using RegistryKey? subKey = baseKey.OpenSubKey(subKeyName, true);
+                                subKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
+                                subKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
                             }
                         }
                     }
@@ -899,16 +891,14 @@ namespace WinHubX.Forms.Settaggi
                         {
                             if (backgroundAccessKey != null)
                             {
-                                foreach (var subKey in backgroundAccessKey.GetSubKeyNames())
+                                foreach (string subKey in backgroundAccessKey.GetSubKeyNames()
+                                    .Where(static subKey =>
+                                        !subKey.StartsWith("Microsoft.Windows.Cortana", StringComparison.Ordinal) &&
+                                        !subKey.StartsWith("Microsoft.Windows.ShellExperienceHost", StringComparison.Ordinal)))
                                 {
-                                    if (!subKey.StartsWith("Microsoft.Windows.Cortana") && !subKey.StartsWith("Microsoft.Windows.ShellExperienceHost"))
-                                    {
-                                        using (var appKey = backgroundAccessKey.OpenSubKey(subKey, true))
-                                        {
-                                            appKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
-                                            appKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
-                                        }
-                                    }
+                                    using RegistryKey? appKey = backgroundAccessKey.OpenSubKey(subKey, true);
+                                    appKey?.SetValue("Disabled", 1, RegistryValueKind.DWord);
+                                    appKey?.SetValue("DisabledByUser", 1, RegistryValueKind.DWord);
                                 }
                             }
                         }

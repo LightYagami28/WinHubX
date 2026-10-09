@@ -7,12 +7,9 @@ public static class NetworkUsageCalculator
         ArgumentNullException.ThrowIfNull(linkSpeedsBitsPerSecond);
 
         double totalBitsPerSecond = 0;
-        foreach (long linkSpeed in linkSpeedsBitsPerSecond)
+        foreach (long linkSpeed in linkSpeedsBitsPerSecond.Where(static speed => speed > 0))
         {
-            if (linkSpeed > 0)
-            {
-                totalBitsPerSecond += linkSpeed;
-            }
+            totalBitsPerSecond += linkSpeed;
         }
 
         return double.IsFinite(totalBitsPerSecond)

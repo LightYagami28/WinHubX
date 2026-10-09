@@ -939,12 +939,10 @@ namespace WinHubX.Forms.Settaggi
         {
             if (sender is CheckBox current && current.Checked)
             {
-                foreach (var chk in panel78.Controls.OfType<CheckBox>())
+                foreach (CheckBox chk in panel78.Controls.OfType<CheckBox>()
+                    .Where(chk => chk.Name.StartsWith("radio_orologio", StringComparison.Ordinal) && chk != current))
                 {
-                    if (chk.Name.StartsWith("radio_orologio") && chk != current)
-                    {
-                        chk.Checked = false;
-                    }
+                    chk.Checked = false;
                 }
             }
         }
@@ -963,16 +961,12 @@ namespace WinHubX.Forms.Settaggi
                     ? text.Substring("Abilita ".Length)
                     : text.Substring("Disabilita ".Length);
 
-                foreach (var chk in panel77.Controls.OfType<CheckBox>())
+                foreach (CheckBox chk in panel77.Controls.OfType<CheckBox>().Where(chk =>
+                    chk != current &&
+                    ((isAbilita && chk.Text.StartsWith("Disabilita ", StringComparison.Ordinal) && chk.Text["Disabilita ".Length..] == baseText) ||
+                     (isDisabilita && chk.Text.StartsWith("Abilita ", StringComparison.Ordinal) && chk.Text["Abilita ".Length..] == baseText))))
                 {
-                    if (chk == current) continue;
-
-                    string chkText = chk.Text;
-                    if ((isAbilita && chkText.StartsWith("Disabilita ") && chkText.Substring("Disabilita ".Length) == baseText) ||
-                        (isDisabilita && chkText.StartsWith("Abilita ") && chkText.Substring("Abilita ".Length) == baseText))
-                    {
-                        chk.Checked = false;
-                    }
+                    chk.Checked = false;
                 }
             }
         }
@@ -994,16 +988,12 @@ namespace WinHubX.Forms.Settaggi
                     ? text.Substring("Aggiungi ".Length)
                     : text.Substring("Rimuovi ".Length);
 
-                foreach (var chk in panel76.Controls.OfType<CheckBox>())
+                foreach (CheckBox chk in panel76.Controls.OfType<CheckBox>().Where(chk =>
+                    chk != current &&
+                    ((isAggiungi && chk.Text.StartsWith("Rimuovi ", StringComparison.Ordinal) && chk.Text["Rimuovi ".Length..] == baseText) ||
+                     (isRimuovi && chk.Text.StartsWith("Aggiungi ", StringComparison.Ordinal) && chk.Text["Aggiungi ".Length..] == baseText))))
                 {
-                    if (chk == current) continue;
-
-                    string chkText = chk.Text;
-                    if ((isAggiungi && chkText.StartsWith("Rimuovi ") && chkText.Substring("Rimuovi ".Length) == baseText) ||
-                        (isRimuovi && chkText.StartsWith("Aggiungi ") && chkText.Substring("Aggiungi ".Length) == baseText))
-                    {
-                        chk.Checked = false;
-                    }
+                    chk.Checked = false;
                 }
             }
         }

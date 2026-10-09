@@ -273,11 +273,8 @@ namespace WinHubX.Forms.Personalizzazione_office
         @"C:\Program Files (x86)\Microsoft Office\Office15"
     };
 
-            foreach (var path in possiblePaths)
+            foreach (string path in possiblePaths.Where(Directory.Exists))
             {
-                if (!Directory.Exists(path))
-                    continue;
-
                 foreach (var exe in exeNames)
                 {
                     string exePath = Path.Combine(path, exe);
@@ -539,10 +536,9 @@ namespace WinHubX.Forms.Personalizzazione_office
             foreach (var app in selectedAppsRemove)
                 keepOrInstall.Remove(app);
             var excludeList = new StringBuilder();
-            foreach (var app in officeApps.Keys)
+            foreach (var app in officeApps.Keys.Where(app => !keepOrInstall.Contains(app)))
             {
-                if (!keepOrInstall.Contains(app))
-                    excludeList.Append($",{app}");
+                excludeList.Append($",{app}");
             }
             try
             {

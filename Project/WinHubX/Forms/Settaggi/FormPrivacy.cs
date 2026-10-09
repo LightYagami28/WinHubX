@@ -226,11 +226,9 @@ namespace WinHubX.Forms.Settaggi
             }
             for (int i = 0; i < DisabilitaPrivacy.Items.Count; i++)
                 DisabilitaPrivacy.SetItemChecked(i, false);
-            foreach (string nome in daDisabilitare)
+            foreach (int index in daDisabilitare.Select(nome => DisabilitaPrivacy.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = DisabilitaPrivacy.Items.IndexOf(nome);
-                if (index != -1)
-                    DisabilitaPrivacy.SetItemChecked(index, true);
+                DisabilitaPrivacy.SetItemChecked(index, true);
             }
             string[] daAbilitare;
 
@@ -244,11 +242,9 @@ namespace WinHubX.Forms.Settaggi
             }
             for (int i = 0; i < AbilitaPrivacy.Items.Count; i++)
                 AbilitaPrivacy.SetItemChecked(i, false);
-            foreach (string nome in daAbilitare)
+            foreach (int index in daAbilitare.Select(nome => AbilitaPrivacy.Items.IndexOf(nome)).Where(static index => index >= 0))
             {
-                int index = AbilitaPrivacy.Items.IndexOf(nome);
-                if (index != -1)
-                    AbilitaPrivacy.SetItemChecked(index, true);
+                AbilitaPrivacy.SetItemChecked(index, true);
             }
         }
 
