@@ -329,14 +329,19 @@ namespace WinHubX
             {
                 using var searcher = new ManagementObjectSearcher(
                     "SELECT Name, NumberOfLogicalProcessors FROM Win32_Processor");
-                foreach (var item in searcher.Get())
+                using ManagementObjectCollection processors = searcher.Get();
+                var processorInfo = new List<CpuProcessorInfo>();
+                foreach (ManagementObject processor in processors)
                 {
-                    string name = item["Name"]?.ToString()?.Trim() ?? "Sconosciuto";
-                    string threads = item["NumberOfLogicalProcessors"]?.ToString() ?? "";
-                    return string.IsNullOrWhiteSpace(threads)
-                        ? name
-                        : $"{name} ({threads} thread logici)";
+                    using (processor)
+                    {
+                        string name = processor["Name"]?.ToString()?.Trim() ?? string.Empty;
+                        int.TryParse(processor["NumberOfLogicalProcessors"]?.ToString(), out int logicalProcessorCount);
+                        processorInfo.Add(new CpuProcessorInfo(name, logicalProcessorCount));
+                    }
                 }
+
+                return CpuInfoFormatter.Format(processorInfo);
             }
             catch (Exception ex)
             {
