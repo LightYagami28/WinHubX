@@ -237,8 +237,8 @@ namespace WinHubX.Forms.Settaggi
 
             using Process process = Process.Start(startInfo)
                 ?? throw new InvalidOperationException($"Impossibile avviare {executable}.");
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync(token);
+            Task<string> errorTask = process.StandardError.ReadToEndAsync(token);
 
             try
             {
@@ -257,7 +257,16 @@ namespace WinHubX.Forms.Settaggi
                 }
 
                 await process.WaitForExitAsync(CancellationToken.None);
-                _ = await Task.WhenAll(outputTask, errorTask);
+                try
+                {
+                    _ = await Task.WhenAll(outputTask, errorTask);
+                }
+                catch (Exception ex) when (token.IsCancellationRequested
+                    && ex is OperationCanceledException or IOException)
+                {
+                    Debug.WriteLine($"Drenaggio output annullato insieme al processo: {ex.Message}");
+                }
+
                 throw;
             }
 
