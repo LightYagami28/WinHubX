@@ -39,7 +39,16 @@ namespace WinHubX
         {
             try
             {
-                Process.Start(new ProcessStartInfo("ms-settings:activation") { UseShellExecute = true });
+                string windowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = Path.Combine(windowsDirectory, "explorer.exe"),
+                    WorkingDirectory = windowsDirectory,
+                    UseShellExecute = false
+                };
+                startInfo.ArgumentList.Add("ms-settings:activation");
+                _ = Process.Start(startInfo)
+                    ?? throw new InvalidOperationException("Impossibile avviare Esplora file.");
             }
             catch (Exception ex)
             {
