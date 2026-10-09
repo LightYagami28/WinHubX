@@ -263,10 +263,11 @@ namespace WinHubX.Forms.Settaggi
 
             string output = await outputTask;
             string error = await errorTask;
+            string errorDetails = error?.Trim() ?? string.Empty;
             AppendSafe(output.TrimEnd());
             AppendSafe(string.IsNullOrWhiteSpace(error) ? string.Empty : $"[ERRORE] {error.TrimEnd()}");
             if (process.ExitCode != 0)
-                throw new InvalidOperationException($"{executable} è terminato con codice {process.ExitCode}: {error.Trim()}");
+                throw new InvalidOperationException($"{executable} è terminato con codice {process.ExitCode}: {errorDetails}");
         }
 
         private void AppendSafe(string? text)
@@ -461,11 +462,13 @@ namespace WinHubX.Forms.Settaggi
             try
             {
                 using ManagementObjectSearcher searcher = new("root\\WMI", "SELECT * FROM MSAcpi_ThermalZoneTemperature");
-                foreach (ManagementObject obj in searcher.Get())
-                {
-                    double tempK = Convert.ToDouble(obj["CurrentTemperature"]);
-                    return (float)((tempK - 2732) / 10.0);
-                }
+                using ManagementObjectCollection zones = searcher.Get();
+                using ManagementObject? zone = zones.Cast<ManagementObject>().FirstOrDefault();
+                if (zone is null)
+                    return -1;
+
+                double tempK = Convert.ToDouble(zone["CurrentTemperature"]);
+                return (float)((tempK - 2732) / 10.0);
             }
             catch (Exception ex)
             {
@@ -539,11 +542,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 using ManagementObjectSearcher searcher = new("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
                 using ManagementObjectCollection systems = searcher.Get();
-                foreach (ManagementObject obj in systems)
-                {
-                    using (obj)
-                        return Convert.ToInt64(obj["TotalPhysicalMemory"]);
-                }
+                using ManagementObject? system = systems.Cast<ManagementObject>().FirstOrDefault();
+                return system is null ? 0 : Convert.ToInt64(system["TotalPhysicalMemory"]);
             }
             catch (Exception ex)
             {
@@ -559,11 +559,10 @@ namespace WinHubX.Forms.Settaggi
             {
                 using ManagementObjectSearcher searcher = new("SELECT FreePhysicalMemory FROM Win32_OperatingSystem");
                 using ManagementObjectCollection operatingSystems = searcher.Get();
-                foreach (ManagementObject operatingSystem in operatingSystems)
-                {
-                    using (operatingSystem)
-                        return checked(Convert.ToInt64(operatingSystem["FreePhysicalMemory"]) * 1024);
-                }
+                using ManagementObject? operatingSystem = operatingSystems.Cast<ManagementObject>().FirstOrDefault();
+                return operatingSystem is null
+                    ? 0
+                    : checked(Convert.ToInt64(operatingSystem["FreePhysicalMemory"]) * 1024);
             }
             catch (Exception ex)
             {
