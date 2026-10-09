@@ -13,6 +13,21 @@ namespace WinHubX.Forms.CreaISO
 {
     public partial class FormCreazioneISO : Form
     {
+        private static bool IsExpectedIsoOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or System.Xml.XmlException
+                or InvalidOperationException
+                or NotSupportedException
+                or ArgumentException
+                or FormatException
+                or OperationCanceledException
+                or TimeoutException;
+
         private const string ResourceFilesFolderName = "Risorse";
         private const string PowerRunExecutableName = "PowerRun.exe";
 
@@ -108,7 +123,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 MessageBox.Show("Operazione annullata.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 MessageBox.Show($"Errore durante l'esecuzione: {ex.Message}");
             }
@@ -119,7 +134,7 @@ namespace WinHubX.Forms.CreaISO
                     if (_elevatedBroker is not null)
                         await _elevatedBroker.DisposeAsync();
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
                 {
                     Log($"Chiusura del broker UAC non riuscita: {ex.Message}");
                 }
@@ -191,7 +206,7 @@ namespace WinHubX.Forms.CreaISO
                 form1.btnmonitoraggio.Enabled = true;
                 form1.pictureBox3.Enabled = true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"\nError: {ex.Message}");
             }
@@ -273,7 +288,7 @@ namespace WinHubX.Forms.CreaISO
                 string aborted = LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata");
                 Log(aborted);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 string errore = LanguageManager.GetTranslation("FormCreazioneISO", "erroregenerico");
                 Log($"{errore}: {ex.Message}");
@@ -395,13 +410,13 @@ namespace WinHubX.Forms.CreaISO
             {
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreoperazione")}: {ex.Message}");
                 if (File.Exists(wimProPath))
                 {
                     try { File.Delete(wimProPath); }
-                    catch (Exception cleanupException)
+                    catch (Exception cleanupException) when (IsExpectedIsoOperationFailure(cleanupException))
                     {
                         Debug.WriteLine($"Impossibile rimuovere il WIM temporaneo '{wimProPath}': {cleanupException}");
                     }
@@ -438,7 +453,7 @@ namespace WinHubX.Forms.CreaISO
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken"));
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroreoperazione")}: {ex.Message}");
                 return false;
@@ -528,7 +543,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroregenericomontaggio")}: {ex.Message}");
             }
@@ -760,7 +775,7 @@ namespace WinHubX.Forms.CreaISO
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "erroregenericaunattend") + $": {ex.Message}");
             }
@@ -925,7 +940,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroregenerico")}: {ex.Message}");
             }
@@ -1086,13 +1101,13 @@ namespace WinHubX.Forms.CreaISO
 
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "verificaparametricompletata"));
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
                     {
                         Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroregenerale")}: {ex.Message}");
                     }
                 }, token);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroregenerale")}: {ex.Message}");
             }
@@ -1195,7 +1210,7 @@ namespace WinHubX.Forms.CreaISO
                         }));
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
                 {
                     Invoke(new Action(() =>
                     {
@@ -1252,7 +1267,7 @@ namespace WinHubX.Forms.CreaISO
                         Log($"\n{LanguageManager.GetTranslation("FormCreazioneISO", "copiacompletata")}");
                     }));
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
                 {
                     Invoke(new Action(() =>
                     {
@@ -1313,7 +1328,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "errorecreazioneinstall")}: {ex.Message}");
             }
@@ -1412,7 +1427,7 @@ namespace WinHubX.Forms.CreaISO
                         AggiornaProgress(1);
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazioneisocompletata"));
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
                     {
                         Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "errorecreazioneiso")}: {ex.Message}");
                     }
@@ -1422,7 +1437,7 @@ namespace WinHubX.Forms.CreaISO
             {
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullata"));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedIsoOperationFailure(ex))
             {
                 Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "errorecreazioneiso")}: {ex.Message}");
             }
