@@ -124,7 +124,7 @@ internal static class BitsTransferDownloader
         using Process process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Impossibile avviare il client BITS.");
         Task progressTask = ReadProgressAsync(process.StandardOutput, onProgress);
-        Task<string> errorTask = process.StandardError.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
         try
         {
             await process.WaitForExitAsync(cancellationToken);
