@@ -127,7 +127,7 @@ namespace WinHubX.Forms.Settaggi
                 }
                 UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "registrazioneDll"));
                 await RegisterSystemDLLs(token);
-                UpdateProgress(++current, total);
+                UpdateProgress(total, total);
                 UpdateLabel(LanguageManager.GetTranslation("FormRipristinoSO", "ripristinoCompletato"));
                 MessageBox.Show(
                     LanguageManager.GetTranslation("FormRipristinoSO", "msgRipristinoCompletato"),
