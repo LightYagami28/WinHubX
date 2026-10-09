@@ -448,8 +448,9 @@ namespace WinHubX.Forms.ImpostazioniApp
 
                 return sb.ToString().Trim();
             }
-            catch
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Newtonsoft.Json.JsonException)
             {
+                Debug.WriteLine($"Lettura note di rilascio non riuscita: {ex}");
                 return "Note di rilascio non disponibili per la lingua selezionata.";
             }
         }

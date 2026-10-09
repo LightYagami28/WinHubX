@@ -108,11 +108,8 @@ namespace WinHubX.Forms.Personalizzazione_office
                     "Version") ?? string.Empty;
             }
 
-            if (!string.IsNullOrEmpty(officeVersion) && officeVersion.StartsWith("16.") && IsOfficeWithPublisher())
-            {
-                if (!officeApps.ContainsKey("publisher"))
-                    officeApps.Add("publisher", "Publisher");
-            }
+            if (!string.IsNullOrEmpty(officeVersion) && officeVersion.StartsWith("16.", StringComparison.Ordinal) && IsOfficeWithPublisher())
+                officeApps.TryAdd("publisher", "Publisher");
         }
         private Dictionary<string, string> DetectInstalledOfficeApps()
         {
@@ -369,8 +366,9 @@ namespace WinHubX.Forms.Personalizzazione_office
                            release.Contains("2019");
                 }
             }
-            catch
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
+                Debug.WriteLine($"Rilevamento versione Office non riuscito: {ex}");
                 return false;
             }
         }
@@ -532,8 +530,9 @@ namespace WinHubX.Forms.Personalizzazione_office
                     }
                 }
             }
-            catch
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
+                Debug.WriteLine($"Lettura configurazione Office non riuscita: {ex}");
                 MessageBox.Show("Impossibile leggere le impostazioni di Office.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }

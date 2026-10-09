@@ -149,13 +149,15 @@ namespace WinHubX.Forms.Base
         private async Task CreateIsoAsync(CancellationToken cancellationToken)
         {
             string comboxstr = comboBox1.Text.Trim();
-            bool selezioniValide =
+            bool selezioniSistemaValide =
                 (RemProcRad.Checked || NotRemProcRad.Checked) &&
                 (DebAppRad.Checked || StockAppRad.Checked) &&
-                (NotDisWinDefRad.Checked || DisWindDefRad.Checked) &&
+                (NotDisWinDefRad.Checked || DisWindDefRad.Checked);
+            bool selezioniImmagineValide =
                 (NotRemEdgeRad.Checked || RemEdgeRad.Checked) &&
-                (IsoLite.Checked || IsoLavorWork.Checked || IsoGaming.Checked) && 
+                (IsoLite.Checked || IsoLavorWork.Checked || IsoGaming.Checked) &&
                 (DriverCartella.Checked || DriverQuestoPC.Checked || NoDriver.Checked);
+            bool selezioniValide = selezioniSistemaValide && selezioniImmagineValide;
             if (comboxstr.Contains("10"))
             {
                 selezioniValide &= (SixforArchRad.Checked || ThirTwoRad.Checked);

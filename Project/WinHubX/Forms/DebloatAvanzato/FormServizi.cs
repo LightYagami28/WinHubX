@@ -59,11 +59,12 @@ public partial class FormServizi : Form
             DisabilitaServizi.BeginUpdate();
             try
             {
-                foreach (string serviceName in catalog.service.Select(static service => service.Name))
-                {
-                    int index = DisabilitaServizi.Items.Add(serviceName);
+                int firstAddedIndex = DisabilitaServizi.Items.Count;
+                DisabilitaServizi.Items.AddRange(catalog.service
+                    .Select(static service => (object)service.Name)
+                    .ToArray());
+                for (int index = firstAddedIndex; index < DisabilitaServizi.Items.Count; index++)
                     DisabilitaServizi.SetItemChecked(index, true);
-                }
             }
             finally
             {

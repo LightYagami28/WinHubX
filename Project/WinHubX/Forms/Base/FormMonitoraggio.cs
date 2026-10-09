@@ -2,7 +2,6 @@ using HartUI.Controls;
 using LibreHardwareMonitor.Hardware;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
-using System.Runtime.InteropServices;
 using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.Base
@@ -35,9 +34,6 @@ namespace WinHubX.Forms.Base
         private readonly string monitoraggioPath =
     Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Impostazioni", "Monitoraggio.json");
-
-        private const uint PROCESS_SET_QUOTA = 0x0100;
-        private const uint PROCESS_QUERY_INFORMATION = 0x0400;
 
         private NetworkInterface[] networkInterfaces = Array.Empty<NetworkInterface>();
         private string[] networkInterfaceIds = Array.Empty<string>();
@@ -322,14 +318,14 @@ namespace WinHubX.Forms.Base
 
         private async void RamMonitorTimer_Tick(object? sender, EventArgs e)
         {
-            MEMORYSTATUSEX memStatus = GetMemoryStatus();
-            if (memStatus.ullTotalPhys == 0)
+            (ulong totalPhysicalMemory, ulong availablePhysicalMemory) = GetMemoryStatus();
+            if (totalPhysicalMemory == 0)
             {
                 Debug.WriteLine("Impossibile leggere la memoria fisica totale.");
                 return;
             }
 
-            double ramUsagePercentage = ((double)(memStatus.ullTotalPhys - memStatus.ullAvailPhys) / memStatus.ullTotalPhys) * 100;
+            double ramUsagePercentage = ((double)(totalPhysicalMemory - availablePhysicalMemory) / totalPhysicalMemory) * 100;
             BarRAM.ProgressValue = Math.Min((int)ramUsagePercentage, 100);
             BarRAMtext.Text = $"{ramUsagePercentage:0}%";
 
@@ -346,9 +342,8 @@ namespace WinHubX.Forms.Base
             {
                 _ramCleanupTask = Task.Run(() =>
                 {
-                    CleanMemory();
+                    CollectManagedMemory();
                     CpuReduce();
-                    OptimizeMemory();
                 }, _monitoringToken);
                 await _ramCleanupTask;
             }
@@ -367,59 +362,9 @@ namespace WinHubX.Forms.Base
             }
         }
 
-        private void CleanMemory()
+        private static void CollectManagedMemory()
         {
-            var processes = Process.GetProcesses();
-
-            foreach (var process in processes)
-            {
-                using (process)
-                {
-                    try
-                    {
-                        CleanProcessMemory(process);
-                    }
-                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
-                    {
-                        Debug.WriteLine($"Riduzione working set del processo {process.Id} non riuscita: {ex.Message}");
-                    }
-                }
-            }
-        }
-
-        private void CleanProcessMemory(Process process)
-        {
-            IntPtr processHandle = OpenProcess(PROCESS_SET_QUOTA | PROCESS_QUERY_INFORMATION, false, process.Id);
-
-            if (processHandle != IntPtr.Zero)
-            {
-                try
-                {
-                    _ = SetProcessWorkingSetSize(processHandle, IntPtr.Zero, IntPtr.Zero);
-                    _ = EmptyWorkingSet(processHandle);
-                }
-                finally
-                {
-                    _ = CloseHandle(processHandle);
-                }
-            }
-        }
-
-        private bool ReduceMemoryUse(int processId)
-        {
-            IntPtr processHandle = OpenProcess(PROCESS_SET_QUOTA | PROCESS_QUERY_INFORMATION, false, processId);
-
-            if (processHandle == IntPtr.Zero)
-                return false;
-
-            try
-            {
-                return EmptyWorkingSet(processHandle);
-            }
-            finally
-            {
-                _ = CloseHandle(processHandle);
-            }
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, blocking: false, compacting: false);
         }
         #endregion
 
@@ -682,22 +627,23 @@ namespace WinHubX.Forms.Base
 
         private double? GetGpuLoadPercentage()
         {
-            foreach (var hardware in _computer.Hardware.Where(static hardware =>
-                hardware.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel))
-            {
-                IEnumerable<float?> readings = hardware.Sensors.Where(s =>
-                    s.SensorType == SensorType.Load &&
-                    (s.Name.Contains("Core") ||
-                     s.Name.Contains("GPU Core") ||
-                     s.Name.Contains("D3D 3D") ||
-                     s.Name.Contains("Utilization")))
-                    .Select(sensor => sensor.Value);
+            return _computer.Hardware
+                .Where(static hardware => hardware.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+                .Select(GetHardwareGpuLoadPercentage)
+                .FirstOrDefault(static usage => usage.HasValue);
+        }
 
-                float? usage = HardwareSensorReading.SelectPercentage(readings);
-                if (usage.HasValue)
-                    return usage.Value;
-            }
-            return null;
+        private static double? GetHardwareGpuLoadPercentage(IHardware hardware)
+        {
+            IEnumerable<float?> readings = hardware.Sensors
+                .Where(static sensor => sensor.SensorType == SensorType.Load &&
+                    (sensor.Name.Contains("Core", StringComparison.Ordinal) ||
+                     sensor.Name.Contains("GPU Core", StringComparison.Ordinal) ||
+                     sensor.Name.Contains("D3D 3D", StringComparison.Ordinal) ||
+                     sensor.Name.Contains("Utilization", StringComparison.Ordinal)))
+                .Select(static sensor => sensor.Value);
+
+            return HardwareSensorReading.SelectPercentage(readings);
         }
 
         private void UpdateGpuUI(double gpuUsage)
@@ -958,8 +904,7 @@ namespace WinHubX.Forms.Base
             {
                 _manualRamCleanupTask = Task.Run(() =>
                 {
-                    CleanMemory();
-                    OptimizeMemory();
+                    CollectManagedMemory();
                 }, _monitoringToken);
                 await _manualRamCleanupTask;
             }
@@ -1010,18 +955,10 @@ namespace WinHubX.Forms.Base
         #endregion
 
         #region Utility Methods
-        private void OptimizeMemory()
+        private static (ulong TotalPhysicalMemory, ulong AvailablePhysicalMemory) GetMemoryStatus()
         {
-            using var currentProcess = Process.GetCurrentProcess();
-            _ = ReduceMemoryUse(currentProcess.Id);
-        }
-
-        private MEMORYSTATUSEX GetMemoryStatus()
-        {
-            MEMORYSTATUSEX memStatus = new MEMORYSTATUSEX();
-            memStatus.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            _ = GlobalMemoryStatusEx(ref memStatus);
-            return memStatus;
+            Microsoft.VisualBasic.Devices.ComputerInfo memoryInfo = new();
+            return (memoryInfo.TotalPhysicalMemory, memoryInfo.AvailablePhysicalMemory);
         }
         private void ApplyTheme()
         {
@@ -1108,39 +1045,6 @@ namespace WinHubX.Forms.Base
 
         #endregion
 
-        #region Native Methods
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MEMORYSTATUSEX
-        {
-            public uint dwLength;
-            public uint dwMemoryLoad;
-            public ulong ullTotalPhys;
-            public ulong ullAvailPhys;
-            public ulong ullTotalPageFile;
-            public ulong ullAvailPageFile;
-            public ulong ullTotalVirtual;
-            public ulong ullAvailVirtual;
-            public ulong ullAvailExtendedVirtual;
-        }
-
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool CloseHandle(IntPtr hObject);
-
-        [DllImport("psapi.dll")]
-        private static extern bool EmptyWorkingSet(IntPtr hProcess);
-
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr dwMinimumWorkingSetSize, IntPtr dwMaximumWorkingSetSize);
-        #endregion
         private void puliziaautomaticoCPU_Click(object sender, EventArgs e)
         {
             puliziaautomaticoCPU.Checked = !puliziaautomaticoCPU.Checked;
