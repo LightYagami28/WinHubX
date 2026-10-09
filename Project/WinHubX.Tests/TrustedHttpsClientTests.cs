@@ -83,7 +83,11 @@ public sealed class TrustedHttpsClientTests
         using var handler = new StubHandler(_ =>
         {
             requests++;
-            return Redirect($"https://github.com/owner/repo/redirect-{requests}");
+            var redirectUri = new UriBuilder(Uri.UriSchemeHttps, "github.com")
+            {
+                Path = $"/owner/repo/redirect-{requests}"
+            };
+            return Redirect(redirectUri.Uri.AbsoluteUri);
         });
         using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://github.com/owner/repo/start");
