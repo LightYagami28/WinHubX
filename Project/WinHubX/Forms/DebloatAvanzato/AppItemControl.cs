@@ -8,7 +8,7 @@ namespace WinHubX.Forms.DebloatAvanzato
     public partial class AppItemControl : UserControl
     {
         private readonly ToolTip _toolTip = new();
-        private IReadOnlyDictionary<string, string> _appNameMappings = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly IReadOnlyDictionary<string, string> _appNameMappings = new Dictionary<string, string>(StringComparer.Ordinal);
 
         public string NomeTecnico { get; private set; } = string.Empty;
         public string? ImgUrl { get; private set; }
