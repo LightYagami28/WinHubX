@@ -24,7 +24,9 @@ namespace WinHubX.Forms.DriverRST
                     UseShellExecute = true
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or InvalidOperationException
+                or System.Security.SecurityException)
             {
                 MessageBox.Show($"Impossibile aprire la pagina ufficiale Intel: {ex.Message}", "Download driver RST",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);

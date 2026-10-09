@@ -46,7 +46,12 @@ namespace WinHubX.Forms.Settaggi
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or FormatException
+                or InvalidCastException
+                or OverflowException)
             {
                 Debug.WriteLine($"Caricamento preferenze Esplora file non riuscito: {ex}");
             }
@@ -79,7 +84,12 @@ namespace WinHubX.Forms.Settaggi
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or FormatException
+                or InvalidCastException
+                or OverflowException)
             {
                 Debug.WriteLine($"Applicazione preferenze Esplora file non riuscita: {ex}");
                 MessageBox.Show(

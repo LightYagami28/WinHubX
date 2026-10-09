@@ -33,7 +33,12 @@ namespace WinHubX
                 string json = File.ReadAllText(path);
                 return JsonConvert.DeserializeObject<ThemeConfig>(json) ?? new ThemeConfig();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or Newtonsoft.Json.JsonException
+                or ArgumentException
+                or NotSupportedException)
             {
                 Debug.WriteLine($"Unable to read theme settings; defaults will be used: {ex}");
                 return new ThemeConfig();

@@ -41,7 +41,10 @@ public static class LanguageManager
         {
             loadedCatalog = LoadEmbeddedCatalog(supportedLanguage);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException
+            or InvalidDataException
+            or Newtonsoft.Json.JsonException
+            or ArgumentException)
         {
             Debug.WriteLine($"Unable to load the {supportedLanguage} localization resource: {ex}");
             supportedLanguage = "it";
@@ -50,7 +53,10 @@ public static class LanguageManager
             {
                 loadedCatalog = LoadEmbeddedCatalog(supportedLanguage);
             }
-            catch (Exception fallbackException)
+            catch (Exception fallbackException) when (fallbackException is IOException
+                or InvalidDataException
+                or Newtonsoft.Json.JsonException
+                or ArgumentException)
             {
                 Debug.WriteLine($"Unable to load the fallback localization resource: {fallbackException}");
                 loadedCatalog = new ReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>(
