@@ -423,6 +423,35 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
+        private void ApplySelectedUtilityOption(
+            HashSet<string> selectedOptions,
+            string optionName,
+            string checkboxName,
+            Action apply,
+            ref int currentStep,
+            string? failureMessage = null)
+        {
+            if (!selectedOptions.Contains(optionName))
+            {
+                SetCheckboxState(checkboxName, false);
+                return;
+            }
+
+            SetCheckboxState(checkboxName, true);
+            currentStep++;
+            backgroundWorker1.ReportProgress(currentStep);
+            try
+            {
+                apply();
+            }
+            catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
+            {
+                RecordOperationFailure(failureMessage is null
+                    ? ex
+                    : new InvalidOperationException(failureMessage, ex));
+            }
+        }
+
         private void SetRegistryValue(string path, string name, object? value, RegistryView view = RegistryView.Default)
         {
             (RegistryHive hive, string subKeyPath) = ParseSystemRegistryPath(path);
@@ -777,42 +806,11 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaattivazionedelNumlockinavvio", false);
             }
-            if (selectedToDisable.Contains("Disabilita News e Interessi"))
-            {
-                SetCheckboxState("DisabilitaNewseInteressi", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ConfigureNewsAndInterests(enabled: false);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaNewseInteressi", false);
-            }
-            if (selectedToDisable.Contains("Disabilita Index File"))
-            {
-                SetCheckboxState("DisabilitaIndexFile", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetSystemVolumeIndexing(enabled: false);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(new InvalidOperationException("Disattivazione indicizzazione non riuscita.", ex));
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaIndexFile", false);
-            }
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita News e Interessi",
+                "DisabilitaNewseInteressi", () => ConfigureNewsAndInterests(enabled: false), ref currentStep);
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Index File", "DisabilitaIndexFile",
+                () => SetSystemVolumeIndexing(enabled: false), ref currentStep,
+                "Disattivazione indicizzazione non riuscita.");
             if (selectedToDisable.Contains("Disabilita Edge PDF"))
             {
                 SetCheckboxState("DisabilitaEdgePDF", true);
@@ -1008,24 +1006,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaStorageCheck", false);
             }
-            if (selectedToDisable.Contains("Disabilita Superfetch"))
-            {
-                SetCheckboxState("DisabilitaSuperfetch", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 4);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaSuperfetch", false);
-            }
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Superfetch", "DisabilitaSuperfetch",
+                () => SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 4), ref currentStep);
             if (selectedToDisable.Contains("Disabilita Storage Check"))
             {
                 SetCheckboxState("DisabilitaStorageCheck", true);
@@ -1044,65 +1026,22 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaStorageCheck", false);
             }
-            if (selectedToDisable.Contains("Disabilita Ibernazione"))
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Ibernazione", "DisabilitaIbernazione", () =>
             {
-                SetCheckboxState("DisabilitaIbernazione", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 0);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 0);
-                    RunSystemTool("powercfg.exe", "/hibernate", "off");
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaIbernazione", false);
-            }
-            if (selectedToDisable.Contains("Disabilita Ottimizzazione FullScreen"))
-            {
-                SetCheckboxState("DisabilitaOttimizzazioneFullScreen", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
+                SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 0);
+                SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 0);
+                RunSystemTool("powercfg.exe", "/hibernate", "off");
+            }, ref currentStep);
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Ottimizzazione FullScreen",
+                "DisabilitaOttimizzazioneFullScreen", () =>
                 {
                     SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 1);
                     SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_FSEBehavior", 2);
                     SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 2);
                     SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaOttimizzazioneFullScreen", false);
-            }
-            if (selectedToDisable.Contains("Disabilita Avvio Rapido"))
-            {
-                SetCheckboxState("DisabilitaAvvioRapido", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 0);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaAvvioRapido", false);
-            }
+                }, ref currentStep);
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Avvio Rapido", "DisabilitaAvvioRapido",
+                () => SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 0), ref currentStep);
             if (selectedToDisable.Contains("Normal Bandwidth"))
             {
                 SetCheckboxState("NormalBandwidth", true);
@@ -1121,26 +1060,12 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("NormalBandwidth", false);
             }
-            if (selectedToDisable.Contains("Disabilita Migliora uso SSD"))
-            {
-                SetCheckboxState("DisabilitaMigliorausoSSD", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
+            ApplySelectedUtilityOption(selectedToDisable, "Disabilita Migliora uso SSD",
+                "DisabilitaMigliorausoSSD", () =>
                 {
                     SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 0);
-
                     SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaMigliorausoSSD", false);
-            }
+                }, ref currentStep);
             if (selectedToEnable.Contains("Abilita Storage Check"))
             {
                 SetCheckboxState("AbilitaStorageCheck", true);
@@ -1183,84 +1108,27 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaStorageCheck", false);
             }
-            if (selectedToEnable.Contains("Abilita Superfetch"))
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Superfetch", "AbilitaSuperfetch", () =>
             {
-                SetCheckboxState("AbilitaSuperfetch", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2);
-                    RunSystemTool("sc.exe", "start", "SysMain");
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
+                SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2);
+                RunSystemTool("sc.exe", "start", "SysMain");
+            }, ref currentStep);
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Ibernazione", "AbilitaIbernazione", () =>
             {
-                SetCheckboxState("AbilitaSuperfetch", false);
-            }
-            if (selectedToEnable.Contains("Abilita Ibernazione"))
-            {
-                SetCheckboxState("AbilitaIbernazione", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1);
-                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1);
-                    RunSystemTool("powercfg.exe", "/hibernate", "on");
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaIbernazione", false);
-            }
-            if (selectedToEnable.Contains("Abilita Ottimizzazione FullScreen"))
-            {
-                SetCheckboxState("AbilitaOttimizzazioneFullScreen", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
+                SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1);
+                SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1);
+                RunSystemTool("powercfg.exe", "/hibernate", "on");
+            }, ref currentStep);
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Ottimizzazione FullScreen",
+                "AbilitaOttimizzazioneFullScreen", () =>
                 {
                     SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 0);
                     DeleteRegistryKeyInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehavior");
                     SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehaviorMode", 0);
                     SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaOttimizzazioneFullScreen", false);
-            }
-            if (selectedToEnable.Contains("Abilita Avvio Rapido"))
-            {
-                SetCheckboxState("AbilitaAvvioRapido", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaAvvioRapido", false);
-            }
+                }, ref currentStep);
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Avvio Rapido", "AbilitaAvvioRapido",
+                () => SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1), ref currentStep);
             if (selectedToEnable.Contains("All Bandwidth"))
             {
                 SetCheckboxState("AllBandwidth", true);
@@ -1439,43 +1307,11 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaattivazionedelNumlockinavvio", false);
             }
-            if (selectedToEnable.Contains("Abilita News e Interessi"))
-            {
-                SetCheckboxState("AbilitaNewseInteressi", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ConfigureNewsAndInterests(enabled: true);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaNewseInteressi", false);
-            }
-            if (selectedToEnable.Contains("Abilita Index File"))
-            {
-                SetCheckboxState("AbilitaIndexFile", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-
-                try
-                {
-                    SetSystemVolumeIndexing(enabled: true);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(new InvalidOperationException("Attivazione indicizzazione non riuscita.", ex));
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaIndexFile", false);
-            }
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita News e Interessi",
+                "AbilitaNewseInteressi", () => ConfigureNewsAndInterests(enabled: true), ref currentStep);
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Index File", "AbilitaIndexFile",
+                () => SetSystemVolumeIndexing(enabled: true), ref currentStep,
+                "Attivazione indicizzazione non riuscita.");
             if (selectedToEnable.Contains("Abilita Risparmio Energetico Personalizzato"))
             {
                 SetCheckboxState("AbilitaRisparmioEnergeticoPersonalizzato", true);
@@ -1510,26 +1346,11 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaRisparmioEnergeticoPersonalizzato", false);
             }
-            if (selectedToEnable.Contains("Abilita Migliora uso SSD"))
+            ApplySelectedUtilityOption(selectedToEnable, "Abilita Migliora uso SSD", "MigliorausoSSD", () =>
             {
-                SetCheckboxState("MigliorausoSSD", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 1);
-
-                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0);
-                }
-                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
-                {
-                    RecordOperationFailure(ex);
-                }
-            }
-            else
-            {
-                SetCheckboxState("MigliorausoSSD", false);
-            }
+                SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 1);
+                SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0);
+            }, ref currentStep);
 
             if (selectedToEnable.Contains("Abilita Mappe"))
             {
