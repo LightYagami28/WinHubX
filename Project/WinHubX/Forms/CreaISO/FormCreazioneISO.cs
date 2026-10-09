@@ -717,13 +717,10 @@ namespace WinHubX.Forms.CreaISO
                             Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "bypasscompletato"));
                         }
                     }
-                    if (unattendType == "Stock")
+                    if (unattendType == "Stock" && File.Exists(sourceUnattendStock))
                     {
-                        if (File.Exists(sourceUnattendStock))
-                        {
-                            File.Copy(sourceUnattendStock, destUnattend, true);
-                            Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "copiastock"));
-                        }
+                        File.Copy(sourceUnattendStock, destUnattend, true);
+                        Log("\n" + LanguageManager.GetTranslation("FormCreazioneISO", "copiastock"));
                     }
                 }
                 else if (windowsVersion == "10" && ParametriISO.TryGetValue("Architettura", out var arch))

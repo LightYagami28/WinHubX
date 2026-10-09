@@ -173,14 +173,9 @@ namespace WinHubX
             lblPanelTitle.Text = title;
             pictureBox3.Visible = showBackArrow;
             pictureBoxlblalto.Image = button?.Image;
-            if (showBackArrow && PnlFormLoader.Controls.Count > 0)
-            {
-                previousForm = PnlFormLoader.Controls[0] as Form;
-            }
-            else
-            {
-                previousForm = null;
-            }
+            previousForm = showBackArrow && PnlFormLoader.Controls.Count > 0
+                ? PnlFormLoader.Controls[0] as Form
+                : null;
             LoadFormIntoPanel(form, showBackArrow ? previousForm : null);
             EnableDragging(this);
             ThemeManager.ApplyThemeToControl(form, dark);

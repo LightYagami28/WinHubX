@@ -367,7 +367,7 @@ namespace WinHubX.Forms.Personalizzazione_office
         private readonly List<string> selectedAppsInstall = new List<string>();
         private readonly List<string> selectedAppsRemove = new List<string>();
 
-        private void DisplayInstalledOfficeApps(string product)
+        private void DisplayInstalledOfficeApps(string productCode)
         {
             var installedApps = DetectInstalledOfficeApps(); 
 
@@ -377,7 +377,7 @@ namespace WinHubX.Forms.Personalizzazione_office
 
             Image? GetImage(string name)
             {
-                bool is365 = product.Contains("365");
+                bool is365 = productCode.Contains("365", StringComparison.OrdinalIgnoreCase);
                 return is365 ? name switch
                 {
                     "word" => Properties.Resources.Microsoft_Office_Word_2025present,
@@ -725,20 +725,15 @@ namespace WinHubX.Forms.Personalizzazione_office
 
             if (!string.IsNullOrEmpty(officeVersion) && Version.TryParse(officeVersion, out installedVersion))
             {
-                if (installedVersion >= requiredVersion)
-                {
-                    versionText =
+                versionText = installedVersion >= requiredVersion
+                    ?
                         LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_office", officeVersion) + "\n" +
                         LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "piattaforma", platform) + "\n" +
                         LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "prodotto", product) + "\n" +
-                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "lingua", culture);
-                }
-                else
-                {
-                    versionText =
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "lingua", culture)
+                    :
                         LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_non_compatibile", officeVersion) + "\n" +
-                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_richiesta", requiredVersion.ToString());
-                }
+                        LanguageManager.FormatTranslation("FormOfficeAggiungiRimuovi", "versione_richiesta", requiredVersion);
             }
 
             lblversioneoffice.Text = versionText;

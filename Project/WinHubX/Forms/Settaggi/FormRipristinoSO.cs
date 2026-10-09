@@ -9,7 +9,7 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormRipristinoSO : Form
     {
-        private static long _cpuStressResultBits;
+        private long _cpuStressResultBits;
         private readonly Form1 form1;
         private readonly FormSettaggi formSettaggi;
         private ElevatedProcessBrokerClient? _repairBroker;

@@ -8,6 +8,7 @@ namespace WinHubX.Forms.DebloatAvanzato
     public partial class AppItemControl : UserControl
     {
         private readonly ToolTip _toolTip = new();
+        private IReadOnlyDictionary<string, string> _appNameMappings = new Dictionary<string, string>(StringComparer.Ordinal);
 
         public string NomeTecnico { get; private set; } = string.Empty;
         public string? ImgUrl { get; private set; }
@@ -21,10 +22,15 @@ namespace WinHubX.Forms.DebloatAvanzato
         }
 
         // ✅ Nuovo costruttore con parametri
-        public AppItemControl(string nomeTecnico, string? imgUrl = null) : this()
+        public AppItemControl(
+            string nomeTecnico,
+            string? imgUrl = null,
+            IReadOnlyDictionary<string, string>? appNameMappings = null) : this()
         {
             NomeTecnico = nomeTecnico;
             ImgUrl = imgUrl;
+            if (appNameMappings is not null)
+                _appNameMappings = appNameMappings;
             InizializzaControllo();
         }
 
@@ -64,7 +70,7 @@ namespace WinHubX.Forms.DebloatAvanzato
 
         private string OttieniNomeLeggibile(string nomeTecnico)
         {
-            if (FormDebloat.appNameMappings.TryGetValue(nomeTecnico, out string? nomeLeggibile))
+            if (_appNameMappings.TryGetValue(nomeTecnico, out string? nomeLeggibile))
                 return nomeLeggibile;
 
             return nomeTecnico.Replace("Microsoft.", "").Replace("_", " ");
