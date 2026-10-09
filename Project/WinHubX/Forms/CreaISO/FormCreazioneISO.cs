@@ -1161,7 +1161,7 @@ namespace WinHubX.Forms.CreaISO
 
                 try
                 {
-                    var process = new Process();
+                    using Process process = new();
                     process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "reg.exe");
                     process.StartInfo.CreateNoWindow = true;
                     process.StartInfo.UseShellExecute = false;
@@ -1169,8 +1169,13 @@ namespace WinHubX.Forms.CreaISO
                     process.StartInfo.ArgumentList.Add(keyToExport);
                     process.StartInfo.ArgumentList.Add(exportPath);
                     process.StartInfo.ArgumentList.Add("/y");
-                    _ = process.Start();
-                    process.WaitForExit();
+                    if (!process.Start())
+                        throw new InvalidOperationException("Impossibile avviare reg.exe per esportare la configurazione.");
+
+                    // Una volta avviato, attendere la fine del processo prima di toccare i file della sessione.
+                    await process.WaitForExitAsync(CancellationToken.None);
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException($"reg.exe export è terminato con codice {process.ExitCode}.");
 
                     if (File.Exists(exportPath))
                     {
