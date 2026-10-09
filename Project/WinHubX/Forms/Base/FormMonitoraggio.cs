@@ -28,6 +28,7 @@ namespace WinHubX.Forms.Base
         private NetworkInterface[] networkInterfaces = Array.Empty<NetworkInterface>();
         private string[] networkInterfaceIds = Array.Empty<string>();
         private readonly object _hardwareSync = new();
+        private readonly SemaphoreSlim _monitorSettingsWriteLock = new(1, 1);
         private HardwareSnapshot _latestHardwareSnapshot = HardwareSnapshot.Empty;
         private long lastUpdateTimestamp;
         private long lastBytesSent;
@@ -111,7 +112,7 @@ namespace WinHubX.Forms.Base
                     StartDiscoMonitoring(),
                     StartTEMPMonitoring()
                 ];
-                LoadMonitoraggioSettings();
+                await LoadMonitoraggioSettingsAsync();
             }
             catch (Exception ex)
             {
@@ -161,7 +162,7 @@ namespace WinHubX.Forms.Base
             };
         }
 
-        private void LoadMonitoraggioSettings()
+        private async Task LoadMonitoraggioSettingsAsync()
         {
             try
             {
@@ -169,10 +170,12 @@ namespace WinHubX.Forms.Base
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(monitoraggioPath)
                         ?? throw new InvalidOperationException("Percorso monitoraggio non valido."));
-                    File.WriteAllText(monitoraggioPath, "{ \"LimiteGB\": 2, \"ShowFahrenheitcpu\": false, \"ShowFahrenheitgpu\": false }");
+                    await File.WriteAllTextAsync(
+                        monitoraggioPath,
+                        "{ \"LimiteGB\": 2, \"ShowFahrenheitcpu\": false, \"ShowFahrenheitgpu\": false }");
                 }
 
-                string json = File.ReadAllText(monitoraggioPath);
+                string json = await File.ReadAllTextAsync(monitoraggioPath);
                 var obj = System.Text.Json.JsonSerializer.Deserialize<MonitoraggioConfig>(json)
                     ?? new MonitoraggioConfig();
                 domainUpDown1.Text = $"{obj.LimiteGB} GB";
@@ -182,10 +185,13 @@ namespace WinHubX.Forms.Base
                 MonitorSettings.ShowFahrenheitgpu = obj.ShowFahrenheitgpu;
                 cuiSwitch_gputemperatura.Checked = obj.ShowFahrenheitgpu;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Lettura impostazioni monitoraggio non riuscita: {ex}");
                 domainUpDown1.Text = "2 GB";
+                MonitorSettings.ShowFahrenheitcpu = false;
                 cuiSwitch_gradicpu.Checked = false;
+                MonitorSettings.ShowFahrenheitgpu = false;
                 cuiSwitch_gputemperatura.Checked = false;
             }
         }
@@ -1223,11 +1229,11 @@ namespace WinHubX.Forms.Base
         }
 
 
-        private void domainUpDown1_SelectedItemChanged(object sender, EventArgs e)
+        private async void domainUpDown1_SelectedItemChanged(object sender, EventArgs e)
         {
-            SaveMonitoraggioSettings();
+            await SaveMonitoraggioSettingsAsync();
         }
-        private void SaveMonitoraggioSettings()
+        private async Task SaveMonitoraggioSettingsAsync()
         {
             int gb = GetSelectedGB();
 
@@ -1243,7 +1249,39 @@ namespace WinHubX.Forms.Base
                 WriteIndented = true
             });
 
-            File.WriteAllText(monitoraggioPath, json);
+            string directory = Path.GetDirectoryName(monitoraggioPath)
+                ?? throw new InvalidOperationException("Percorso monitoraggio non valido.");
+            string temporaryPath = $"{monitoraggioPath}.{Guid.NewGuid():N}.tmp";
+
+            await _monitorSettingsWriteLock.WaitAsync();
+            try
+            {
+                Directory.CreateDirectory(directory);
+                await File.WriteAllTextAsync(temporaryPath, json);
+                File.Move(temporaryPath, monitoraggioPath, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Salvataggio impostazioni monitoraggio non riuscito: {ex}");
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(temporaryPath))
+                    {
+                        File.Delete(temporaryPath);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Rimozione file temporaneo impostazioni non riuscita: {ex.Message}");
+                }
+                finally
+                {
+                    _monitorSettingsWriteLock.Release();
+                }
+            }
         }
 
         private void FormMonitoraggio_Load(object sender, EventArgs e)
@@ -1261,17 +1299,17 @@ namespace WinHubX.Forms.Base
             domainUpDown1.ReadOnly = true;
         }
 
-        private void cuiSwitch_gradicpu_CheckedChanged(object sender, EventArgs e)
+        private async void cuiSwitch_gradicpu_CheckedChanged(object sender, EventArgs e)
         {
             MonitorSettings.ShowFahrenheitcpu = cuiSwitch_gradicpu.Checked;
-            SaveMonitoraggioSettings();
+            await SaveMonitoraggioSettingsAsync();
             UpdateTemperatureDisplays();
         }
 
-        private void cuiSwitch2_CheckedChanged(object sender, EventArgs e)
+        private async void cuiSwitch2_CheckedChanged(object sender, EventArgs e)
         {
             MonitorSettings.ShowFahrenheitgpu = cuiSwitch_gputemperatura.Checked;
-            SaveMonitoraggioSettings();
+            await SaveMonitoraggioSettingsAsync();
             UpdateTemperatureDisplays();
         }
 

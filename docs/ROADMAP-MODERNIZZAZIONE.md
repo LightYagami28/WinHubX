@@ -23,7 +23,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 
 - [ ] 9. Separare servizi, stato applicativo e presentazione WinForms.
 - [ ] 10. Introdurre lifecycle e cancellazione coerenti per tutte le operazioni async.
-- [ ] 11. Eliminare scansioni ricorsive e I/O sincrono dal thread UI.
+- [ ] 11. Eliminare scansioni ricorsive e I/O sincrono dal thread UI. Nel Monitoraggio, lettura delle preferenze resa asincrona e scritture serializzate su file temporaneo con sostituzione atomica; restano da auditare le altre schermate e scansioni.
 - [ ] 12. Rendere cache e snapshot hardware con scadenza e invalidazione esplicite.
 - [ ] 13. Completare la riscrittura del Monitoraggio con un modello di snapshot unico.
 - [ ] 14. Profilare startup, CPU, allocazioni e heap su .NET 10 e .NET 11.
