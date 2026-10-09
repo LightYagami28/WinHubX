@@ -379,12 +379,7 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
                 .ConfigureAwait(false);
             string? acknowledgement = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
             if (acknowledgement != "READY")
-            {
-                brokerProcess.Kill(entireProcessTree: true);
-                brokerProcess.Dispose();
-                brokerProcess = null;
                 throw new UnauthorizedAccessException("Il broker privilegiato non ha autenticato il canale IPC.");
-            }
 
             ElevatedProcessBrokerClient client = new(pipe, reader, writer, brokerProcess, workspaceRoot);
             return client;
