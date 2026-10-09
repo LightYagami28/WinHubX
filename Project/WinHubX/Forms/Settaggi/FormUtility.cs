@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text.Json;
@@ -400,10 +400,22 @@ namespace WinHubX.Forms.Settaggi
             QueueRegistryValue(hive, subKeyPath, name, value, kind, view);
         }
 
+        private void SetRegistryValueInBothViews(string path, string name, object? value)
+        {
+            SetRegistryValue(path, name, value, RegistryView.Registry32);
+            SetRegistryValue(path, name, value, RegistryView.Registry64);
+        }
+
         private void DeleteRegistryKey(string path, string name, RegistryView view = RegistryView.Default)
         {
             (RegistryHive hive, string subKeyPath) = ParseSystemRegistryPath(path);
             QueueRegistryDeletion(hive, subKeyPath, name, view);
+        }
+
+        private void DeleteRegistryKeyInBothViews(string path, string name)
+        {
+            DeleteRegistryKey(path, name, RegistryView.Registry32);
+            DeleteRegistryKey(path, name, RegistryView.Registry64);
         }
 
         private void QueueRegistryValue(
@@ -1016,8 +1028,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters", "StoragePolicy", RegistryView.Registry32);
-                    DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters", "StoragePolicy", RegistryView.Registry64);
+                    DeleteRegistryKeyInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters", "StoragePolicy");
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1055,14 +1066,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 1, RegistryView.Registry64);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_FSEBehavior", 2, RegistryView.Registry32);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_FSEBehavior", 2, RegistryView.Registry64);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 2, RegistryView.Registry32);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 2, RegistryView.Registry64);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 1);
+                    SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_FSEBehavior", 2);
+                    SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 2);
+                    SetRegistryValueInBothViews(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1098,8 +1105,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryKey(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", RegistryView.Registry32);
-                    DeleteRegistryKey(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", RegistryView.Registry64);
+                    DeleteRegistryKeyInBothViews(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit");
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1117,11 +1123,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 0);
 
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1181,8 +1185,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2);
                     RunSystemTool("sc.exe", "start", "SysMain");
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
@@ -1201,10 +1204,8 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1, RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HibernateEnabled", 1);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1);
                     RunSystemTool("powercfg.exe", "/hibernate", "on");
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
@@ -1223,14 +1224,10 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 0, RegistryView.Registry64);
-                    DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehavior", RegistryView.Registry32);
-                    DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehavior", RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehaviorMode", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehaviorMode", 0, RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 0);
+                    DeleteRegistryKeyInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehavior");
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_FSEBehaviorMode", 0);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1248,8 +1245,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1267,8 +1263,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", 0);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1397,11 +1392,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Terminal Server", "fDenyTSConnections", 0);
 
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", "UserAuthentication", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", "UserAuthentication", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", "UserAuthentication", 0);
                     string[] commands = new[]
                     {
             "Enable-NetFirewallRule -Name \"RemoteDesktop*\""
@@ -1424,8 +1417,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"HKEY_USERS\.DEFAULT\Control Panel\Keyboard", "InitialKeyboardIndicators", 2147483650, RegistryView.Registry32);
-                    SetRegistryValue(@"HKEY_USERS\.DEFAULT\Control Panel\Keyboard", "InitialKeyboardIndicators", 2147483650, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"HKEY_USERS\.DEFAULT\Control Panel\Keyboard", "InitialKeyboardIndicators", 2147483650);
                     string[] commands = new[]
                     {
             "Add-Type -AssemblyName System.Windows.Forms",
@@ -1549,11 +1541,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 1, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 1, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "DisableLastAccess", 1);
 
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1572,8 +1562,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\Maps", "AutoUpdateEnabled", null, RegistryView.Registry32);
-                    SetRegistryValue(@"SYSTEM\Maps", "AutoUpdateEnabled", null, RegistryView.Registry64);
+                    SetRegistryValueInBothViews(@"SYSTEM\Maps", "AutoUpdateEnabled", null);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1591,16 +1580,11 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "SwapfileControl", null, RegistryView.Registry64);
-                    SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "SwapfileControl", null, RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary", "Value", "Allow", RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary", "Value", "Allow", RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary", "Value", "Allow", RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary", "Value", "Allow", RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary", "Value", "Allow", RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary", "Value", "Allow", RegistryView.Registry32);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess", "Value", "Allow", RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess", "Value", "Allow", RegistryView.Registry32);
+                    SetRegistryValueInBothViews(@"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "SwapfileControl", null);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\documentsLibrary", "Value", "Allow");
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\picturesLibrary", "Value", "Allow");
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\videosLibrary", "Value", "Allow");
+                    SetRegistryValueInBothViews(@"SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\broadFileSystemAccess", "Value", "Allow");
                     string appPrivacyPath = @"SOFTWARE\Policies\Microsoft\Windows\AppPrivacy";
                     string[] propertiesToRemove = {
                 "LetAppsGetDiagnosticInfo",
@@ -1622,8 +1606,7 @@ namespace WinHubX.Forms.Settaggi
 
                     foreach (string property in propertiesToRemove)
                     {
-                        SetRegistryValue(appPrivacyPath, property, null, RegistryView.Registry64);
-                        SetRegistryValue(appPrivacyPath, property, null, RegistryView.Registry32);
+                        SetRegistryValueInBothViews(appPrivacyPath, property, null);
                     }
                     using (RegistryKey? backgroundAccessKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications", true))
                     {
@@ -1660,8 +1643,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableTailoredExperiencesWithDiagnosticData", null, RegistryView.Registry64);
-                    SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableTailoredExperiencesWithDiagnosticData", null, RegistryView.Registry32);
+                    SetRegistryValueInBothViews(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableTailoredExperiencesWithDiagnosticData", null);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
