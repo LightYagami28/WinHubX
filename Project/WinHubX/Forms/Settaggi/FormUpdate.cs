@@ -271,6 +271,27 @@ namespace WinHubX.Forms.Settaggi
             pendingRegistryMutations = null;
         }
 
+        private static void RunElevatedPowerShellCommand(string command, string operationDescription)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Verb = "runas"
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-NonInteractive");
+            startInfo.ArgumentList.Add("-Command");
+            startInfo.ArgumentList.Add(command);
+
+            using Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell.");
+            process.WaitForExit();
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException($"{operationDescription} terminata con codice {process.ExitCode}.");
+        }
+
         private void btnResetUpdate_Click(object sender, EventArgs e)
         {
             try
@@ -471,25 +492,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    var startInfo = new System.Diagnostics.ProcessStartInfo()
-                    {
-                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                        UseShellExecute = true,
-                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
-                        Verb = "runas"
-                    };
-                    startInfo.ArgumentList.Add("-NoProfile");
-                    startInfo.ArgumentList.Add("-NonInteractive");
-                    startInfo.ArgumentList.Add("-Command");
-                    startInfo.ArgumentList.Add("$ErrorActionPreference='Stop'; $manager=New-Object -ComObject Microsoft.Update.ServiceManager; if ($manager.Services | Where-Object { $_.ServiceID -eq '7971f918-a847-4430-9279-4a52d1efe18d' }) { $manager.RemoveService('7971f918-a847-4430-9279-4a52d1efe18d') }");
-
-                    using (var process = System.Diagnostics.Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
-                    {
-                        process.WaitForExit();
-                        if (process.ExitCode != 0)
-                            throw new InvalidOperationException($"Rimozione del servizio Microsoft Update terminata con codice {process.ExitCode}.");
-                    }
+                    RunElevatedPowerShellCommand(
+                        "$ErrorActionPreference='Stop'; $manager=New-Object -ComObject Microsoft.Update.ServiceManager; if ($manager.Services | Where-Object { $_.ServiceID -eq '7971f918-a847-4430-9279-4a52d1efe18d' }) { $manager.RemoveService('7971f918-a847-4430-9279-4a52d1efe18d') }",
+                        "Rimozione del servizio Microsoft Update");
                 }
                 catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
@@ -605,27 +610,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    var startInfo = new System.Diagnostics.ProcessStartInfo()
-                    {
-                        FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                        UseShellExecute = true,
-                        WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
-                        Verb = "runas"
-                    };
-                    startInfo.ArgumentList.Add("-NoProfile");
-                    startInfo.ArgumentList.Add("-NonInteractive");
-                    startInfo.ArgumentList.Add("-Command");
-                    startInfo.ArgumentList.Add("(New-Object -ComObject Microsoft.Update.ServiceManager).AddService2('7971f918-a847-4430-9279-4a52d1efe18d', 7, '')");
-
-                    using (var process = System.Diagnostics.Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile avviare il processo PowerShell."))
-                    {
-                        process.WaitForExit();
-                        if (process.ExitCode != 0)
-                        {
-                            throw new InvalidOperationException($"Attivazione del servizio Microsoft Update terminata con codice {process.ExitCode}.");
-                        }
-                    }
+                    RunElevatedPowerShellCommand(
+                        "(New-Object -ComObject Microsoft.Update.ServiceManager).AddService2('7971f918-a847-4430-9279-4a52d1efe18d', 7, '')",
+                        "Attivazione del servizio Microsoft Update");
                 }
                 catch (Exception ex) when (IsExpectedUpdateOperationFailure(ex))
                 {
