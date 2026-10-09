@@ -11,7 +11,8 @@ namespace WinHubX.Impostazioni;
 internal enum ElevatedProcessKind
 {
     Dism,
-    Registry
+    Registry,
+    SystemUtility
 }
 
 internal static class ElevatedProcessCommandValidator
@@ -56,6 +57,9 @@ internal static class ElevatedProcessCommandValidator
                 break;
             case ElevatedProcessKind.Registry:
                 ValidateRegistry(arguments, workspaceRoot);
+                break;
+            case ElevatedProcessKind.SystemUtility:
+                ValidateSystemUtility(arguments, workspaceRoot);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind));
@@ -115,13 +119,20 @@ internal static class ElevatedProcessCommandValidator
         }
         else if (arguments[0].Equals("/Online", StringComparison.OrdinalIgnoreCase))
         {
-            if (arguments.Count != 3
-                || !arguments[1].Equals("/Export-Driver", StringComparison.OrdinalIgnoreCase)
-                || !arguments[2].StartsWith("/Destination:", StringComparison.OrdinalIgnoreCase)
-                || !Path.GetFullPath(arguments[2]["/Destination:".Length..])
-                    .StartsWith(root + "DriverExport" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            bool exportDriver = arguments.Count == 3
+                && arguments[1].Equals("/Export-Driver", StringComparison.OrdinalIgnoreCase)
+                && arguments[2].StartsWith("/Destination:", StringComparison.OrdinalIgnoreCase)
+                && Path.GetFullPath(arguments[2]["/Destination:".Length..])
+                    .StartsWith(root + "DriverExport" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+            bool safeRepair = arguments.Count == 3
+                && arguments[1].Equals("/Cleanup-Image", StringComparison.OrdinalIgnoreCase)
+                && (arguments[2].Equals("/CheckHealth", StringComparison.OrdinalIgnoreCase)
+                    || arguments[2].Equals("/ScanHealth", StringComparison.OrdinalIgnoreCase)
+                    || arguments[2].Equals("/RestoreHealth", StringComparison.OrdinalIgnoreCase)
+                    || arguments[2].Equals("/StartComponentCleanup", StringComparison.OrdinalIgnoreCase));
+            if (!exportDriver && !safeRepair)
             {
-                throw new ArgumentException("È consentita solo l'esportazione dei driver nella directory di sessione WinHubX.", nameof(arguments));
+                throw new ArgumentException("Operazione DISM online non consentita.", nameof(arguments));
             }
             return;
         }
@@ -155,6 +166,34 @@ internal static class ElevatedProcessCommandValidator
             }
         }
     }
+
+    private static void ValidateSystemUtility(IReadOnlyList<string> arguments, string workspaceRoot)
+    {
+        if (arguments[0].Equals("sfc", StringComparison.OrdinalIgnoreCase)
+            && arguments.Count == 2 && arguments[1].Equals("/scannow", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (arguments[0].Equals("chkdsk", StringComparison.OrdinalIgnoreCase)
+            && arguments.Count == 3 && arguments[1].Length == 2 && char.IsAsciiLetter(arguments[1][0])
+            && arguments[1][1] == ':' && arguments[2].Equals("/scan", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (arguments[0].Equals("regsvr32", StringComparison.OrdinalIgnoreCase)
+            && arguments.Count == 3 && arguments[1].Equals("/s", StringComparison.OrdinalIgnoreCase)
+            && AllowedSystemDlls.Contains(arguments[2], StringComparer.OrdinalIgnoreCase))
+            return;
+
+        string expectedBackupPath = Path.GetFullPath(Path.Combine(workspaceRoot, "Repair", "RegistryBackup_HKLM.reg"));
+        if (arguments[0].Equals("export-hklm", StringComparison.OrdinalIgnoreCase)
+            && arguments.Count == 2
+            && Path.GetFullPath(arguments[1]).Equals(expectedBackupPath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        throw new ArgumentException("Comando di ripristino elevato non consentito.", nameof(arguments));
+    }
+
+    private static readonly string[] AllowedSystemDlls =
+    ["atl.dll", "jscript.dll", "msxml3.dll", "shell32.dll", "shdocvw.dll", "urlmon.dll", "vbscript.dll", "wintrust.dll"];
 
     internal static IReadOnlyList<string> ParseInstalledPackageIdentities(string dismOutput)
     {
@@ -373,6 +412,9 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
     internal Task<int> RunRegistryAsync(IReadOnlyList<string> arguments, Action<string, bool>? onOutput, CancellationToken cancellationToken)
         => RunAsync(ElevatedProcessKind.Registry, arguments, onOutput, cancellationToken);
 
+    internal Task<int> RunSystemUtilityAsync(IReadOnlyList<string> arguments, Action<string, bool>? onOutput, CancellationToken cancellationToken)
+        => RunAsync(ElevatedProcessKind.SystemUtility, arguments, onOutput, cancellationToken);
+
     private async Task<int> RunAsync(
         ElevatedProcessKind kind,
         IReadOnlyList<string> arguments,
@@ -500,9 +542,24 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
 
     private static async Task<int> RunHostProcessAsync(ElevatedProcessKind kind, IReadOnlyList<string> arguments, StreamWriter writer)
     {
-        string executablePath = kind == ElevatedProcessKind.Dism
-            ? Path.Combine(Environment.SystemDirectory, "dism.exe")
-            : Path.Combine(Environment.SystemDirectory, "reg.exe");
+        string executableName = kind switch
+        {
+            ElevatedProcessKind.Dism => "dism.exe",
+            ElevatedProcessKind.Registry => "reg.exe",
+            ElevatedProcessKind.SystemUtility => arguments[0].ToLowerInvariant() switch
+            {
+                "sfc" => "sfc.exe",
+                "chkdsk" => "chkdsk.exe",
+                "regsvr32" => "regsvr32.exe",
+                "export-hklm" => "reg.exe",
+                _ => throw new InvalidOperationException("Utility privilegiata non riconosciuta dopo la validazione.")
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+        string executablePath = Path.Combine(Environment.SystemDirectory, executableName);
+        IEnumerable<string> processArguments = kind == ElevatedProcessKind.SystemUtility
+            ? GetSystemUtilityArguments(arguments)
+            : arguments;
         ProcessStartInfo startInfo = new(executablePath)
         {
             WorkingDirectory = Environment.SystemDirectory,
@@ -511,7 +568,7 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        foreach (string argument in arguments)
+        foreach (string argument in processArguments)
             startInfo.ArgumentList.Add(argument);
 
         using Process process = Process.Start(startInfo)
@@ -523,6 +580,14 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
         await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
         return process.ExitCode;
     }
+
+    private static IReadOnlyList<string> GetSystemUtilityArguments(IReadOnlyList<string> arguments)
+        => arguments[0].ToLowerInvariant() switch
+        {
+            "sfc" or "chkdsk" or "regsvr32" => arguments.Skip(1).ToArray(),
+            "export-hklm" => ["export", "HKLM\\SOFTWARE", arguments[1], "/y"],
+            _ => throw new InvalidOperationException("Utility privilegiata non riconosciuta dopo la validazione.")
+        };
 
     private static async Task ForwardLinesAsync(StreamReader source, bool isError, StreamWriter writer, SemaphoreSlim writeGate)
     {

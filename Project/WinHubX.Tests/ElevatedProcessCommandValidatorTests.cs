@@ -30,7 +30,7 @@ public sealed class ElevatedProcessCommandValidatorTests
     public void Validate_RejectsUnapprovedDismOperation()
     {
         Assert.Throws<ArgumentException>(() => ElevatedProcessCommandValidator.Validate(
-            ElevatedProcessKind.Dism, ["/online", "/cleanup-image", "/startcomponentcleanup"], WorkspaceRoot));
+            ElevatedProcessKind.Dism, ["/online", "/Enable-Feature", "/FeatureName:TelnetClient"], WorkspaceRoot));
     }
 
     [Fact]
@@ -48,6 +48,44 @@ public sealed class ElevatedProcessCommandValidatorTests
         ElevatedProcessCommandValidator.Validate(ElevatedProcessKind.Dism,
             [$"/Image:{WorkspaceRoot}\\Mount\\mount", "/English", "/Remove-Package",
                 "/PackageName:Microsoft-Windows-MediaPlayer-Package~31bf3856ad364e35~amd64~~10.0.1.0", "/NoRestart"], WorkspaceRoot);
+    }
+
+    [Theory]
+    [InlineData("sfc", "/scannow")]
+    [InlineData("chkdsk", "C:", "/scan")]
+    [InlineData("regsvr32", "/s", "atl.dll")]
+    public void Validate_AcceptsAllowlistedRepairUtilities(params string[] arguments)
+    {
+        ElevatedProcessCommandValidator.Validate(ElevatedProcessKind.SystemUtility, arguments, WorkspaceRoot);
+    }
+
+    [Fact]
+    public void Validate_AcceptsOnlySessionPathForElevatedRegistryBackup()
+    {
+        ElevatedProcessCommandValidator.Validate(ElevatedProcessKind.SystemUtility,
+            ["export-hklm", $"{WorkspaceRoot}\\Repair\\RegistryBackup_HKLM.reg"], WorkspaceRoot);
+    }
+
+    [Theory]
+    [InlineData("sfc", "/verifyonly")]
+    [InlineData("chkdsk", "C:", "/f")]
+    [InlineData("regsvr32", "/s", @"C:\Users\Public\evil.dll")]
+    [InlineData("export-hklm", @"C:\Users\Public\backup.reg")]
+    public void Validate_RejectsUnsafeRepairUtilities(params string[] arguments)
+    {
+        Assert.Throws<ArgumentException>(() => ElevatedProcessCommandValidator.Validate(
+            ElevatedProcessKind.SystemUtility, arguments, WorkspaceRoot));
+    }
+
+    [Theory]
+    [InlineData("/CheckHealth")]
+    [InlineData("/ScanHealth")]
+    [InlineData("/RestoreHealth")]
+    [InlineData("/StartComponentCleanup")]
+    public void Validate_AcceptsAllowlistedOnlineDismRepair(string operation)
+    {
+        ElevatedProcessCommandValidator.Validate(ElevatedProcessKind.Dism,
+            ["/Online", "/Cleanup-Image", operation], WorkspaceRoot);
     }
 
     [Fact]
