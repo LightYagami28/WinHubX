@@ -4,22 +4,22 @@ using Xunit;
 
 namespace WinHubX.Tests;
 
-public sealed class IsoResourceWorkspaceTests
+public sealed class PrivateUserWorkspaceTests
 {
     [Fact]
     [SupportedOSPlatform("windows")]
     public void CreateSession_CreatesPrivateGuidDirectoryAndCanDeleteOnlyThatSession()
     {
-        string sessionPath = IsoResourceWorkspace.CreateSession();
+        string sessionPath = PrivateUserWorkspace.CreateSession();
 
         try
         {
-            Assert.Equal(sessionPath, IsoResourceWorkspace.ValidateSessionPath(sessionPath));
+            Assert.Equal(sessionPath, PrivateUserWorkspace.ValidateSessionPath(sessionPath));
             Assert.True(Directory.Exists(sessionPath));
         }
         finally
         {
-            IsoResourceWorkspace.DeleteSession(sessionPath);
+            PrivateUserWorkspace.DeleteSession(sessionPath);
         }
 
         Assert.False(Directory.Exists(sessionPath));
@@ -30,6 +30,6 @@ public sealed class IsoResourceWorkspaceTests
     public void ValidateSessionPath_RejectsPathsOutsideWorkspace()
     {
         Assert.Throws<InvalidDataException>(() =>
-            IsoResourceWorkspace.ValidateSessionPath(Path.GetTempPath()));
+            PrivateUserWorkspace.ValidateSessionPath(Path.GetTempPath()));
     }
 }

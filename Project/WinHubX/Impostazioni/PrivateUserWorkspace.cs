@@ -5,9 +5,9 @@ using System.Security.Principal;
 namespace WinHubX.Impostazioni;
 
 [SupportedOSPlatform("windows")]
-internal static class IsoResourceWorkspace
+internal static class PrivateUserWorkspace
 {
-    private const string WorkspaceFolderName = "WinHubX\\IsoResourceSessions";
+    private const string WorkspaceFolderName = "WinHubX\\PrivateSessions";
 
     internal static string CreateSession()
     {
@@ -18,7 +18,7 @@ internal static class IsoResourceWorkspace
         string appRoot = Path.Join(localAppData, "WinHubX");
         Directory.CreateDirectory(appRoot);
         EnsureNotReparsePoint(appRoot);
-        string parentPath = Path.Join(appRoot, "IsoResourceSessions");
+        string parentPath = Path.Join(appRoot, "PrivateSessions");
         Directory.CreateDirectory(parentPath);
         EnsureNotReparsePoint(parentPath);
 
@@ -54,12 +54,13 @@ internal static class IsoResourceWorkspace
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (string.IsNullOrWhiteSpace(localAppData))
             throw new IOException("Impossibile determinare la cartella dati locale dell'utente.");
+
         string parentPath = Path.GetFullPath(Path.Join(localAppData, WorkspaceFolderName));
         string fullPath = Path.GetFullPath(sessionPath);
         if (!string.Equals(Path.GetDirectoryName(fullPath), parentPath, StringComparison.OrdinalIgnoreCase)
             || !Guid.TryParseExact(Path.GetFileName(fullPath), "N", out _))
         {
-            throw new InvalidDataException("Il percorso della sessione risorse ISO non è valido.");
+            throw new InvalidDataException("Il percorso della sessione privata non è valido.");
         }
 
         return fullPath;
@@ -76,6 +77,6 @@ internal static class IsoResourceWorkspace
     private static void EnsureNotReparsePoint(string path)
     {
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException("Il workspace risorse ISO non può contenere reparse point.");
+            throw new IOException("Il workspace privato non può contenere reparse point.");
     }
 }

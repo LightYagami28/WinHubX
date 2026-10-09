@@ -618,6 +618,7 @@ namespace WinHubX
             }
 
             string? tempFile = null;
+            string? privateWorkspacePath = null;
             string? savePath = null;
             SetDownloadButtonStyle(true);
             using CancellationTokenSource downloadCancellation = new();
@@ -676,8 +677,8 @@ namespace WinHubX
 
                 else
                 {
-                    string tempDir = Path.GetTempPath();
-                    Directory.CreateDirectory(tempDir);
+                    privateWorkspacePath = PrivateUserWorkspace.CreateSession();
+                    string tempDir = privateWorkspacePath;
                     string platform = arch == "x32" ? "x86" : "x64";
 
                     url = links.FirstOrDefault(k => k.Key.Contains($"Officex{(platform == "x64" ? "64" : "32")}", StringComparison.OrdinalIgnoreCase)).Value
@@ -731,6 +732,8 @@ namespace WinHubX
                     {
                         if (!string.IsNullOrEmpty(tempFile) && File.Exists(tempFile))
                             File.Delete(tempFile);
+                        if (privateWorkspacePath is not null)
+                            PrivateUserWorkspace.DeleteSession(privateWorkspacePath);
                         if (!IsDisposed && !Disposing &&
                             !string.IsNullOrEmpty(savePath) && File.Exists(savePath) &&
                             !WinHubX.Impostazioni.DownloadManager.IsDownloading &&
@@ -744,7 +747,7 @@ namespace WinHubX
                             }
                         }
                     }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
                     {
                         Debug.WriteLine($"Pulizia file temporaneo/destinazione Office non riuscita: {ex}");
                     }
