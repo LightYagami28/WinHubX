@@ -99,6 +99,105 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
+        private void ApplySelectedPrivacyOption(
+            HashSet<string> selectedOptions,
+            string optionName,
+            string checkboxName,
+            System.Action apply,
+            List<string> failures,
+            ref int currentStep,
+            bool reportWhenNotSelected = false,
+            bool setCheckboxAfterProgress = false)
+        {
+            if (!selectedOptions.Contains(optionName))
+            {
+                if (reportWhenNotSelected)
+                {
+                    currentStep++;
+                    backgroundWorker1.ReportProgress(currentStep);
+                }
+                SetCheckboxState(checkboxName, false);
+                return;
+            }
+
+            if (!setCheckboxAfterProgress)
+                SetCheckboxState(checkboxName, true);
+            currentStep++;
+            backgroundWorker1.ReportProgress(currentStep);
+            if (setCheckboxAfterProgress)
+                SetCheckboxState(checkboxName, true);
+            try
+            {
+                apply();
+            }
+            catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
+            {
+                failures.Add(ex.GetBaseException().Message);
+            }
+        }
+
+        private void ConfigureReservedStorage(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+            {
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", "ReservedStorageState",
+                    enabled ? 1 : 0, RegistryValueKind.DWord, view);
+            }
+
+            string state = enabled ? "Enabled" : "Disabled";
+            string script = "$ErrorActionPreference = 'Stop'" + Environment.NewLine
+                + $"Set-WindowsReservedStorageState -State {state} -Online -ErrorAction Stop" + Environment.NewLine
+                + registryChanges.BuildCommand();
+            RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
+        }
+
+        private void ConfigureActivityFeed(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+            {
+                foreach (string valueName in new[] { "EnableActivityFeed", "PublishUserActivities", "UploadUserActivities" })
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Policies\Microsoft\Windows\System", valueName, enabled ? 1 : 0,
+                        RegistryValueKind.DWord, view);
+                }
+            }
+
+            ApplyElevatedRegistryMutations(registryChanges);
+        }
+
+        private void ConfigureWifiSense(bool enabled)
+        {
+            int value = enabled ? 1 : 0;
+            ElevatedRegistryMutationBatch registryChanges = new();
+            foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+            {
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"Software\Microsoft\PolicyManager\default\WiFi", "AllowWiFiHotSpotReporting", value,
+                    RegistryValueKind.DWord, view);
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"Software\Microsoft\PolicyManager\default\WiFi", "AllowAutoConnectToWiFiSenseHotspots", value,
+                    RegistryValueKind.DWord, view);
+                foreach (string policyName in new[] { "AllowWiFiHotSpotReporting", "AllowAutoConnectToWiFiSenseHotspots" })
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        $@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\{policyName}", "Value", value,
+                        RegistryValueKind.DWord, view);
+                }
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "AutoConnectAllowedOEM", value,
+                    RegistryValueKind.DWord, view);
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "WiFISenseAllowed", value,
+                    RegistryValueKind.DWord, view);
+            }
+
+            ApplyElevatedRegistryMutations(registryChanges);
+        }
+
         private bool GetCheckboxState(string itemName)
         {
             using (RegistryKey? key = Registry.CurrentUser.OpenSubKey("Software\\WinHubX"))
@@ -760,34 +859,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaAutoManteinance", false);
             }
-            if (selection.Disable.Contains("Disabilita Spazio Riservato"))
-            {
-                SetCheckboxState("DisabilitaSpazioRiservato", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", "ReservedStorageState", 0,
-                            RegistryValueKind.DWord, view);
-                    }
-                    string script = "$ErrorActionPreference = 'Stop'" + Environment.NewLine
-                        + "Set-WindowsReservedStorageState -State Disabled -Online -ErrorAction Stop" + Environment.NewLine
-                        + registryChanges.BuildCommand();
-                    RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaSpazioRiservato", false);
-            }
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Spazio Riservato",
+                "DisabilitaSpazioRiservato", () => ConfigureReservedStorage(enabled: false), failures, ref currentStep);
             if (selection.Disable.Contains("Disabilita Tweaks Game DVR"))
             {
                 SetCheckboxState("DisabilitaTweaksGameDVR", true);
@@ -822,74 +895,10 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTweaksGameDVR", false);
             }
-            if (selection.Disable.Contains("Disabilita Storia Attivita"))
-            {
-                SetCheckboxState("DisabilitaStoriaAttivita", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        foreach (string valueName in new[] { "EnableActivityFeed", "PublishUserActivities", "UploadUserActivities" })
-                        {
-                            registryChanges.SetValue(RegistryHive.LocalMachine,
-                                @"SOFTWARE\Policies\Microsoft\Windows\System", valueName, 0,
-                                RegistryValueKind.DWord, view);
-                        }
-                    }
-                    ApplyElevatedRegistryMutations(registryChanges);
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaStoriaAttivita", false);
-            }
-            if (selection.Disable.Contains("Disabilita Wifi-Sense"))
-            {
-                SetCheckboxState("DisabilitaWifiSense", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowWiFiHotSpotReporting", 0,
-                            RegistryValueKind.DWord, view);
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowAutoConnectToWiFiSenseHotspots", 0,
-                            RegistryValueKind.DWord, view);
-                        foreach (string policyName in new[] { "AllowWiFiHotSpotReporting", "AllowAutoConnectToWiFiSenseHotspots" })
-                        {
-                            registryChanges.SetValue(RegistryHive.LocalMachine,
-                                $@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\{policyName}", "Value", 0,
-                                RegistryValueKind.DWord, view);
-                        }
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "AutoConnectAllowedOEM", 0,
-                            RegistryValueKind.DWord, view);
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "WiFISenseAllowed", 0,
-                            RegistryValueKind.DWord, view);
-                    }
-                    ApplyElevatedRegistryMutations(registryChanges);
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaWifiSense", false);
-            }
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Storia Attivita",
+                "DisabilitaStoriaAttivita", () => ConfigureActivityFeed(enabled: false), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Wifi-Sense", "DisabilitaWifiSense",
+                () => ConfigureWifiSense(enabled: false), failures, ref currentStep);
             if (selection.Disable.Contains("Disabilita Notifiche Tray/Calendario"))
             {
                 SetCheckboxState("DisabilitaNotificheTrayCalendario", true);
@@ -1254,36 +1263,9 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaAutoManteinance", false);
             }
-            if (selection.Enable.Contains("Abilita Spazio Riservato"))
-            {
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                SetCheckboxState("AbilitaSpazioRiservato", true);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\Windows\CurrentVersion\ReservedStorage", "ReservedStorageState", 1,
-                            RegistryValueKind.DWord, view);
-                    }
-                    string script = "$ErrorActionPreference = 'Stop'" + Environment.NewLine
-                        + "Set-WindowsReservedStorageState -State Enabled -Online -ErrorAction Stop" + Environment.NewLine
-                        + registryChanges.BuildCommand();
-                    RunElevatedPowerShellScript(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                SetCheckboxState("AbilitaSpazioRiservato", false);
-            }
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Spazio Riservato",
+                "AbilitaSpazioRiservato", () => ConfigureReservedStorage(enabled: true), failures,
+                ref currentStep, reportWhenNotSelected: true, setCheckboxAfterProgress: true);
             if (selection.Enable.Contains("Abilita Tweaks Game DVR"))
             {
                 SetCheckboxState("AbilitaTweaksGameDVR", true);
@@ -1320,82 +1302,10 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTweaksGameDVR", false);
             }
-            if (selection.Enable.Contains("Abilita Storie Attivita"))
-            {
-                SetCheckboxState("AbilitaStoriaAttivita", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        foreach (string valueName in new[] { "EnableActivityFeed", "PublishUserActivities", "UploadUserActivities" })
-                        {
-                            registryChanges.SetValue(RegistryHive.LocalMachine,
-                                @"SOFTWARE\Policies\Microsoft\Windows\System", valueName, 1,
-                                RegistryValueKind.DWord, view);
-                        }
-                    }
-                    ApplyElevatedRegistryMutations(registryChanges);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaStoriaAttivita", false);
-            }
-            if (selection.Enable.Contains("Abilita Wifi-Sense"))
-            {
-                SetCheckboxState("AbilitaWifiSense", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowWiFiHotSpotReporting", 1,
-                            RegistryValueKind.DWord, view);
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"Software\Microsoft\PolicyManager\default\WiFi", "AllowAutoConnectToWiFiSenseHotspots", 1,
-                            RegistryValueKind.DWord, view);
-                        foreach (string policyName in new[] { "AllowWiFiHotSpotReporting", "AllowAutoConnectToWiFiSenseHotspots" })
-                        {
-                            registryChanges.SetValue(RegistryHive.LocalMachine,
-                                $@"SOFTWARE\Microsoft\PolicyManager\default\WiFi\{policyName}", "Value", 1,
-                                RegistryValueKind.DWord, view);
-                        }
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "AutoConnectAllowedOEM", 1,
-                            RegistryValueKind.DWord, view);
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\WcmSvc\wifinetworkmanager\config", "WiFISenseAllowed", 1,
-                            RegistryValueKind.DWord, view);
-                    }
-                    ApplyElevatedRegistryMutations(registryChanges);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaStoriaAttivita", false);
-            }
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Storie Attivita",
+                "AbilitaStoriaAttivita", () => ConfigureActivityFeed(enabled: true), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Wifi-Sense", "AbilitaWifiSense",
+                () => ConfigureWifiSense(enabled: true), failures, ref currentStep);
             if (selection.Enable.Contains("Abilita Notifiche Tray/Calendario"))
             {
                 SetCheckboxState("AbilitaNotificheTrayCalendario", true);
