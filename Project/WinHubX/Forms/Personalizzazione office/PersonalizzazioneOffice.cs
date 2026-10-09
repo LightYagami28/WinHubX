@@ -100,7 +100,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 return;
             }
 
-            var cancellation = new CancellationTokenSource();
+            using CancellationTokenSource cancellation = new();
             _installationCancellation = cancellation;
             _installationTask = StartInstallationAsync(xmlFilePath, sessionDirectory, cancellation.Token);
             try
@@ -111,7 +111,6 @@ namespace WinHubX.Forms.Personalizzazione_office
             {
                 _installationTask = null;
                 _installationCancellation = null;
-                cancellation.Dispose();
                 if (_closeAfterInstallation && !IsDisposed && IsHandleCreated)
                 {
                     _allowClose = true;
