@@ -61,7 +61,7 @@ namespace WinHubX.Forms.CreaISO
             }
         }
 
-        private List<Task> taskList = new();
+        private readonly List<Task> taskList = new();
 
         private void FormCreazioneISO_FormClosed(object? sender, FormClosedEventArgs e)
         {
