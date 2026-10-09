@@ -2,7 +2,6 @@ using HartUI.Controls;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Text.RegularExpressions;
 using WinHubX.Forms.Personalizzazione_office;
 using WinHubX.Impostazioni;
@@ -282,12 +281,13 @@ namespace WinHubX
                 }
                 tempFolder = PrivateUserWorkspace.CreateSession();
                 string tempZipPath = Path.Join(tempFolder, "OfficeScrubber.zip");
+                string extractionFolder = Path.Join(tempFolder, "extracted");
 
                 Directory.CreateDirectory(tempFolder);
                 await DownloadManager.DownloadFileAsync(zipFileUrl, tempZipPath,
                     cancellationToken, autoParallel: false);
-                ExtractZipSafely(tempZipPath, tempFolder);
-                string cmdPath = Path.Join(tempFolder, "OfficeScrubber.cmd");
+                SafeZipExtractor.ExtractToFreshDirectory(tempZipPath, extractionFolder);
+                string cmdPath = Path.Join(extractionFolder, "OfficeScrubber.cmd");
 
                 if (!File.Exists(cmdPath))
                 {
@@ -305,7 +305,7 @@ namespace WinHubX
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = Path.Join(Environment.SystemDirectory, "cmd.exe"),
-                        WorkingDirectory = tempFolder,
+                        WorkingDirectory = extractionFolder,
                         Verb = "runas",
                         UseShellExecute = true
                     }
@@ -353,33 +353,6 @@ namespace WinHubX
                 {
                     EndLifetimeOperation();
                 }
-            }
-        }
-
-        private static void ExtractZipSafely(string archivePath, string destination)
-        {
-            Directory.CreateDirectory(destination);
-            using ZipArchive archive = ZipFile.OpenRead(archivePath);
-            foreach (ZipArchiveEntry entry in archive.Entries)
-            {
-                string target;
-                try
-                {
-                    target = SafePathResolver.ResolveContainedPath(destination, entry.FullName);
-                }
-                catch (InvalidDataException ex)
-                {
-                    throw new InvalidDataException("Archivio Office Scrubber non valido: percorso ZIP non sicuro.", ex);
-                }
-
-                if (string.IsNullOrEmpty(entry.Name))
-                {
-                    Directory.CreateDirectory(target);
-                    continue;
-                }
-
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                entry.ExtractToFile(target, overwrite: true);
             }
         }
 
