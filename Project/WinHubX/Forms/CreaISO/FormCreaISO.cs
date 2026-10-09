@@ -141,45 +141,46 @@ namespace WinHubX.Forms.Base
                 return;
             }
 
-            string zipUrl = await GetZipUrlFromGitHubConfigAsync();
-            string zipFilePath = Path.Combine(Path.GetTempPath(), "RisorseCreaISO.zip");
-
+            string tempRoot = Path.GetTempPath();
+            string sessionId = Guid.NewGuid().ToString("N");
+            string zipFilePath = Path.Combine(tempRoot, $"WinHubX-RisorseCreaISO-{sessionId}.zip");
+            string stagingPath = Path.Combine(tempRoot, $"WinHubX-RisorseCreaISO-{sessionId}");
+            string resourcePath = Path.Combine(tempRoot, "RisorseCreaISO");
             try
             {
-                if (!File.Exists(zipFilePath))
-                {
-                    await ScaricaFileAsync(zipUrl, zipFilePath);
-                }
+                string zipUrl = await GetZipUrlFromGitHubConfigAsync();
+                await ScaricaFileAsync(zipUrl, zipFilePath);
+                SafeZipExtractor.ExtractToFreshDirectory(zipFilePath, stagingPath);
 
-                string tempPath = Path.Combine(Path.GetTempPath(), "RisorseCreaISO");
-                if (!Directory.Exists(tempPath))
+                if (File.Exists(resourcePath))
+                    throw new IOException("Il percorso risorse ISO esiste già come file.");
+                if (Directory.Exists(resourcePath))
                 {
-                    _ = Directory.CreateDirectory(tempPath);
+                    if ((File.GetAttributes(resourcePath) & FileAttributes.ReparsePoint) != 0)
+                        throw new IOException("Il percorso risorse ISO non può essere un reparse point.");
+                    Directory.Delete(resourcePath, recursive: true);
                 }
-
-                using (ZipArchive archive = ZipFile.OpenRead(zipFilePath))
-                {
-                    foreach (ZipArchiveEntry entry in archive.Entries)
-                    {
-                        string destinazioneFile = Path.Combine(tempPath, entry.FullName);
-                        if (string.IsNullOrEmpty(entry.Name))
-                        {
-                            continue;
-                        }
-                        string? directoryPath = Path.GetDirectoryName(destinazioneFile);
-                        if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-                        {
-                            _ = Directory.CreateDirectory(directoryPath);
-                        }
-
-                        entry.ExtractToFile(destinazioneFile, overwrite: true);
-                    }
-                }
+                Directory.Move(stagingPath, resourcePath);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                _ = MessageBox.Show(this, $"Impossibile verificare o estrarre le risorse ISO: {ex.Message}",
+                    "WinHubX — risorse ISO", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(zipFilePath))
+                        File.Delete(zipFilePath);
+                    if (Directory.Exists(stagingPath))
+                        Directory.Delete(stagingPath, recursive: true);
+                }
+                catch (Exception cleanupException)
+                {
+                    Debug.WriteLine($"Pulizia risorse ISO temporanee non completata: {cleanupException}");
+                }
             }
 
             _ = await RunPowerShellAsync(
