@@ -387,6 +387,42 @@ namespace WinHubX.Forms.Settaggi
             }
         }
 
+        private void ConfigureNewsAndInterests(bool enabled)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Path.Join(Environment.SystemDirectory, "taskkill.exe"),
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("/IM");
+            startInfo.ArgumentList.Add("explorer.exe");
+            startInfo.ArgumentList.Add("/F");
+            using (Process process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
+            {
+                process.WaitForExit();
+            }
+
+            int viewMode = enabled ? 1 : 2;
+            int available = enabled ? 1 : 0;
+            foreach (RegistryView view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
+            {
+                using RegistryKey? key = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, view)
+                    .CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds");
+                key?.SetValue("ShellFeedsTaskbarViewMode", viewMode, RegistryValueKind.DWord);
+                key?.SetValue("IsFeedsAvailable", available, RegistryValueKind.DWord);
+            }
+
+            foreach (RegistryView view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
+            {
+                QueueRegistryValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
+                    "EnableFeeds", available, RegistryValueKind.DWord, view);
+            }
+        }
+
         private void SetRegistryValue(string path, string name, object? value, RegistryView view = RegistryView.Default)
         {
             (RegistryHive hive, string subKeyPath) = ParseSystemRegistryPath(path);
@@ -748,38 +784,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = Path.Join(Environment.SystemDirectory, "taskkill.exe"),
-                        RedirectStandardOutput = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-                    startInfo.ArgumentList.Add("/IM");
-                    startInfo.ArgumentList.Add("explorer.exe");
-                    startInfo.ArgumentList.Add("/F");
-                    using (Process process = Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
-                    {
-                        process.WaitForExit();
-                    }
-
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
-                    {
-                        key32?.SetValue("ShellFeedsTaskbarViewMode", 2, RegistryValueKind.DWord);
-                        key32?.SetValue("IsFeedsAvailable", 0, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
-                    {
-                        key64?.SetValue("ShellFeedsTaskbarViewMode", 2, RegistryValueKind.DWord);
-                        key64?.SetValue("IsFeedsAvailable", 0, RegistryValueKind.DWord);
-                    }
-                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
-                        "EnableFeeds", 0, RegistryValueKind.DWord, RegistryView.Registry32);
-                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
-                        "EnableFeeds", 0, RegistryValueKind.DWord, RegistryView.Registry64);
+                    ConfigureNewsAndInterests(enabled: false);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
@@ -1441,36 +1446,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = Path.Join(Environment.SystemDirectory, "taskkill.exe"),
-                        RedirectStandardOutput = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-                    startInfo.ArgumentList.Add("/IM");
-                    startInfo.ArgumentList.Add("explorer.exe");
-                    startInfo.ArgumentList.Add("/F");
-                    using (Process process = Process.Start(startInfo)
-                        ?? throw new InvalidOperationException("Impossibile riavviare Explorer."))
-                    {
-                        process.WaitForExit();
-                    }
-                    using (RegistryKey? key32 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
-                    {
-                        key32?.SetValue("ShellFeedsTaskbarViewMode", 1, RegistryValueKind.DWord);
-                        key32?.SetValue("IsFeedsAvailable", 1, RegistryValueKind.DWord);
-                    }
-
-                    using (RegistryKey key64 = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64).CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Feeds"))
-                    {
-                        key64?.SetValue("ShellFeedsTaskbarViewMode", 1, RegistryValueKind.DWord);
-                        key64?.SetValue("IsFeedsAvailable", 1, RegistryValueKind.DWord);
-                    }
-                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
-                        "EnableFeeds", 1, RegistryValueKind.DWord, RegistryView.Registry32);
-                    QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
-                        "EnableFeeds", 1, RegistryValueKind.DWord, RegistryView.Registry64);
+                    ConfigureNewsAndInterests(enabled: true);
                 }
                 catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
