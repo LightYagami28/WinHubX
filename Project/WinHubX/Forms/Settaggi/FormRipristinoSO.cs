@@ -414,6 +414,7 @@ namespace WinHubX.Forms.Settaggi
                 }
                 catch (OperationCanceledException) when (workerSource.IsCancellationRequested)
                 {
+                    Debug.WriteLine("Monitoraggio CPU annullato durante il rilascio delle risorse del test.");
                 }
             }
         }

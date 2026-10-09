@@ -116,6 +116,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -334,6 +335,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -443,6 +445,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -541,6 +544,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -641,6 +645,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -680,6 +685,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -769,6 +775,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -957,6 +964,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -982,6 +990,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringToken.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
@@ -1179,6 +1188,7 @@ namespace WinHubX.Forms.Base
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
             {
+                return;
             }
             catch (Exception ex)
             {
