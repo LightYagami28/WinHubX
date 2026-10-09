@@ -10,6 +10,10 @@ namespace WinHubX.Forms.Personalizzazione_office
     {
         private readonly Form1 form1;
         private readonly FormOffice formoffice;
+        private CancellationTokenSource? _installationCancellation;
+        private Task? _installationTask;
+        private bool _closeAfterInstallation;
+        private bool _allowClose;
 
         public PersonalizzazioneOffice(Form1 form1, FormOffice formoffice)
         {
@@ -26,8 +30,14 @@ namespace WinHubX.Forms.Personalizzazione_office
             };
         }
 
-        private void btn_avviainstallazione_Click(object? sender, EventArgs e)
+        private async void btn_avviainstallazione_Click(object? sender, EventArgs e)
         {
+            if (_installationTask is { IsCompleted: false })
+            {
+                MessageBox.Show("È già in corso una personalizzazione di Office.");
+                return;
+            }
+
             progressBar_office.Visible = true;
             string version = comboBoxVerOffice.SelectedItem?.ToString() ?? string.Empty;
             string language = comboBox_Lingua.SelectedItem?.ToString()?.ToUpperInvariant() ?? "IT";
@@ -40,33 +50,74 @@ namespace WinHubX.Forms.Personalizzazione_office
             }
             string archLabel = (arch == "64" || arch == "ARM64") ? "x64" : "x32";
             string xmlFileName = $"Configurazione{version.Replace(" ", "")}{archLabel}.xml";
-            string xmlFilePath = Path.Combine(Path.GetTempPath(), xmlFileName);
-            ExtractAndSaveResource(xmlFileName, xmlFilePath);
-            if (language == "EN")
-                ModifyElementFromXml(xmlFilePath, "it-it", "en-gb");
-            if (checkBox_visio.Checked)
-                AddVisioElement(version, xmlFilePath);
-            if (checkBox_project.Checked)
-                AddProjectElement(version, xmlFilePath);
-            Dictionary<CheckBox, string> apps = new()
-    {
-        { checkBox_word, "Word" },
-        { checkBox_excel, "Excel" },
-        { checkBox_powerpoint, "PowerPoint" },
-        { checkBox_outlook, "Outlook" },
-        { checkBox_onenote, "OneNote" },
-        { checkBox_onedrive, "OneDrive" },
-        { checkBox_publisher, "Publisher" },
-        { checkBox_access, "Access" }
-    };
-
-            foreach (var kvp in apps)
+            string sessionDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WinHubX",
+                "OfficePersonalizzato",
+                Guid.NewGuid().ToString("N"));
+            string xmlFilePath = Path.Combine(sessionDirectory, xmlFileName);
+            try
             {
-                if (kvp.Key.Checked)
-                    RemoveElementFromXml(xmlFilePath, "ExcludeApp", kvp.Value);
+                Directory.CreateDirectory(sessionDirectory);
+                ExtractAndSaveResource(xmlFileName, xmlFilePath);
+                if (language == "EN")
+                    ModifyElementFromXml(xmlFilePath, "it-it", "en-gb");
+                if (checkBox_visio.Checked)
+                    AddVisioElement(version, xmlFilePath);
+                if (checkBox_project.Checked)
+                    AddProjectElement(version, xmlFilePath);
+                Dictionary<CheckBox, string> apps = new()
+                {
+                    { checkBox_word, "Word" },
+                    { checkBox_excel, "Excel" },
+                    { checkBox_powerpoint, "PowerPoint" },
+                    { checkBox_outlook, "Outlook" },
+                    { checkBox_onenote, "OneNote" },
+                    { checkBox_onedrive, "OneDrive" },
+                    { checkBox_publisher, "Publisher" },
+                    { checkBox_access, "Access" }
+                };
+
+                foreach (var kvp in apps)
+                {
+                    if (kvp.Key.Checked)
+                        RemoveElementFromXml(xmlFilePath, "ExcludeApp", kvp.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    if (Directory.Exists(sessionDirectory))
+                        Directory.Delete(sessionDirectory, recursive: true);
+                }
+                catch (Exception cleanupException) when (cleanupException is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"Cleanup sessione Office fallito: {cleanupException}");
+                }
+
+                MessageBox.Show($"Preparazione installazione non riuscita: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
-            StartInstallation(xmlFilePath);
+            var cancellation = new CancellationTokenSource();
+            _installationCancellation = cancellation;
+            _installationTask = StartInstallationAsync(xmlFilePath, sessionDirectory, cancellation.Token);
+            try
+            {
+                await _installationTask;
+            }
+            finally
+            {
+                _installationTask = null;
+                _installationCancellation = null;
+                cancellation.Dispose();
+                if (_closeAfterInstallation && !IsDisposed && IsHandleCreated)
+                {
+                    _allowClose = true;
+                    BeginInvoke(new Action(Close));
+                }
+            }
         }
 
         private string GetArchitecture()
@@ -138,7 +189,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             foreach (XmlNode node in doc.GetElementsByTagName("Language"))
             {
                 var attr = node.Attributes?["ID"];
-                if (attr?.Value == oldLang)
+                if (attr is not null && attr.Value == oldLang)
                     attr.Value = newLang;
             }
 
@@ -346,29 +397,30 @@ namespace WinHubX.Forms.Personalizzazione_office
   <ExcludeApp ID=""Word"" />
 </Product>";
 
-        private async void StartInstallation(string xmlFilePath)
+        private async Task StartInstallationAsync(
+            string xmlFilePath,
+            string sessionDirectory,
+            CancellationToken cancellationToken)
         {
             try
             {
                 progressBar_office.Value = 0;
-                string tempPath = Path.Combine(Path.GetTempPath(), "OfficePersonalizzato");
-                Directory.CreateDirectory(tempPath);
-                string binExePath = Path.Combine(tempPath, "bin.exe");
+                string binExePath = Path.Combine(sessionDirectory, "bin.exe");
                 ExtractAndSaveResource("bin.exe", binExePath);
 
                 progressBar_office.Value = 15;
-                await Task.Delay(5000);
+                await Task.Delay(5000, cancellationToken);
 
                 if (!File.Exists(binExePath))
                     throw new FileNotFoundException("Executable not found.", binExePath);
 
                 progressBar_office.Value = 30;
-                await Task.Delay(3000);
+                await Task.Delay(3000, cancellationToken);
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = binExePath,
-                    WorkingDirectory = tempPath,
+                    WorkingDirectory = sessionDirectory,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -378,41 +430,48 @@ namespace WinHubX.Forms.Personalizzazione_office
                     ?? throw new InvalidOperationException("Impossibile avviare l'installazione di Office."))
                 {
                     progressBar_office.Value = 50;
-                    await Task.Delay(6000);
-
-                    if (process != null)
-                        await Task.Run(() => process.WaitForExit());
+                    // Il setup usa i file della sessione: attendere la sua uscita prima del cleanup.
+                    await process.WaitForExitAsync(CancellationToken.None);
                 }
 
                 progressBar_office.Value = 75;
-                await Task.Delay(4000);
+                await Task.Delay(4000, cancellationToken);
 
-                File.Delete(xmlFilePath);
-                if (Directory.Exists(tempPath))
-                {
-                    Directory.Delete(tempPath, true);
-                }
                 progressBar_office.Value = 100;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Debug.WriteLine("Personalizzazione Office annullata prima dell'avvio del setup.");
             }
             catch (Exception ex)
             {
                 _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(sessionDirectory))
+                        Directory.Delete(sessionDirectory, recursive: true);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"Cleanup sessione personalizzazione Office non riuscito: {ex}");
+                }
+            }
         }
 
         private void PersonalizzazioneOffice_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            string tempPath = Path.Combine(Path.GetTempPath(), "OfficePersonalizzato");
-            if (Directory.Exists(tempPath))
+            if (_allowClose || _installationTask is not { IsCompleted: false })
+                return;
+
+            e.Cancel = true;
+            _closeAfterInstallation = true;
+            _installationCancellation?.Cancel();
+            if (!IsDisposed)
             {
-                try
-                {
-                    Directory.Delete(tempPath, true);
-                }
-                catch (Exception ex)
-                {
-                    _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                Debug.WriteLine("Chiusura rinviata finché il processo Office non ha terminato e la sessione non è pulita.");
             }
         }
 

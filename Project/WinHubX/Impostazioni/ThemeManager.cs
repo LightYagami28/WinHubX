@@ -92,46 +92,21 @@ namespace WinHubX.Impostazioni
 
             if (control is Form form && form.Name != "Form1")
             {
-                if (IsSpecialColor(form.BackColor))
-                {
-                    form.BackColor = form.BackColor;
-                }
-                else
-                {
+                if (!IsSpecialColor(form.BackColor))
                     form.BackColor = darkTheme ? UiPalette.DarkSurface : UiPalette.LightSurface;
-                }
 
-                if (IsSpecialColor(form.ForeColor))
-                {
-                    form.ForeColor = form.ForeColor;
-                }
-                else
-                {
+                if (!IsSpecialColor(form.ForeColor))
                     form.ForeColor = foreColor;
-                }
             }
             else
             {
-                if (IsSpecialColor(control.BackColor))
-                {
-                    // mantiene il colore originale
-                    control.BackColor = control.BackColor;
-                }
-                else
-                {
+                if (!IsSpecialColor(control.BackColor))
                     control.BackColor = backColor;
-                }
 
                 if (!(control is PictureBox))
                 {
-                    if (IsSpecialColor(control.ForeColor))
-                    {
-                        control.ForeColor = control.ForeColor;
-                    }
-                    else
-                    {
+                    if (!IsSpecialColor(control.ForeColor))
                         control.ForeColor = foreColor;
-                    }
                 }
                 if (control is cuiButton cuoreBtn)
                 {
