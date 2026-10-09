@@ -1,4 +1,6 @@
-﻿using WinHubX.Forms.Base;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using WinHubX.Forms.Base;
 using WinHubX.Impostazioni;
 
 namespace WinHubX.Forms.DebloatAvanzato
@@ -32,15 +34,17 @@ namespace WinHubX.Forms.DebloatAvanzato
             lblNome.Text = OttieniNomeLeggibile(NomeTecnico);
 
             // Carica immagine se presente
-            if (!string.IsNullOrEmpty(ImgUrl))
+            if (Uri.TryCreate(ImgUrl, UriKind.Absolute, out Uri? imageUri)
+                && imageUri.Scheme == Uri.UriSchemeHttps)
             {
                 try
                 {
-                    pictureBox.Load(ImgUrl);
+                    pictureBox.LoadCompleted += PictureBox_LoadCompleted;
+                    pictureBox.LoadAsync(imageUri.AbsoluteUri);
                 }
-                catch
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
                 {
-                    pictureBox.Image = null;
+                    Debug.WriteLine($"Caricamento immagine debloat non avviato: {ex.Message}");
                 }
             }
 
@@ -50,6 +54,12 @@ namespace WinHubX.Forms.DebloatAvanzato
             // Tema
             BackColor = ThemeManager.GetBackColor(ThemeManager.IsDarkTheme);
             lblNome.ForeColor = ThemeManager.GetForeColor(ThemeManager.IsDarkTheme);
+        }
+
+        private void PictureBox_LoadCompleted(object? sender, AsyncCompletedEventArgs e)
+        {
+            if (e.Error is not null)
+                Debug.WriteLine($"Caricamento immagine debloat fallito: {e.Error.Message}");
         }
 
         private string OttieniNomeLeggibile(string nomeTecnico)

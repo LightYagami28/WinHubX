@@ -10,6 +10,8 @@ namespace WinHubX.Forms.DebloatAvanzato
         {
             if (disposing)
             {
+                pictureBox.LoadCompleted -= PictureBox_LoadCompleted;
+                pictureBox.CancelAsync();
                 _toolTip.Dispose();
                 components?.Dispose();
             }
