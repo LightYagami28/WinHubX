@@ -51,7 +51,7 @@ namespace WinHubX.Forms.CreaISO
             InitializeComponent();
             this.form1 = form1;
             this.formcreaiso = formcreaiso;
-            this.resourceSessionPath = IsoResourceWorkspace.ValidateSessionPath(resourceSessionPath);
+            this.resourceSessionPath = PrivateUserWorkspace.ValidateSessionPath(resourceSessionPath);
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
             FormClosed += FormCreazioneISO_FormClosed;
         }
@@ -148,7 +148,7 @@ namespace WinHubX.Forms.CreaISO
                     }
                     try
                     {
-                        IsoResourceWorkspace.DeleteSession(resourceSessionPath);
+                        PrivateUserWorkspace.DeleteSession(resourceSessionPath);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
                     {

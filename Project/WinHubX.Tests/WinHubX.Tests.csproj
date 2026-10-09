@@ -40,7 +40,7 @@
     <Compile Include="..\WinHubX\Impostazioni\BitsTransferDownloader.cs" Link="Impostazioni\BitsTransferDownloader.cs" />
     <Compile Include="..\WinHubX\Impostazioni\SafeZipExtractor.cs" Link="Impostazioni\SafeZipExtractor.cs" />
     <Compile Include="..\WinHubX\Impostazioni\SafePathResolver.cs" Link="Impostazioni\SafePathResolver.cs" />
-    <Compile Include="..\WinHubX\Impostazioni\IsoResourceWorkspace.cs" Link="Impostazioni\IsoResourceWorkspace.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\PrivateUserWorkspace.cs" Link="Impostazioni\PrivateUserWorkspace.cs" />
     <Compile Include="..\WinHubX\Impostazioni\HardwareSensorReading.cs" Link="Impostazioni\HardwareSensorReading.cs" />
     <Compile Include="..\WinHubX\Impostazioni\CpuInfoFormatter.cs" Link="Impostazioni\CpuInfoFormatter.cs" />
     <Compile Include="..\WinHubX\Impostazioni\BackgroundWorkerCompletionMessageFactory.cs" Link="Impostazioni\BackgroundWorkerCompletionMessageFactory.cs" />

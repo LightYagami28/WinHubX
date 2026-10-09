@@ -132,7 +132,7 @@ namespace WinHubX.Forms.Base
                 {
                     try
                     {
-                        IsoResourceWorkspace.DeleteSession(sessionPath);
+                        PrivateUserWorkspace.DeleteSession(sessionPath);
                         _pendingResourceSessionPath = null;
                     }
                     catch (Exception cleanupException) when (cleanupException is IOException or UnauthorizedAccessException or InvalidDataException)
@@ -181,7 +181,7 @@ namespace WinHubX.Forms.Base
             string resourceSessionPath;
             try
             {
-                resourceSessionPath = IsoResourceWorkspace.CreateSession();
+                resourceSessionPath = PrivateUserWorkspace.CreateSession();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
             {
@@ -224,7 +224,7 @@ namespace WinHubX.Forms.Base
                     if (Directory.Exists(stagingPath))
                         Directory.Delete(stagingPath, recursive: true);
                     if (!resourcePrepared)
-                        IsoResourceWorkspace.DeleteSession(resourceSessionPath);
+                        PrivateUserWorkspace.DeleteSession(resourceSessionPath);
                 }
                 catch (Exception cleanupException) when (IsExpectedIsoResourceFailure(cleanupException))
                 {
@@ -315,7 +315,7 @@ namespace WinHubX.Forms.Base
 
             try
             {
-                IsoResourceWorkspace.DeleteSession(sessionPath);
+                PrivateUserWorkspace.DeleteSession(sessionPath);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
             {
