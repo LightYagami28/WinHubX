@@ -24,13 +24,16 @@ namespace WinHubX.Forms.CreaISO
         private string InstallMountRoot => Path.Combine(WorkspaceRoot, "Mount", "mount");
         private string BootMountRoot => Path.Combine(WorkspaceRoot, "Mount", "boot");
         private readonly FormCreaISO formcreaiso;
+        private readonly string resourceSessionPath;
+        private string ResourceRoot => Path.Combine(resourceSessionPath, "RisorseCreaISO");
 
-        public FormCreazioneISO(Form1 form1, FormCreaISO formcreaiso)
+        public FormCreazioneISO(Form1 form1, FormCreaISO formcreaiso, string resourceSessionPath)
         {
             LanguageManager.LoadTranslations();
             InitializeComponent();
             this.form1 = form1;
             this.formcreaiso = formcreaiso;
+            this.resourceSessionPath = IsoResourceWorkspace.ValidateSessionPath(resourceSessionPath);
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
         }
         private async void FormCreazioneISO_Shown(object? sender, EventArgs e)
@@ -104,6 +107,14 @@ namespace WinHubX.Forms.CreaISO
                     _elevatedBroker = null;
                     SetButtonsEnabled(true);
                     btnStopVerdi.Visible = false;
+                    try
+                    {
+                        IsoResourceWorkspace.DeleteSession(resourceSessionPath);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+                    {
+                        Log($"Pulizia workspace risorse ISO non riuscita: {ex.Message}");
+                    }
                 }
             }
         }
@@ -156,20 +167,6 @@ namespace WinHubX.Forms.CreaISO
                 form1.btnDebloat.Enabled = true;
                 form1.btnmonitoraggio.Enabled = true;
                 form1.pictureBox3.Enabled = true;
-
-                string tempPath = Path.GetTempPath();
-                string zipPath = Path.Combine(tempPath, "RisorseCreaISO.zip");
-                string folderPath = Path.Combine(tempPath, "RisorseCreaISO");
-
-                if (File.Exists(zipPath))
-                {
-                    File.Delete(zipPath);
-                }
-
-                if (Directory.Exists(folderPath))
-                {
-                    Directory.Delete(folderPath, true);
-                }
             }
             catch (Exception ex)
             {
@@ -524,16 +521,16 @@ namespace WinHubX.Forms.CreaISO
                     return;
                 }
 
-                string sourceUnattend = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattend.xml");
-                string sourceUnattendStock = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattendstock.xml");
+                string sourceUnattend = Path.Combine(ResourceRoot, "Risorse", "unattend.xml");
+                string sourceUnattendStock = Path.Combine(ResourceRoot, "Risorse", "unattendstock.xml");
                 string destUnattend = Path.Combine(IsoWorkingRoot, "sources", "$OEM$", "$$", "Panther", "unattend.xml");
                 string mountDir = InstallMountRoot;
                 string bootWimPath = Path.Combine(IsoWorkingRoot, "sources", "boot.wim");
                 string bootMountDir = BootMountRoot;
                 string appraiserPath = Path.Combine(IsoWorkingRoot, "sources", "appraiserres.dll");
                 string appraiserBakPath = appraiserPath + ".bak";
-                string sourceUnattend10 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattend10.xml");
-                string sourceUnattendx32 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattendx32.xml");
+                string sourceUnattend10 = Path.Combine(ResourceRoot, "Risorse", "unattend10.xml");
+                string sourceUnattendx32 = Path.Combine(ResourceRoot, "Risorse", "unattendx32.xml");
 
                 _ = Directory.CreateDirectory(Path.GetDirectoryName(destUnattend)
                     ?? throw new InvalidOperationException("Percorso unattend non valido."));
@@ -940,8 +937,8 @@ namespace WinHubX.Forms.CreaISO
 
                         File.Create(Path.Combine(targetDir, "noedge.pref")).Dispose();
 
-                        File.Copy(Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\OperaGXSetup.exe"), Path.Combine(targetDir, "OperaGXSetup.exe"), true);
-                        File.Copy(Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\PowerRun.exe"), Path.Combine(targetDir, "PowerRun.exe"), true);
+                        File.Copy(Path.Combine(ResourceRoot, "Risorse", "OperaGXSetup.exe"), Path.Combine(targetDir, "OperaGXSetup.exe"), true);
+                        File.Copy(Path.Combine(ResourceRoot, "Risorse", "PowerRun.exe"), Path.Combine(targetDir, "PowerRun.exe"), true);
 
                         IncrementProgress();
                     }
@@ -1133,8 +1130,8 @@ namespace WinHubX.Forms.CreaISO
                     Log($"\n[INFO] {LanguageManager.GetTranslation("FormCreazioneISO", "importazionesettaggiabilitata")}");
                 }));
 
-                string exportPath = Path.Combine(Path.GetTempPath(), "config.dat");
-                string targetExportPath = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\config.dat");
+                string exportPath = Path.Combine(resourceSessionPath, "config.dat");
+                string targetExportPath = Path.Combine(ResourceRoot, "Risorse", "config.dat");
                 string keyToExport = @"HKEY_CURRENT_USER\Software\WinHubX";
 
                 try
@@ -1182,7 +1179,7 @@ namespace WinHubX.Forms.CreaISO
                 }
             }
 
-            string sourceFolder = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse");
+            string sourceFolder = Path.Combine(ResourceRoot, "Risorse");
             string targetFolder = Path.Combine(InstallMountRoot, "Windows");
 
             Invoke(new Action(() =>
@@ -1302,7 +1299,7 @@ namespace WinHubX.Forms.CreaISO
         {
             string sourcePath = IsoWorkingRoot;
             string isoOutputPath = formcreaiso.labelpercorso.Text;
-            string oscdimgPath = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\oscdimg");
+            string oscdimgPath = Path.Combine(ResourceRoot, "Risorse", "oscdimg");
             string destinationPath = isoOutputPath;
 
             try

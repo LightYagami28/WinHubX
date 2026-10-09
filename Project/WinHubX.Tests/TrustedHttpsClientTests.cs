@@ -77,6 +77,26 @@ public sealed class TrustedHttpsClientTests
     }
 
     [Fact]
+    public async Task SendAsync_RejectsRedirectChainsLongerThanMaximum()
+    {
+        int requests = 0;
+        using var handler = new StubHandler(_ =>
+        {
+            requests++;
+            return Redirect($"https://github.com/owner/repo/redirect-{requests}");
+        });
+        using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://github.com/owner/repo/start");
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => TrustedHttpsClient.SendAsync(
+            client,
+            request,
+            TestContext.Current.CancellationToken));
+
+        Assert.Equal(6, requests);
+    }
+
+    [Fact]
     public async Task GetStringAsync_AppliesClientTimeoutToResponseBody()
     {
         using var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
