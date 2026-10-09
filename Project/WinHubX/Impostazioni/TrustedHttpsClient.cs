@@ -48,7 +48,7 @@ public static class TrustedHttpsClient
         }
 
         Uri currentUri = ValidateUri(request.RequestUri?.AbsoluteUri, "richiesta HTTP");
-        for (int redirectCount = 0; ; redirectCount++)
+        for (int redirectCount = 0; redirectCount <= MaximumRedirects; redirectCount++)
         {
             using var safeRequest = new HttpRequestMessage(request.Method, currentUri)
             {
@@ -76,7 +76,7 @@ public static class TrustedHttpsClient
             {
                 throw new HttpRequestException("Il server ha restituito un redirect senza destinazione.");
             }
-            if (redirectCount >= MaximumRedirects)
+            if (redirectCount == MaximumRedirects)
             {
                 throw new HttpRequestException("Numero massimo di redirect superato.");
             }
@@ -84,6 +84,8 @@ public static class TrustedHttpsClient
             string locationValue = location.IsAbsoluteUri ? location.AbsoluteUri : new Uri(currentUri, location).AbsoluteUri;
             currentUri = ValidateUri(locationValue, "redirect HTTP");
         }
+
+        throw new InvalidOperationException("Il ciclo di redirect è terminato in modo inatteso.");
     }
 
     public static async Task<HttpResponseMessage> GetAsync(

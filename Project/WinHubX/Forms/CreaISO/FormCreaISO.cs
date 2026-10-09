@@ -23,6 +23,8 @@ namespace WinHubX.Forms.Base
         private readonly Form1 form1;
         private string selectedFile = string.Empty;
         private string percorsoCompletoISO = string.Empty;
+        private string? _pendingResourceSessionPath;
+        private bool _resourceSessionTransferred;
         public FormCreaISO(Form1 form1)
         {
             InitializeComponent();
@@ -33,6 +35,7 @@ namespace WinHubX.Forms.Base
             pictureBox4.Hide();
             ActiveControl = btn_browserBianco;
             ThemeManager.ApplyThemeToControl(this, ThemeManager.IsDarkTheme);
+            FormClosed += OnFormClosedCleanupResourceSession;
             string downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             labelpercorso.Text = $"{downloadPath}";
             percorsoCompletoISO = downloadPath;
@@ -131,26 +134,30 @@ namespace WinHubX.Forms.Base
                 return;
             }
 
-            string tempRoot = Path.GetTempPath();
-            string sessionId = Guid.NewGuid().ToString("N");
-            string zipFilePath = Path.Combine(tempRoot, $"WinHubX-RisorseCreaISO-{sessionId}.zip");
-            string stagingPath = Path.Combine(tempRoot, $"WinHubX-RisorseCreaISO-{sessionId}");
-            string resourcePath = Path.Combine(tempRoot, "RisorseCreaISO");
+            string resourceSessionPath;
+            try
+            {
+                resourceSessionPath = IsoResourceWorkspace.CreateSession();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                _ = MessageBox.Show(this, $"Impossibile creare il workspace privato per le risorse ISO: {ex.Message}",
+                    "WinHubX — risorse ISO", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            string zipFilePath = Path.Combine(resourceSessionPath, "RisorseCreaISO.zip");
+            string stagingPath = Path.Combine(resourceSessionPath, "staging");
+            string resourcePath = Path.Combine(resourceSessionPath, "RisorseCreaISO");
+            bool resourcePrepared = false;
             try
             {
                 string zipUrl = await GetZipUrlFromGitHubConfigAsync();
                 await ScaricaFileAsync(zipUrl, zipFilePath);
                 SafeZipExtractor.ExtractToFreshDirectory(zipFilePath, stagingPath);
-
-                if (File.Exists(resourcePath))
-                    throw new IOException("Il percorso risorse ISO esiste già come file.");
-                if (Directory.Exists(resourcePath))
-                {
-                    if ((File.GetAttributes(resourcePath) & FileAttributes.ReparsePoint) != 0)
-                        throw new IOException("Il percorso risorse ISO non può essere un reparse point.");
-                    Directory.Delete(resourcePath, recursive: true);
-                }
                 Directory.Move(stagingPath, resourcePath);
+                resourcePrepared = true;
+                _pendingResourceSessionPath = resourceSessionPath;
             }
             catch (Exception ex)
             {
@@ -166,6 +173,8 @@ namespace WinHubX.Forms.Base
                         File.Delete(zipFilePath);
                     if (Directory.Exists(stagingPath))
                         Directory.Delete(stagingPath, recursive: true);
+                    if (!resourcePrepared)
+                        IsoResourceWorkspace.DeleteSession(resourceSessionPath);
                 }
                 catch (Exception cleanupException)
                 {
@@ -222,7 +231,7 @@ namespace WinHubX.Forms.Base
         { "TipoOttimizzazione", TipoOttimizzazione },
     };
 
-            FormCreazioneISO nuovaForm = new FormCreazioneISO(form1, this)
+            FormCreazioneISO nuovaForm = new FormCreazioneISO(form1, this, resourceSessionPath)
             {
                 ParametriISO = parametri
             };
@@ -235,7 +244,23 @@ namespace WinHubX.Forms.Base
             nuovaForm.FormBorderStyle = FormBorderStyle.None;
             form1.PnlFormLoader.Controls.Add(nuovaForm);
             nuovaForm.Show();
+            _resourceSessionTransferred = true;
             Close();
+        }
+
+        private void OnFormClosedCleanupResourceSession(object? sender, FormClosedEventArgs e)
+        {
+            if (_resourceSessionTransferred || _pendingResourceSessionPath is not { } sessionPath)
+                return;
+
+            try
+            {
+                IsoResourceWorkspace.DeleteSession(sessionPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                Debug.WriteLine($"Pulizia workspace risorse ISO non riuscita: {ex.Message}");
+            }
         }
 
         private async void btn_browser_Click(object? sender, EventArgs e)

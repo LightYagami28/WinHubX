@@ -4,6 +4,8 @@ I download devono usare HTTPS, allowlist di host e verifica dell'integrità quan
 
 Gli archivi ZIP scaricati sono estratti soltanto dopo la validazione dei nomi e dei percorsi canonici; traversal, link/reparse point e archivi oltre i limiti di quantità/dimensione vengono rifiutati. L'estrazione avviene in una directory di staging nuova e l'app mostra l'errore senza proseguire se il contenuto non è valido.
 
+Le risorse temporanee per la creazione ISO sono conservate in sessioni GUID sotto `%LOCALAPPDATA%\WinHubX\IsoResourceSessions`, con ACL limitate all'utente corrente, agli amministratori e a SYSTEM; il percorso viene validato prima della pulizia e non viene riutilizzata una directory condivisa sotto `%TEMP%`.
+
 I download binari usano BITS dopo che `TrustedHttpsClient` ha seguito e rivalidato ogni redirect HTTPS; il job BITS vieta ulteriori redirect, verifica la revoca del certificato e scrive su un file temporaneo univoco, pubblicato nella destinazione solo dopo il completamento. L'annullamento rimuove anche il job BITS residuo.
 
 Gli URL degli asset attualmente configurati in `Dipendenze.json` sono stati verificati come raggiungibili il 2026-10-09. Alcuni puntano alla release upstream `MrNico98/WinHubX-Resource`; il fork `LightYagami28/WinHubX-Resource` non ha release proprie. La raggiungibilità non equivale a verifica di provenienza o integrità: usare hash pubblicati/validati indipendentemente quando disponibili. L'integrazione DefendNot è esclusa dalla migrazione BITS e dall'esecuzione dell'audit perché può disattivare Defender; il suo hash x64 non è stato corretto né la sua affidabilità di avvio aumentata.
