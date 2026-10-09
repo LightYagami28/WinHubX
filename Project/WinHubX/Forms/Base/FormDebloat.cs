@@ -321,23 +321,8 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo
-                {
-                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-                psi.ArgumentList.Add("-NoProfile");
-                psi.ArgumentList.Add("-NonInteractive");
-                psi.ArgumentList.Add("-Command");
-                psi.ArgumentList.Add($"Get-AppxPackage -AllUsers -Name '{EscapePowerShellLiteral(nomeApp)}' | Remove-AppxPackage");
-
-                using (Process process = new Process { StartInfo = psi })
-                {
-                    _ = process.Start();
-                    process.WaitForExit();
-                }
+                RunElevatedPowerShellCommand(
+                    $"Get-AppxPackage -AllUsers -Name '{EscapePowerShellLiteral(nomeApp)}' | Remove-AppxPackage");
             }
             catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
@@ -349,28 +334,32 @@ namespace WinHubX.Forms.Base
         {
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo
-                {
-                    FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                };
-                psi.ArgumentList.Add("-NoProfile");
-                psi.ArgumentList.Add("-NonInteractive");
-                psi.ArgumentList.Add("-Command");
-                psi.ArgumentList.Add($"Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -like '*{EscapePowerShellLiteral(nomeApp)}*' }} | Remove-AppxProvisionedPackage -Online");
-
-                using (Process process = new Process { StartInfo = psi })
-                {
-                    _ = process.Start();
-                    process.WaitForExit();
-                }
+                RunElevatedPowerShellCommand(
+                    $"Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -like '*{EscapePowerShellLiteral(nomeApp)}*' }} | Remove-AppxProvisionedPackage -Online");
             }
             catch (Exception ex) when (IsExpectedDebloatFailure(ex))
             {
                 _ = MessageBox.Show($"Error: {nomeApp}: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private static void RunElevatedPowerShellCommand(string command)
+        {
+            ProcessStartInfo psi = new()
+            {
+                FileName = Path.Join(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
+                Verb = "runas",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-NonInteractive");
+            psi.ArgumentList.Add("-Command");
+            psi.ArgumentList.Add(command);
+
+            using Process process = new() { StartInfo = psi };
+            _ = process.Start();
+            process.WaitForExit();
         }
 
         private static string EscapePowerShellLiteral(string value) => value.Replace("'", "''", StringComparison.Ordinal);
