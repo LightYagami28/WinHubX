@@ -9,6 +9,18 @@ namespace WinHubX.Forms.Base
 {
     public partial class FormMonitoraggio : Form
     {
+        private static bool IsExpectedMonitoringFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or ArgumentException
+                or TimeoutException;
+
         private sealed record HardwareSnapshot(string CpuTemperature, string GpuTemperature, double GpuUsage)
         {
             public static HardwareSnapshot Empty { get; } = new("N/A", "N/A", 0);
@@ -123,7 +135,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Avvio monitoraggio non riuscito: {ex}");
                 ShowErrorMessage($"Impossibile avviare il monitoraggio:\n{ex.Message}");
@@ -199,7 +211,7 @@ namespace WinHubX.Forms.Base
             {
                 Debug.WriteLine("Caricamento impostazioni monitoraggio annullato durante la chiusura.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Lettura impostazioni monitoraggio non riuscita: {ex}");
                 domainUpDown1.Text = "2 GB";
@@ -344,7 +356,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Pulizia automatica della memoria non riuscita: {ex}");
             }
@@ -367,7 +379,7 @@ namespace WinHubX.Forms.Base
                     {
                         CleanProcessMemory(process);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Riduzione working set del processo {process.Id} non riuscita: {ex.Message}");
                     }
@@ -444,7 +456,7 @@ namespace WinHubX.Forms.Base
                     {
                         return;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Lettura cartella temporanea non riuscita: {ex}");
                     }
@@ -458,7 +470,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Monitoraggio cartella temporanea terminato con errore: {ex}");
             }
@@ -493,7 +505,7 @@ namespace WinHubX.Forms.Base
                     {
                         return;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Lettura utilizzo disco non riuscita: {ex}");
                         await Task.Delay(3000, _monitoringToken);
@@ -504,7 +516,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Monitoraggio disco terminato con errore: {ex}");
             }
@@ -520,7 +532,7 @@ namespace WinHubX.Forms.Base
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Contatore PhysicalDisk non disponibile: {ex.Message}");
                 _diskUsageCounter?.Dispose();
@@ -535,7 +547,7 @@ namespace WinHubX.Forms.Base
                 {
                     throw;
                 }
-                catch (Exception fallbackException)
+                catch (Exception fallbackException) when (IsExpectedMonitoringFailure(fallbackException))
                 {
                     Debug.WriteLine($"Contatore LogicalDisk non disponibile: {fallbackException.Message}");
                     _diskUsageCounter?.Dispose();
@@ -573,7 +585,7 @@ namespace WinHubX.Forms.Base
                     BarDISCOtext.Text = $"{discoUsage:0}%";
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Aggiornamento UI utilizzo disco non riuscito: {ex}");
             }
@@ -605,7 +617,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Monitoraggio CPU terminato con errore: {ex}");
             }
@@ -633,7 +645,7 @@ namespace WinHubX.Forms.Base
                     {
                         return;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Lettura sensori hardware non riuscita: {ex}");
                     }
@@ -645,7 +657,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Lettura sensori hardware non riuscita: {ex}");
             }
@@ -723,7 +735,7 @@ namespace WinHubX.Forms.Base
                     {
                         await UpdateNetworkStats();
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Lettura statistiche di rete non riuscita: {ex}");
                     }
@@ -733,7 +745,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Monitoraggio rete terminato con errore: {ex}");
             }
@@ -864,7 +876,7 @@ namespace WinHubX.Forms.Base
                     : networkCapacityKB > 0 ? $"{networkUsage:0.0}%" : "—";
                 progressbarRete.ProgressValue = (int)Math.Round(networkUsage);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Aggiornamento UI statistiche di rete non riuscito: {ex}");
             }
@@ -892,7 +904,7 @@ namespace WinHubX.Forms.Base
                     {
                         ManageProcess(process);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
                     {
                         Debug.WriteLine($"Ottimizzazione del processo {process.Id} non riuscita: {ex.Message}");
                     }
@@ -955,7 +967,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 ShowErrorMessage($"Pulizia RAM non riuscita:\n{ex.Message}");
             }
@@ -981,7 +993,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 ShowErrorMessage($"Ottimizzazione CPU non riuscita:\n{ex.Message}");
             }
@@ -1053,7 +1065,7 @@ namespace WinHubX.Forms.Base
             {
                 // La cancellazione è il normale percorso di arresto dei monitor.
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Arresto dei monitor non riuscito: {ex}");
             }
@@ -1065,7 +1077,7 @@ namespace WinHubX.Forms.Base
                     _computer?.Close();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Chiusura del monitor hardware non riuscita: {ex}");
             }
@@ -1083,7 +1095,7 @@ namespace WinHubX.Forms.Base
             {
                 resource?.Dispose();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Rilascio di {resourceName} non riuscito: {ex}");
             }
@@ -1180,7 +1192,7 @@ namespace WinHubX.Forms.Base
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 ShowErrorMessage($"Errore durante la pulizia della cartella TEMP:\n{ex.Message}");
             }
@@ -1280,7 +1292,7 @@ namespace WinHubX.Forms.Base
             {
                 Debug.WriteLine("Salvataggio impostazioni monitoraggio annullato durante la chiusura.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedMonitoringFailure(ex))
             {
                 Debug.WriteLine($"Salvataggio impostazioni monitoraggio non riuscito: {ex}");
             }
