@@ -188,9 +188,6 @@ namespace WinHubX.Forms.ImpostazioniApp
         {
             var config = ThemeConfig.Load();
 
-            string jsonPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "WinHubX", "Impostazioni", "Tema.json");
-
             if (!config.ThemeManuallySet)
             {
                 radioButton_temadisistema.Checked = true;
@@ -211,9 +208,6 @@ namespace WinHubX.Forms.ImpostazioniApp
         private void LoadCurrentLingua()
         {
             var config = ThemeConfig.Load();
-
-            string jsonPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "WinHubX", "Impostazioni", "Tema.json");
 
             if (!config.LanguageManuallySet)
             {
