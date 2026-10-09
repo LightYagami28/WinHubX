@@ -436,7 +436,7 @@ namespace WinHubX
             string jsonUrl,
             CancellationToken cancellationToken)
         {
-            List<OfficeVersion> officeVersions = new List<OfficeVersion>();
+            List<OfficeVersion> loadedOfficeVersions = new();
 
             {
                 string jsonResponse = await TrustedHttpsClient.GetStringAsync(
@@ -481,11 +481,11 @@ namespace WinHubX
                         office.Lingue.Add(lang.Name, links);
                     }
 
-                    officeVersions.Add(office);
+                    loadedOfficeVersions.Add(office);
                 }
             }
 
-            return officeVersions;
+            return loadedOfficeVersions;
         }
 
 
@@ -625,12 +625,9 @@ namespace WinHubX
                 }
                 else if (selectedInstallationType.Equals("Online", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (arch == "x64")
-                        url = links.FirstOrDefault(k => k.Key.Contains("x64", StringComparison.OrdinalIgnoreCase)).Value
-                              ?? links.GetValueOrDefault("Online");
-                    else
-                        url = links.FirstOrDefault(k => k.Key.Contains("x32", StringComparison.OrdinalIgnoreCase)).Value
-                              ?? links.GetValueOrDefault("Online");
+                    string architectureToken = arch == "x64" ? "x64" : "x32";
+                    url = links.FirstOrDefault(link => link.Key.Contains(architectureToken, StringComparison.OrdinalIgnoreCase)).Value
+                          ?? links.GetValueOrDefault("Online");
                 }
 
                 if (string.IsNullOrEmpty(url))

@@ -230,16 +230,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 DisabilitaPrivacy.SetItemChecked(index, true);
             }
-            string[] daAbilitare;
-
-            if (isHDD)
-            {
-                daAbilitare = new string[] { "Abilita Schedul Defrag" };
-            }
-            else
-            {
-                daAbilitare = new string[0];
-            }
+            string[] daAbilitare = isHDD ? ["Abilita Schedul Defrag"] : [];
             for (int i = 0; i < AbilitaPrivacy.Items.Count; i++)
                 AbilitaPrivacy.SetItemChecked(i, false);
             foreach (int index in daAbilitare.Select(nome => AbilitaPrivacy.Items.IndexOf(nome)).Where(static index => index >= 0))

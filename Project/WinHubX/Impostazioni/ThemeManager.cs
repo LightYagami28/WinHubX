@@ -103,11 +103,8 @@ namespace WinHubX.Impostazioni
                 if (!IsSpecialColor(control.BackColor))
                     control.BackColor = backColor;
 
-                if (!(control is PictureBox))
-                {
-                    if (!IsSpecialColor(control.ForeColor))
-                        control.ForeColor = foreColor;
-                }
+                if (control is not PictureBox && !IsSpecialColor(control.ForeColor))
+                    control.ForeColor = foreColor;
                 if (control is cuiButton cuoreBtn)
                 {
                     bool isVerdi = cuoreBtn.Name.Contains("Verdi");

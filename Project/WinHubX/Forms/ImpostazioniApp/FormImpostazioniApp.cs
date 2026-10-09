@@ -430,7 +430,7 @@ namespace WinHubX.Forms.ImpostazioniApp
                 StringBuilder sb = new StringBuilder();
                 foreach (var note in notes)
                 {
-                    sb.AppendLine("• " + note.ToString());
+                    sb.AppendLine("• " + note);
                 }
 
                 return sb.ToString().Trim();

@@ -18,7 +18,7 @@ namespace WinHubX.Forms.Base
         private readonly Form1 form1;
         private static readonly HttpClient ResourceClient = CreateResourceClient();
         private List<string> appxNames = new List<string>();
-        public static Dictionary<string, string> appNameMappings = new Dictionary<string, string>();
+        private Dictionary<string, string> appNameMappings = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> imageUrls = new Dictionary<string, string>();
         private int totalSteps = 0;
 
@@ -193,7 +193,7 @@ namespace WinHubX.Forms.Base
             imageUrls.TryGetValue(nomeLeggibile, out string? imgUrl);
             if (string.IsNullOrEmpty(imgUrl))
                 imageUrls.TryGetValue("Generale", out imgUrl);
-            var itemControl = new AppItemControl(nomeTecnico, imgUrl)
+            var itemControl = new AppItemControl(nomeTecnico, imgUrl, appNameMappings)
             {
                 Width = (flowLayoutPanel1.ClientSize.Width / 2) - 20,
                 Height = 50,
