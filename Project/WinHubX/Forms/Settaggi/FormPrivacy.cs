@@ -107,7 +107,8 @@ namespace WinHubX.Forms.Settaggi
             List<string> failures,
             ref int currentStep,
             bool reportWhenNotSelected = false,
-            bool setCheckboxAfterProgress = false)
+            bool setCheckboxAfterProgress = false,
+            string? uncheckedCheckboxName = null)
         {
             if (!selectedOptions.Contains(optionName))
             {
@@ -116,7 +117,7 @@ namespace WinHubX.Forms.Settaggi
                     currentStep++;
                     backgroundWorker1.ReportProgress(currentStep);
                 }
-                SetCheckboxState(checkboxName, false);
+                SetCheckboxState(uncheckedCheckboxName ?? checkboxName, false);
                 return;
             }
 
@@ -196,6 +197,101 @@ namespace WinHubX.Forms.Settaggi
             }
 
             ApplyElevatedRegistryMutations(registryChanges);
+        }
+
+        private void ConfigureErrorReporting(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+            {
+                if (enabled)
+                {
+                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", view);
+                }
+                else
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", 1,
+                        RegistryValueKind.DWord, view);
+                }
+            }
+
+            string taskScript = PrivacyScheduledTaskScriptBuilder.BuildScript(
+            [new PrivacyScheduledTaskChange(
+                @"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: enabled)]);
+            ApplyElevatedRegistryMutations(registryChanges, taskScript);
+        }
+
+        private void ConfigureDiagnosticTracking(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            if (enabled)
+            {
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
+                    RegistryValueKind.DWord, RegistryView.Registry64);
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
+                    RegistryValueKind.DWord, RegistryView.Default);
+            }
+            else
+            {
+                foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableDiagnostics", 1,
+                        RegistryValueKind.DWord, view);
+                }
+            }
+
+            ConfigureServices(registryChanges,
+                new PrivacyServiceChange("DiagTrack", enabled ? "Automatic" : "Disabled", StartAfterConfiguration: enabled));
+        }
+
+        private void ConfigureWapPushService(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            if (enabled)
+            {
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SYSTEM\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
+                    RegistryValueKind.DWord, RegistryView.Registry64);
+                registryChanges.SetValue(RegistryHive.LocalMachine,
+                    @"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
+                    RegistryValueKind.DWord, RegistryView.Default);
+            }
+            else
+            {
+                foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableWAPPushService", 1,
+                        RegistryValueKind.DWord, view);
+                }
+            }
+
+            ConfigureServices(registryChanges,
+                new PrivacyServiceChange("dmwappushservice", enabled ? "Automatic" : "Disabled", StartAfterConfiguration: enabled));
+        }
+
+        private void ConfigureHomeGroup(bool enabled)
+        {
+            ElevatedRegistryMutationBatch registryChanges = new();
+            if (!enabled)
+            {
+                foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+                {
+                    registryChanges.SetValue(RegistryHive.LocalMachine,
+                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableHomeGroup", 1,
+                        RegistryValueKind.DWord, view);
+                }
+            }
+
+            string startType = enabled ? "Manual" : "Disabled";
+            ConfigureServices(registryChanges,
+                new PrivacyServiceChange("HomeGroupListener", startType, StartAfterConfiguration: false),
+                new PrivacyServiceChange("HomeGroupProvider", startType, StartAfterConfiguration: false));
         }
 
         private bool GetCheckboxState(string itemName)
@@ -648,111 +744,15 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("DisabilitaTracking", false);
             }
-            if (selection.Disable.Contains("Disabilita Segnalazione Errori"))
-            {
-                SetCheckboxState("DisabilitaSegnalazioneErrori", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    foreach (RegistryView view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
-                    {
-                        registryChanges.SetValue(RegistryHive.LocalMachine,
-                            @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", 1,
-                            RegistryValueKind.DWord, view);
-                    }
-                    ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
-                    [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: false)]));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaSegnalazioneErrori", false);
-            }
-            if (selection.Disable.Contains("Disabilita Tracking Diagnostica"))
-            {
-                SetCheckboxState("DisabilitaTrackingDiagnostica", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    var registryChanges = new ElevatedRegistryMutationBatch();
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableDiagnostics", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry64);
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableDiagnostics", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry32);
-                    ConfigureServices(registryChanges,
-                        new PrivacyServiceChange("DiagTrack", "Disabled", StartAfterConfiguration: false));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaTrackingDiagnostica", false);
-            }
-            if (selection.Disable.Contains("Disabilita WAP Push Service"))
-            {
-                SetCheckboxState("DisabilitaWAPPushService", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    var registryChanges = new ElevatedRegistryMutationBatch();
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableWAPPushService", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry64);
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableWAPPushService", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry32);
-                    ConfigureServices(registryChanges,
-                        new PrivacyServiceChange("dmwappushservice", "Disabled", StartAfterConfiguration: false));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisabilitaWAPPushService", false);
-            }
-            if (selection.Disable.Contains("Disabilita Home Group"))
-            {
-                SetCheckboxState("DisabilitaHomeGroup", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    var registryChanges = new ElevatedRegistryMutationBatch();
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableHomeGroup", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry64);
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "DisableHomeGroup", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry32);
-                    ConfigureServices(registryChanges,
-                        new PrivacyServiceChange("HomeGroupListener", "Disabled", StartAfterConfiguration: false),
-                        new PrivacyServiceChange("HomeGroupProvider", "Disabled", StartAfterConfiguration: false));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("DisbailitaHomeGroup", false);
-            }
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Segnalazione Errori",
+                "DisabilitaSegnalazioneErrori", () => ConfigureErrorReporting(enabled: false), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Tracking Diagnostica",
+                "DisabilitaTrackingDiagnostica", () => ConfigureDiagnosticTracking(enabled: false), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita WAP Push Service",
+                "DisabilitaWAPPushService", () => ConfigureWapPushService(enabled: false), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Disable, "Disabilita Home Group", "DisabilitaHomeGroup",
+                () => ConfigureHomeGroup(enabled: false), failures, ref currentStep,
+                uncheckedCheckboxName: "DisbailitaHomeGroup");
             if (selection.Disable.Contains("Disabilita Assistenza Remota"))
             {
                 SetCheckboxState("DisabilitaAssistenzaRemota", true);
@@ -1059,102 +1059,14 @@ namespace WinHubX.Forms.Settaggi
             {
                 SetCheckboxState("AbilitaTracking", false);
             }
-            if (selection.Enable.Contains("Abilita Segnalazione Errori"))
-            {
-                SetCheckboxState("AbilitaSegnalazioneErrori", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ElevatedRegistryMutationBatch registryChanges = new();
-                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry64);
-                    registryChanges.DeleteValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", RegistryView.Registry32);
-                    ApplyElevatedRegistryMutations(registryChanges, PrivacyScheduledTaskScriptBuilder.BuildScript(
-                    [new PrivacyScheduledTaskChange(@"Microsoft\Windows\Windows Error Reporting\QueueReporting", Enable: true)]));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaSegnalazioneErrori", false);
-            }
-            if (selection.Enable.Contains("Abilita Tracking Diagnostica"))
-            {
-                SetCheckboxState("AbilitaTrackingDiagnostica", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    var registryChanges = new ElevatedRegistryMutationBatch();
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
-                        RegistryValueKind.DWord, RegistryView.Registry64);
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection", "AllowTelemetry", 3,
-                        RegistryValueKind.DWord, RegistryView.Default);
-                    ConfigureServices(registryChanges,
-                        new PrivacyServiceChange("DiagTrack", "Automatic", StartAfterConfiguration: true));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaTrackingDiagnostica", false);
-            }
-            if (selection.Enable.Contains("Abilita WAP Push Service"))
-            {
-                SetCheckboxState("AbilitaWAPPushService", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    var registryChanges = new ElevatedRegistryMutationBatch();
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SYSTEM\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
-                        RegistryValueKind.DWord, RegistryView.Registry64);
-                    registryChanges.SetValue(RegistryHive.LocalMachine,
-                        @"SYSTEM\WOW6432Node\CurrentControlSet\Services\dmwappushservice", "DelayedAutoStart", 1,
-                        RegistryValueKind.DWord, RegistryView.Default);
-                    ConfigureServices(registryChanges,
-                        new PrivacyServiceChange("dmwappushservice", "Automatic", StartAfterConfiguration: true));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaWAPPushService", false);
-            }
-            if (selection.Enable.Contains("Abilita Home Group"))
-            {
-                SetCheckboxState("AbilitaHomeGroup", true);
-                currentStep++;
-                backgroundWorker1.ReportProgress(currentStep);
-                try
-                {
-                    ConfigureServices(new ElevatedRegistryMutationBatch(),
-                        new PrivacyServiceChange("HomeGroupListener", "Manual", StartAfterConfiguration: false),
-                        new PrivacyServiceChange("HomeGroupProvider", "Manual", StartAfterConfiguration: false));
-                }
-                catch (Exception ex) when (IsExpectedPrivacyOperationFailure(ex))
-                {
-                    failures.Add(ex.GetBaseException().Message);
-                }
-            }
-            else
-            {
-                SetCheckboxState("AbilitaHomeGroup", false);
-            }
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Segnalazione Errori",
+                "AbilitaSegnalazioneErrori", () => ConfigureErrorReporting(enabled: true), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Tracking Diagnostica",
+                "AbilitaTrackingDiagnostica", () => ConfigureDiagnosticTracking(enabled: true), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita WAP Push Service",
+                "AbilitaWAPPushService", () => ConfigureWapPushService(enabled: true), failures, ref currentStep);
+            ApplySelectedPrivacyOption(selection.Enable, "Abilita Home Group", "AbilitaHomeGroup",
+                () => ConfigureHomeGroup(enabled: true), failures, ref currentStep);
             if (selection.Enable.Contains("Abilita Assistenza Remota"))
             {
                 SetCheckboxState("AbilitaAssistenzaRemota", true);
