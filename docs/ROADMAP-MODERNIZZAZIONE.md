@@ -26,7 +26,7 @@ Il lavoro si considera consegnabile quando ogni task è verificato con evidenze 
 - [ ] 11. Eliminare scansioni ricorsive e I/O sincrono dal thread UI. Nel Monitoraggio, lettura delle preferenze resa asincrona e scritture serializzate su file temporaneo con sostituzione atomica; restano da auditare le altre schermate e scansioni.
 - [ ] 12. Rendere cache e snapshot hardware con scadenza e invalidazione esplicite.
 - [ ] 13. Completare la riscrittura del Monitoraggio con un modello di snapshot unico.
-- [ ] 14. Profilare startup, CPU, allocazioni e heap su .NET 10 e .NET 11.
+- [ ] 14. Profilare startup, CPU, allocazioni e heap su .NET 10 e .NET 11. Rilevata una traccia d’avvio di 15 s su .NET 11 RC (`dotnet-trace`, circa 4,2 MB); `topN` mostra prevalentemente attese del message loop/UI e del thread pool, senza hotspot CPU applicativi nella finestra osservata. Il campionamento è limitato all’avvio a riposo: non sostituisce scenari d’interazione, allocazioni/heap o confronto con .NET 10; la verifica visuale resta indisponibile finché `sky` non è configurato.
 - [ ] 15. Ridurre creazione ripetuta di form, immagini e handler.
 - [ ] 16. Misurare working set e tempi di apertura per ogni sezione.
 - [ ] 17. Applicare double buffering, DPI PerMonitorV2 e layout responsive ai Designer.
