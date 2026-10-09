@@ -8,6 +8,20 @@ namespace WinHubX.Forms.DebloatAvanzato;
 
 public partial class FormServizi : Form
 {
+    private static bool IsExpectedServiceOperationFailure(Exception exception) =>
+        exception is IOException
+            or UnauthorizedAccessException
+            or System.Security.SecurityException
+            or System.ComponentModel.Win32Exception
+            or System.Runtime.InteropServices.COMException
+            or HttpRequestException
+            or System.Text.Json.JsonException
+            or Newtonsoft.Json.JsonException
+            or InvalidOperationException
+            or OperationCanceledException
+            or TimeoutException
+            or ArgumentException;
+
     private static readonly HttpClient HttpClient = CreateHttpClient();
     private const string ServicesUrl =
         "https://raw.githubusercontent.com/LightYagami28/WinHubX-Resource/refs/heads/main/servizi.json";
@@ -58,7 +72,7 @@ public partial class FormServizi : Form
 
             _serviceCatalog = catalog;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (IsExpectedServiceOperationFailure(ex))
         {
             _ = MessageBox.Show(
                 this,
@@ -201,7 +215,7 @@ public partial class FormServizi : Form
                 "Operazione annullata nella richiesta UAC.",
                 "Operation cancelled at the UAC prompt.") + Environment.NewLine);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (IsExpectedServiceOperationFailure(ex))
         {
             Debug.WriteLine(ex);
             richTextBox1.AppendText($"❌ {ex.GetBaseException().Message}{Environment.NewLine}");
@@ -212,7 +226,7 @@ public partial class FormServizi : Form
             {
                 File.Delete(reportPath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedServiceOperationFailure(ex))
             {
                 Debug.WriteLine($"Impossibile eliminare il report temporaneo dei servizi: {ex}");
             }

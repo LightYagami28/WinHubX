@@ -910,7 +910,11 @@ namespace WinHubX.Forms.Settaggi
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+                or IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or InvalidOperationException)
             {
                 Debug.WriteLine($"Riavvio Esplora file dopo personalizzazione non riuscito: {ex}");
                 MessageBox.Show(
