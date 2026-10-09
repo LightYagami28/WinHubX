@@ -207,25 +207,17 @@ namespace WinHubX.Forms.Settaggi
                 pendingRegistryMutations = new ElevatedRegistryMutationBatch();
                 pendingRegistryAclMutations = new ElevatedRegistryAclMutationBatch();
                 SetMpPreference("EnableControlledFolderAccess", true);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry32);
+                SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1);
                 SetDwordRegistryValue(@"SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry32);
                 SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\QualityCompat", "cadca5fe-87d3-4b96-b7fb-a231484277cc", 0, RegistryView.Registry64);
                 SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 0, RegistryView.Registry64);
-                SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry64);
-                SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 1, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 1, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 1, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 1, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry32);
-                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry64);
-                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
+                SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1);
+                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 1);
+                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5);
+                SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1);
+                SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 1);
+                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0);
+                SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2);
                 ApplyPendingRegistryMutations();
             }
             catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
@@ -251,10 +243,20 @@ namespace WinHubX.Forms.Settaggi
             GetPendingRegistryMutations().DeleteValue(RegistryHive.LocalMachine, keyPath, valueName, registryView);
         }
 
+        private void DeleteRegistryValue(string keyPath, string valueName)
+        {
+            DeleteRegistryValue(keyPath, valueName);
+        }
+
         private void SetDwordRegistryValue(string keyPath, string valueName, int value, RegistryView registryView)
         {
             GetPendingRegistryMutations().SetValue(RegistryHive.LocalMachine, keyPath, valueName, value,
                 RegistryValueKind.DWord, registryView);
+        }
+
+        private void SetDwordRegistryValue(string keyPath, string valueName, int value)
+        {
+            SetDwordRegistryValue(keyPath, valueName, value);
         }
 
         void GrantRegistryTakeOwnershipRight(string keyPath, RegistryView registryView)
@@ -365,8 +367,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -419,8 +420,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 1);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -438,8 +438,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -457,8 +456,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 0, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 0, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 0);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -476,8 +474,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -495,8 +492,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 0, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 0, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 0);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -514,8 +510,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -533,8 +528,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -552,10 +546,8 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0, RegistryView.Registry32);
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", 0);
+                    SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -574,18 +566,15 @@ namespace WinHubX.Forms.Settaggi
                 try
                 {
                     string systrayKeyPath = @"SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray";
-                    SetDwordRegistryValue(systrayKeyPath, "HideSystray", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(systrayKeyPath, "HideSystray", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(systrayKeyPath, "HideSystray", 1);
                     var osVersion = Environment.OSVersion.Version;
                     if (osVersion.Build == 14393)
                     {
-                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "WindowsDefender", RegistryView.Registry64);
-                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "WindowsDefender", RegistryView.Registry32);
+                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "WindowsDefender");
                     }
                     else if (osVersion.Build >= 15063)
                     {
-                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "SecurityHealth", RegistryView.Registry64);
-                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "SecurityHealth", RegistryView.Registry32);
+                        DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "SecurityHealth");
                     }
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
@@ -629,8 +618,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -648,8 +636,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -702,8 +689,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", RegistryView.Registry64);
-                    DeleteRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", RegistryView.Registry32);
+                    DeleteRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -721,8 +707,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", RegistryView.Registry64);
-                    DeleteRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", RegistryView.Registry32);
+                    DeleteRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -740,8 +725,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -780,11 +764,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 5);
 
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry64);
-                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry32);
+                    SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1);
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -802,8 +784,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -821,8 +802,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -840,11 +820,9 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SpynetReporting");
 
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent");
                 }
                 catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
@@ -862,8 +840,7 @@ namespace WinHubX.Forms.Settaggi
                 backgroundWorker1.ReportProgress(currentStep);
                 try
                 {
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray", "HideSystray", RegistryView.Registry64);
-                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray", "HideSystray", RegistryView.Registry32);
+                    DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Systray", "HideSystray");
                     var buildVersion = Environment.OSVersion.Version.Build;
 
                     if (buildVersion == 14393)

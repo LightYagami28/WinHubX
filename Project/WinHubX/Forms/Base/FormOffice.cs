@@ -280,7 +280,7 @@ namespace WinHubX
                     );
                     return;
                 }
-                tempFolder = Path.Join(Path.GetTempPath(), $"WinHubX-OfficeScrubber-{Guid.NewGuid():N}");
+                tempFolder = PrivateUserWorkspace.CreateSession();
                 string tempZipPath = Path.Join(tempFolder, "OfficeScrubber.zip");
 
                 Directory.CreateDirectory(tempFolder);
