@@ -281,43 +281,22 @@ namespace WinHubX.Forms.Settaggi
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (e.Error is not null)
+            CompletionMessage completion = BackgroundWorkerCompletionMessageFactory.Create(
+                e,
+                "Alcune impostazioni privacy non sono state applicate:",
+                LanguageManager.GetTranslation("Global", "modifichesuccesso"));
+            MessageBoxIcon icon = completion.Severity switch
             {
-                _ = MessageBox.Show(
-                    $"Operazione non completata: {e.Error.GetBaseException().Message}",
-                    "WinHubX",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return;
-            }
-
-            if (e.Cancelled)
-            {
-                _ = MessageBox.Show("Operazione annullata.", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (e.Result is List<string> failures && failures.Count > 0)
-            {
-                string details = string.Join(Environment.NewLine, failures.Distinct().Take(5));
-                string remaining = failures.Count > 5
-                    ? $"{Environment.NewLine}Altri errori: {failures.Count - 5}."
-                    : string.Empty;
-                _ = MessageBox.Show(
-                    $"Alcune impostazioni privacy non sono state applicate:{Environment.NewLine}{details}{remaining}",
-                    "WinHubX",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
-            string messaggio = LanguageManager.GetTranslation("Global", "modifichesuccesso");
+                CompletionMessageSeverity.Error => MessageBoxIcon.Error,
+                CompletionMessageSeverity.Warning => MessageBoxIcon.Warning,
+                _ => MessageBoxIcon.Information
+            };
 
             _ = MessageBox.Show(
-                messaggio,
+                completion.Text,
                 "WinHubX",
                 MessageBoxButtons.OK,
-                MessageBoxIcon.Information
+                icon
             );
         }
 
