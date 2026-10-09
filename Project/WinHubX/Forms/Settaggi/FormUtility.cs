@@ -35,6 +35,21 @@ namespace WinHubX.Forms.Settaggi
             Debug.WriteLine(exception);
         }
 
+        private static bool IsExpectedSystemOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException
+                or FormatException
+                or InvalidCastException
+                or OverflowException;
+
         private string? GetOperationFailureSummary()
         {
             string[] failures = operationFailures.ToArray();
@@ -363,7 +378,7 @@ namespace WinHubX.Forms.Settaggi
                     task.Enabled = false;
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
             {
                 RecordOperationFailure(new InvalidOperationException(
                     $"Impossibile disabilitare l’attività pianificata '{taskPath}'.",
@@ -496,7 +511,7 @@ namespace WinHubX.Forms.Settaggi
                         throw new InvalidOperationException($"schtasks.exe è terminato con codice {process.ExitCode} per l’attività '{taskName}'.");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
             {
                 RecordOperationFailure(new InvalidOperationException(
                     $"Impossibile riattivare l’attività pianificata '{taskName}'.",
@@ -572,7 +587,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(new InvalidOperationException("Modifica delle app in background non riuscita.", ex));
                 }
@@ -603,7 +618,7 @@ namespace WinHubX.Forms.Settaggi
                     DisableScheduledTask(@"Microsoft\Windows\Feedback\Siuf\DmClient");
                     DisableScheduledTask(@"Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -624,7 +639,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
                         "DisabledByGroupPolicy", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(new InvalidOperationException("Modifica Advertising ID non riuscita.", ex));
                 }
@@ -649,7 +664,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
                         "EnabledV9", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -675,7 +690,7 @@ namespace WinHubX.Forms.Settaggi
                         "UserAuthentication", 1, RegistryValueKind.DWord, RegistryView.Registry64);
 
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -702,7 +717,7 @@ namespace WinHubX.Forms.Settaggi
 
 
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -751,7 +766,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
                         "EnableFeeds", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -769,7 +784,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetSystemVolumeIndexing(enabled: false);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(new InvalidOperationException("Disattivazione indicizzazione non riuscita.", ex));
                 }
@@ -823,7 +838,7 @@ namespace WinHubX.Forms.Settaggi
 
 
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -844,7 +859,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Maps",
                         "AutoUpdateEnabled", 0, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -906,7 +921,7 @@ namespace WinHubX.Forms.Settaggi
 
 
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -939,7 +954,7 @@ namespace WinHubX.Forms.Settaggi
                         cloudContentKey32?.SetValue("DisableTailoredExperiencesWithDiagnosticData", 1, RegistryValueKind.DWord);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -964,7 +979,7 @@ namespace WinHubX.Forms.Settaggi
                         key32.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy", false);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -982,7 +997,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 4);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1001,7 +1016,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters", "StoragePolicy", RegistryView.Registry32);
                     DeleteRegistryKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters", "StoragePolicy", RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1021,7 +1036,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 0);
                     RunSystemTool("powercfg.exe", "/hibernate", "off");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1046,7 +1061,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1, RegistryView.Registry32);
                     SetRegistryValue(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1064,7 +1079,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 0);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1083,7 +1098,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryKey(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", RegistryView.Registry32);
                     DeleteRegistryKey(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1105,7 +1120,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1, RegistryView.Registry32);
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 1, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1147,7 +1162,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     RecordOperationFailure(ex);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1167,7 +1182,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Services\SysMain", "Start", 2, RegistryView.Registry64);
                     RunSystemTool("sc.exe", "start", "SysMain");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1189,7 +1204,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings", "ShowHibernateOption", 1, RegistryView.Registry64);
                     RunSystemTool("powercfg.exe", "/hibernate", "on");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1214,7 +1229,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0, RegistryView.Registry32);
                     SetRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1233,7 +1248,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1, RegistryView.Registry32);
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 1, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1252,7 +1267,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", 0, RegistryView.Registry32);
                     SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Psched", "NonBestEffortLimit", 0, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1287,7 +1302,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1317,7 +1332,7 @@ namespace WinHubX.Forms.Settaggi
                     EnableScheduledTask("Microsoft\\Windows\\Feedback\\Siuf\\DmClient");
                     EnableScheduledTask("Microsoft\\Windows\\Feedback\\Siuf\\DmClientOnScenarioDownload");
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1338,7 +1353,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo",
                         "DisabledByGroupPolicy", RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1363,7 +1378,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryDeletion(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter",
                         "EnabledV9", RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1390,7 +1405,7 @@ namespace WinHubX.Forms.Settaggi
         };
                     RunPowerShellCommands(commands);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1415,7 +1430,7 @@ namespace WinHubX.Forms.Settaggi
         };
                     RunPowerShellCommands(commands);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1462,7 +1477,7 @@ namespace WinHubX.Forms.Settaggi
                     QueueRegistryValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Feeds",
                         "EnableFeeds", 1, RegistryValueKind.DWord, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1481,7 +1496,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetSystemVolumeIndexing(enabled: true);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(new InvalidOperationException("Attivazione indicizzazione non riuscita.", ex));
                 }
@@ -1515,7 +1530,7 @@ namespace WinHubX.Forms.Settaggi
                             throw new InvalidOperationException($"powercfg terminato con codice {process.ExitCode}.");
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(new InvalidOperationException("Creazione del profilo energetico non riuscita.", ex));
                 }
@@ -1537,7 +1552,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0, RegistryView.Registry32);
                     SetRegistryValue(@"SYSTEM\CurrentControlSet\Control\FileSystem", "EncryptPagingFile", 0, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1557,7 +1572,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SYSTEM\Maps", "AutoUpdateEnabled", null, RegistryView.Registry32);
                     SetRegistryValue(@"SYSTEM\Maps", "AutoUpdateEnabled", null, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1625,7 +1640,7 @@ namespace WinHubX.Forms.Settaggi
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
@@ -1645,7 +1660,7 @@ namespace WinHubX.Forms.Settaggi
                     SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableTailoredExperiencesWithDiagnosticData", null, RegistryView.Registry64);
                     SetRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows\CloudContent", "DisableTailoredExperiencesWithDiagnosticData", null, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedSystemOperationFailure(ex))
                 {
                     RecordOperationFailure(ex);
                 }
