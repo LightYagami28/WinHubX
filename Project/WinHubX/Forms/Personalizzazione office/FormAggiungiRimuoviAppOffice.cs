@@ -1,7 +1,6 @@
 ﻿using Microsoft.Win32;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Text;
 using WinHubX.Impostazioni;
 
@@ -13,21 +12,6 @@ namespace WinHubX.Forms.Personalizzazione_office
         public string platform = string.Empty;
         public string product = string.Empty;
         public string culture = string.Empty;
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto)]
-        public static extern int RegOpenKeyEx(
-    IntPtr hKey,
-    string subKey,
-    int ulOptions,
-    int samDesired,
-    out IntPtr phkResult);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern int RegCloseKey(IntPtr hKey);
-
-        private const int KEY_WOW64_64KEY = 0x0100;
-        private const int KEY_QUERY_VALUE = 0x0001;
-        private static readonly IntPtr HKEY_LOCAL_MACHINE = new IntPtr(unchecked((int)0x80000002));
-
         private Dictionary<string, string> officeApps = new Dictionary<string, string>()
         {
             {"word", "Word"},
@@ -484,33 +468,21 @@ namespace WinHubX.Forms.Personalizzazione_office
 
         public static string? GetRegistryValue(string subKey, string valueName)
         {
-            IntPtr hKey = IntPtr.Zero;
             try
             {
-                int result = RegOpenKeyEx(
-                    HKEY_LOCAL_MACHINE,
-                    subKey,
-                    0,
-                    KEY_QUERY_VALUE | KEY_WOW64_64KEY,
-                    out hKey);
-
-                if (result == 0 && hKey != IntPtr.Zero)
-                {
-                    using (RegistryKey key = RegistryKey.FromHandle(new Microsoft.Win32.SafeHandles.SafeRegistryHandle(hKey, true)))
-                    {
-                        return key.GetValue(valueName)?.ToString();
-                    }
-                }
+                using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+                using RegistryKey? key = baseKey.OpenSubKey(subKey, writable: false);
+                return key?.GetValue(valueName)?.ToString();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ArgumentException
+                or IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException)
             {
-                _ = MessageBox.Show($"Error: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine($"Lettura del valore Registro HKLM\\{subKey}\\{valueName} non riuscita: {ex}");
+                _ = MessageBox.Show($"Lettura del Registro non riuscita: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
             }
-            finally
-            {
-
-            }
-            return null;
         }
 
         private async void BtnInstall_Click(object? sender, EventArgs e)
