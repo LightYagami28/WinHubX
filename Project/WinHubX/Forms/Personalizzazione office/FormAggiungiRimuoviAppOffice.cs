@@ -8,6 +8,33 @@ namespace WinHubX.Forms.Personalizzazione_office
 {
     public partial class FormAggiungiRimuoviAppOffice : Form
     {
+        private static readonly Dictionary<string, string> FriendlyApplicationNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["WINWORD"] = "Word",
+            ["EXCEL"] = "Excel",
+            ["POWERPNT"] = "PowerPoint",
+            ["MSACCESS"] = "Access",
+            ["OUTLOOK"] = "Outlook",
+            ["MSPUB"] = "Publisher",
+            ["ONENOTE"] = "OneNote",
+            ["VISIO"] = "Visio",
+            ["WINPROJ"] = "Project",
+            ["ONEDRIVE"] = "OneDrive"
+        };
+        private static readonly Dictionary<string, string> ExecutableNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["WINWORD"] = "WINWORD.EXE",
+            ["EXCEL"] = "EXCEL.EXE",
+            ["POWERPNT"] = "POWERPNT.EXE",
+            ["MSACCESS"] = "MSACCESS.EXE",
+            ["OUTLOOK"] = "OUTLOOK.EXE",
+            ["MSPUB"] = "MSPUB.EXE",
+            ["ONENOTE"] = "ONENOTE.EXE",
+            ["VISIO"] = "VISIO.EXE",
+            ["WINPROJ"] = "WINPROJ.EXE",
+            ["ONEDRIVE"] = "ONEDRIVE.EXE"
+        };
+
         public string officeVersion = string.Empty;
         public string platform = string.Empty;
         public string product = string.Empty;
@@ -283,40 +310,16 @@ namespace WinHubX.Forms.Personalizzazione_office
 
         private string GetFriendlyAppName(string appCode)
         {
-            var nameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        {"WINWORD", "Word"},
-        {"EXCEL", "Excel"},
-        {"POWERPNT", "PowerPoint"},
-        {"MSACCESS", "Access"},
-        {"OUTLOOK", "Outlook"},
-        {"MSPUB", "Publisher"},
-        {"ONENOTE", "OneNote"},
-        {"VISIO", "Visio"},
-        {"WINPROJ", "Project"},
-        {"ONEDRIVE", "OneDrive"}
-    };
-
-            return nameMap.ContainsKey(appCode) ? nameMap[appCode] : appCode;
+            return FriendlyApplicationNames.TryGetValue(appCode, out string? friendlyName)
+                ? friendlyName
+                : appCode;
         }
 
         private string GetExeName(string appCode)
         {
-            var exeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        {"WINWORD", "WINWORD.EXE"},
-        {"EXCEL", "EXCEL.EXE"},
-        {"POWERPNT", "POWERPNT.EXE"},
-        {"MSACCESS", "MSACCESS.EXE"},
-        {"OUTLOOK", "OUTLOOK.EXE"},
-        {"MSPUB", "MSPUB.EXE"},
-        {"ONENOTE", "ONENOTE.EXE"},
-        {"VISIO", "VISIO.EXE"},
-        {"WINPROJ", "WINPROJ.EXE"},
-        {"ONEDRIVE", "ONEDRIVE.EXE"}
-    };
-
-            return exeMap.ContainsKey(appCode) ? exeMap[appCode] : $"{appCode}.EXE";
+            return ExecutableNames.TryGetValue(appCode, out string? executableName)
+                ? executableName
+                : $"{appCode}.EXE";
         }
 
         private static HashSet<string> FindOfficeExecutableNames(string directory)
