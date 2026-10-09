@@ -8,6 +8,17 @@ namespace WinHubX.Forms.Personalizzazione_office
 {
     public partial class FormAggiungiRimuoviAppOffice : Form
     {
+        private static bool IsExpectedOfficeDiscoveryFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or ArgumentException;
+
         private static readonly Dictionary<string, string> FriendlyApplicationNames = new(StringComparer.OrdinalIgnoreCase)
         {
             ["WINWORD"] = "Word",
@@ -246,7 +257,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                     apps = FallbackOfficeDetection();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
                 MessageBox.Show($"Errore durante il rilevamento delle app Office: {ex.Message}", "DEBUG", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 apps = FallbackOfficeDetection();
@@ -575,7 +586,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 MessageBox.Show("Operazione completata.\nLe app di Office sono state aggiornate con successo.",
                     "Office Installer", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
                 progressBar1.Value = 0;
 
@@ -617,7 +628,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                     audienceId = key?.GetValue("AudienceId")?.ToString();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
                 Debug.WriteLine($"Lettura AudienceId Office in vista registro a 32 bit non riuscita: {ex}");
             }
@@ -631,7 +642,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                         audienceId = key?.GetValue("AudienceId")?.ToString();
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
                 {
                     Debug.WriteLine($"Lettura AudienceId Office in vista registro a 64 bit non riuscita: {ex}");
                 }
@@ -716,7 +727,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeDiscoveryFailure(ex))
             {
                 Debug.WriteLine($"Lettura configurazione Click-to-Run non riuscita: {ex}");
             }

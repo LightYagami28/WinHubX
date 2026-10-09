@@ -8,6 +8,19 @@ namespace WinHubX.Forms.Personalizzazione_office
 {
     public partial class PersonalizzazioneOffice : Form
     {
+        private static bool IsExpectedOfficeInstallationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or InvalidOperationException
+                or NotSupportedException
+                or ArgumentException
+                or OperationCanceledException
+                or TimeoutException
+                or XmlException;
+
         private readonly Form1 form1;
         private readonly FormOffice formoffice;
         private CancellationTokenSource? _installationCancellation;
@@ -83,7 +96,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                     RemoveElementFromXml(xmlFilePath, "ExcludeApp", kvp.Value);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 try
                 {
@@ -136,7 +149,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                         return "32";
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 Debug.WriteLine($"Lettura architettura hardware non riuscita; uso l'architettura OS: {ex}");
             }
@@ -229,7 +242,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 targetNode.ParentNode?.InsertAfter(fragment, targetNode);
                 xmlDoc.Save(xmlFilePath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 MessageBox.Show($"Errore durante la modifica di '{xmlFilePath}': {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -254,7 +267,7 @@ namespace WinHubX.Forms.Personalizzazione_office
 
                 xmlDoc.Save(xmlFilePath);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 MessageBox.Show($"Errore durante la rimozione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -272,7 +285,7 @@ namespace WinHubX.Forms.Personalizzazione_office
                 resourceStream.CopyTo(fileStream);
 
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 MessageBox.Show($"Errore durante l'estrazione di '{resourceName}': {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -443,7 +456,7 @@ namespace WinHubX.Forms.Personalizzazione_office
             {
                 Debug.WriteLine("Personalizzazione Office annullata prima dell'avvio del setup.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeInstallationFailure(ex))
             {
                 _ = MessageBox.Show($"Installazione Office non riuscita: {ex.Message}", "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
