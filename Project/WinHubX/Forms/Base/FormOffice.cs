@@ -11,6 +11,20 @@ namespace WinHubX
 {
     public partial class FormOffice : Form
     {
+        private static bool IsExpectedOfficeOperationFailure(Exception exception) =>
+            exception is IOException
+                or HttpRequestException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or NotSupportedException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private readonly Form1 form1;
         private readonly NotifyIcon notifyIcon;
         private List<OfficeVersion> officeVersions = new();
@@ -189,7 +203,7 @@ namespace WinHubX
             {
                 Process.Start(new ProcessStartInfo("https://account.microsoft.com/services") { UseShellExecute = true });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 MessageBox.Show($"Impossibile aprire la gestione ufficiale dell’abbonamento Office: {ex.Message}",
                     "WinHubX", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -212,7 +226,7 @@ namespace WinHubX
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 Debug.WriteLine($"Verifica connettività Office non riuscita: {ex}");
                 return false;
@@ -309,7 +323,7 @@ namespace WinHubX
             {
                 Debug.WriteLine("Operazione Scrubber annullata durante la chiusura della finestra Office.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 MessageBox.Show(
                     $"{LanguageManager.GetTranslation("FormOffice", "errore_generico_scrubber")} {ex.Message}",
@@ -558,7 +572,7 @@ namespace WinHubX
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 Debug.WriteLine($"Rilevamento architettura Office non riuscito; uso l'architettura del sistema: {ex}");
             }
@@ -696,7 +710,7 @@ namespace WinHubX
                 WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
                 MessageBox.Show("Download annullato dall'utente.");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = false;
                 WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = null;
@@ -791,7 +805,7 @@ namespace WinHubX
 
                 installationSucceeded = true;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 Debug.WriteLine($"Installazione offline Office non riuscita: {ex}");
                 MessageBox.Show($"Errore durante l'installazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -813,7 +827,7 @@ namespace WinHubX
                             dismounted = true;
                         }
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
                     {
                         Debug.WriteLine($"Smontaggio immagine Office non riuscito: {ex}");
                         MessageBox.Show($"Impossibile smontare l'immagine Office: {ex.Message}", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -872,7 +886,7 @@ namespace WinHubX
                     MessageBox.Show("Installazione completata, ma l'installer temporaneo non è stato rimosso.", "Avviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
             {
                 MessageBox.Show($"Errore durante l'installazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -1086,7 +1100,7 @@ namespace WinHubX
                 {
                     return;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedOfficeOperationFailure(ex))
                 {
                     Debug.WriteLine($"Caricamento catalogo Office non riuscito: {ex}");
                     if (!IsDisposed && !Disposing)
