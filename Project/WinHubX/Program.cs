@@ -7,11 +7,19 @@ namespace WinHubX
 {
     static class Program
     {
-        private static ThemeConfig Config = ThemeConfig.Load();
+        private static ThemeConfig? _config;
+        private static ThemeConfig Config => _config ??= ThemeConfig.Load();
 
         [STAThread]
         static void Main(string[] args)
         {
+            if (args.Length == 3 && args[0] == "--elevated-process-broker")
+            {
+                Environment.ExitCode = ElevatedProcessBrokerClient.RunHostAsync(args[1], args[2]).GetAwaiter().GetResult();
+                return;
+            }
+
+            _ = Config;
             // Configurazione WinForms moderna: DPI, stili visuali e rendering
             // vengono applicati prima di creare qualsiasi controllo.
             ApplicationConfiguration.Initialize();

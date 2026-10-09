@@ -17,6 +17,12 @@ namespace WinHubX.Forms.CreaISO
         public Dictionary<string, string> ParametriISO { get; set; } = new();
         private readonly Form1 form1;
         private CancellationTokenSource? _cancellationTokenSource;
+        private ElevatedProcessBrokerClient? _elevatedBroker;
+        private string WorkspaceRoot => _elevatedBroker?.WorkspaceRoot
+            ?? throw new InvalidOperationException("Workspace ISO non inizializzato.");
+        private string IsoWorkingRoot => Path.Combine(WorkspaceRoot, "ISO", "WinISO");
+        private string InstallMountRoot => Path.Combine(WorkspaceRoot, "Mount", "mount");
+        private string BootMountRoot => Path.Combine(WorkspaceRoot, "Mount", "boot");
         private readonly FormCreaISO formcreaiso;
 
         public FormCreazioneISO(Form1 form1, FormCreaISO formcreaiso)
@@ -59,6 +65,7 @@ namespace WinHubX.Forms.CreaISO
 
             try
             {
+                _elevatedBroker = await ElevatedProcessBrokerClient.StartAsync(token);
                 foreach (var (action, progress, delay) in steps)
                 {
                     await Task.Delay(delay, token);
@@ -83,8 +90,21 @@ namespace WinHubX.Forms.CreaISO
             }
             finally
             {
-                SetButtonsEnabled(true);
-                btnStopVerdi.Visible = false;
+                try
+                {
+                    if (_elevatedBroker is not null)
+                        await _elevatedBroker.DisposeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log($"Chiusura del broker UAC non riuscita: {ex.Message}");
+                }
+                finally
+                {
+                    _elevatedBroker = null;
+                    SetButtonsEnabled(true);
+                    btnStopVerdi.Visible = false;
+                }
             }
         }
 
@@ -189,7 +209,7 @@ namespace WinHubX.Forms.CreaISO
                 return;
             }
 
-            string extractPath = @"C:\ISO\WinISO";
+            string extractPath = IsoWorkingRoot;
             Directory.CreateDirectory(extractPath);
             progressBar2.Value = 0;
 
@@ -279,7 +299,7 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task VerificaWIMoESD(CancellationToken token)
         {
-            string sourcesPath = @"C:\ISO\WinISO\sources";
+            string sourcesPath = Path.Combine(IsoWorkingRoot, "sources");
             string esdPath = Path.Combine(sourcesPath, "install.esd");
             string wimPath = Path.Combine(sourcesPath, "install.wim");
             string wimProPath = Path.Combine(sourcesPath, "install_pro.wim");
@@ -369,22 +389,6 @@ namespace WinHubX.Forms.CreaISO
             }
         }
 
-        private static ProcessStartInfo CreateDismStartInfo(IEnumerable<string> arguments)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(Environment.SystemDirectory, "dism.exe"),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            foreach (string argument in arguments)
-                startInfo.ArgumentList.Add(argument);
-
-            return startInfo;
-        }
-
         private async Task<bool> EseguiDISM(IReadOnlyList<string> arguments, IProgress<int> progress, CancellationToken token)
         {
             try
@@ -392,53 +396,22 @@ namespace WinHubX.Forms.CreaISO
                 token.ThrowIfCancellationRequested();
                 UpdateProgressBar(0, 100);
 
-                using var dismProcess = new Process
+                ElevatedProcessBrokerClient broker = _elevatedBroker
+                    ?? throw new InvalidOperationException("Broker UAC per DISM non inizializzato.");
+                int exitCode = await broker.RunDismAsync(arguments, (line, isError) =>
                 {
-                    StartInfo = CreateDismStartInfo(arguments)
-                };
+                    if (isError)
+                        Log($"DISM: {line}");
+                    int? value = ParseProgress(line);
+                    if (value.HasValue)
+                        progress?.Report(value.Value);
+                }, token);
 
-                dismProcess.OutputDataReceived += (sender, args) =>
-                {
-                    if (!string.IsNullOrEmpty(args.Data))
-                    {
-                        int? value = ParseProgress(args.Data);
-                        if (value.HasValue)
-                            progress?.Report(value.Value);
-                    }
-                };
-
-                dismProcess.ErrorDataReceived += (sender, args) =>
-                {
-                    if (!string.IsNullOrEmpty(args.Data))
-                        Log($"Error: {args.Data}");
-                };
-
-                _ = dismProcess.Start();
-                dismProcess.BeginOutputReadLine();
-                dismProcess.BeginErrorReadLine();
-
-                try
-                {
-                    await dismProcess.WaitForExitAsync(token);
-                }
-                catch (OperationCanceledException)
-                {
-                    try
-                    {
-                        if (!dismProcess.HasExited)
-                            dismProcess.Kill(entireProcessTree: true);
-                    }
-                    catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-                    {
-                        Debug.WriteLine($"Impossibile terminare DISM dopo l’annullamento: {ex.Message}");
-                    }
-
-                    await dismProcess.WaitForExitAsync(CancellationToken.None);
-                    throw;
-                }
-
-                progress?.Report(100);
-                return dismProcess.ExitCode == 0;
+                if (exitCode == 0)
+                    progress?.Report(100);
+                else
+                    Log($"DISM è terminato con codice {exitCode}.");
+                return exitCode == 0;
             }
             catch (OperationCanceledException)
             {
@@ -465,41 +438,21 @@ namespace WinHubX.Forms.CreaISO
             progressBar2.Value = Math.Clamp(value, 0, progressBar2.MaxValue);
         }
 
-        private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunDismCapturingOutputAsync(
+        private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunDismCapturingOutputAsync(
             IReadOnlyList<string> arguments,
             CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            using Process process = Process.Start(CreateDismStartInfo(arguments))
-                ?? throw new InvalidOperationException("Impossibile avviare DISM.");
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
-
-            try
+            ElevatedProcessBrokerClient broker = _elevatedBroker
+                ?? throw new InvalidOperationException("Broker UAC per DISM non inizializzato.");
+            StringBuilder standardOutput = new();
+            StringBuilder standardError = new();
+            int exitCode = await broker.RunDismAsync(arguments, (line, isError) =>
             {
-                await process.WaitForExitAsync(token);
-            }
-            catch (OperationCanceledException)
-            {
-                try
-                {
-                    if (!process.HasExited)
-                        process.Kill(entireProcessTree: true);
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
-                {
-                    Debug.WriteLine($"Impossibile terminare DISM dopo l’annullamento: {ex.Message}");
-                }
-
-                await process.WaitForExitAsync(CancellationToken.None);
-                _ = await Task.WhenAll(outputTask, errorTask);
-                throw;
-            }
-
-            await Task.WhenAll(outputTask, errorTask);
-            string standardOutput = await outputTask;
-            string standardError = await errorTask;
-            return (process.ExitCode, standardOutput, standardError);
+                StringBuilder destination = isError ? standardError : standardOutput;
+                _ = destination.AppendLine(line);
+            }, token);
+            return (exitCode, standardOutput.ToString(), standardError.ToString());
         }
 
         private int? ParseProgress(string output)
@@ -516,8 +469,8 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task MontaggioInstall(CancellationToken token)
         {
-            string wimPath = @"C:\ISO\WinISO\sources\install.wim";
-            string mountDir = @"C:\mount\mount";
+                string wimPath = Path.Combine(IsoWorkingRoot, "sources", "install.wim");
+                string mountDir = InstallMountRoot;
 
             try
             {
@@ -573,11 +526,11 @@ namespace WinHubX.Forms.CreaISO
 
                 string sourceUnattend = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattend.xml");
                 string sourceUnattendStock = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattendstock.xml");
-                string destUnattend = @"C:\ISO\WinISO\sources\$OEM$\$$\Panther\unattend.xml";
-                string mountDir = @"C:\mount\mount";
-                string bootWimPath = @"C:\ISO\WinISO\sources\boot.wim";
-                string bootMountDir = @"C:\mount\boot";
-                string appraiserPath = @"C:\ISO\WinISO\sources\appraiserres.dll";
+                string destUnattend = Path.Combine(IsoWorkingRoot, "sources", "$OEM$", "$$", "Panther", "unattend.xml");
+                string mountDir = InstallMountRoot;
+                string bootWimPath = Path.Combine(IsoWorkingRoot, "sources", "boot.wim");
+                string bootMountDir = BootMountRoot;
+                string appraiserPath = Path.Combine(IsoWorkingRoot, "sources", "appraiserres.dll");
                 string appraiserBakPath = appraiserPath + ".bak";
                 string sourceUnattend10 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattend10.xml");
                 string sourceUnattendx32 = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\unattendx32.xml");
@@ -816,55 +769,14 @@ namespace WinHubX.Forms.CreaISO
             token.ThrowIfCancellationRequested();
             IReadOnlyList<string> parsedArguments = ParseRegistryCommand(command);
             Log($"[ESEGUITO] reg.exe {string.Join(' ', parsedArguments.Skip(1))}");
+            ElevatedProcessBrokerClient broker = _elevatedBroker
+                ?? throw new InvalidOperationException("Broker UAC del Registro non inizializzato.");
+            int exitCode = await broker.RunRegistryAsync(parsedArguments.Skip(1).ToArray(),
+                (line, isError) => Log(isError ? $"reg.exe: {line}" : line), token);
 
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = Path.Combine(Environment.SystemDirectory, "reg.exe"),
-                WorkingDirectory = Environment.SystemDirectory,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-            foreach (string argument in parsedArguments.Skip(1))
-                startInfo.ArgumentList.Add(argument);
-
-            using Process process = Process.Start(startInfo)
-                ?? throw new InvalidOperationException("Impossibile avviare reg.exe.");
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
-
-            try
-            {
-                await process.WaitForExitAsync(token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                try
-                {
-                if (!process.HasExited)
-                    process.Kill(entireProcessTree: true);
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or AggregateException)
-                {
-                    Debug.WriteLine($"WinHubX registry command cancellation failed: {ex.Message}");
-                }
-
-                await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-                _ = await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
-                throw;
-            }
-
-            string output = await outputTask.ConfigureAwait(false);
-            string error = await errorTask.ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(output))
-                Log(output.Trim());
-            if (!string.IsNullOrWhiteSpace(error))
-                Log(error.Trim());
-
-            if (process.ExitCode != 0)
+            if (exitCode != 0)
                 throw new InvalidOperationException(
-                    $"reg.exe è terminato con codice {process.ExitCode}: {string.Join(Environment.NewLine, new[] { output.Trim(), error.Trim() }.Where(static text => text.Length > 0))}");
+                    $"reg.exe è terminato con codice {exitCode}.");
         }
 
         private static IReadOnlyList<string> ParseRegistryCommand(string command)
@@ -926,92 +838,68 @@ namespace WinHubX.Forms.CreaISO
                     processo != "RimuoviProcessi")
                     return;
 
-                string mountPath = @"C:\mount\mount";
+                string mountPath = InstallMountRoot;
+                string[] packagePrefixes =
+                [
+                    "Microsoft-Windows-InternetExplorer-Optional-Package",
+                    "Microsoft-Windows-Kernel-LA57-FoD",
+                    "Microsoft-Windows-LanguageFeatures-Handwriting",
+                    "Microsoft-Windows-LanguageFeatures-OCR",
+                    "Microsoft-Windows-LanguageFeatures-Speech",
+                    "Microsoft-Windows-LanguageFeatures-TextToSpeech",
+                    "Microsoft-Windows-MediaPlayer-Package",
+                    "Microsoft-Windows-TabletPCMath-Package",
+                    "Microsoft-Windows-Wallpaper-Content-Extended-FoD"
+                ];
 
-                var pacchetti = new Dictionary<string, string>
-        {
-            { "InternetExplorer-Optional-Package",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-InternetExplorer-Optional-Package*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
+                var packageQuery = await RunDismCapturingOutputAsync(
+                    [$"/Image:{mountPath}", "/English", "/Get-Packages", "/Format:List"], token);
+                if (packageQuery.ExitCode != 0)
+                {
+                    Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "erroregenerico")}: DISM /Get-Packages è terminato con codice {packageQuery.ExitCode}. {packageQuery.StandardError}");
+                    return;
+                }
 
-            { "Windows-Kernel-LA57-FoD",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-Kernel-LA57-FoD*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "LanguageFeatures-Handwriting",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-LanguageFeatures-Handwriting*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "LanguageFeatures-OCR",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-LanguageFeatures-OCR*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "LanguageFeatures-Speech",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-LanguageFeatures-Speech*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "LanguageFeatures-TextToSpeech",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-LanguageFeatures-TextToSpeech*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "MediaPlayer-Package",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-MediaPlayer-Package*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "TabletPCMath-Package",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-TabletPCMath-Package*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-
-            { "Wallpaper-Content-Extended-FoD",
-              $@"$pkgs = Get-WindowsPackage -Path '{mountPath}' | Where-Object {{ $_.PackageName -like 'Microsoft-Windows-Wallpaper-Content-Extended-FoD*' }}; foreach ($pkg in $pkgs) {{ dism /English /image:{mountPath} /Remove-Package /PackageName:$($pkg.PackageName) /NoRestart }}" },
-        };
+                IReadOnlyList<string> installedPackages = ElevatedProcessCommandValidator
+                    .ParseInstalledPackageIdentities(packageQuery.StandardOutput);
 
                 progressBar2.Invoke(new Action(() =>
                 {
-                    progressBar2.MaxValue = pacchetti.Count;
+                    progressBar2.MaxValue = packagePrefixes.Length;
                     progressBar2.Value = 0;
                 }));
 
-                foreach (var (nome, comando) in pacchetti)
+                foreach (string packagePrefix in packagePrefixes)
                 {
-                    if (token.IsCancellationRequested)
+                    token.ThrowIfCancellationRequested();
+                    string[] matchingPackages = installedPackages
+                        .Where(identity => identity.StartsWith(packagePrefix, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "rimozionepacchetto")}: \"{packagePrefix}\"...");
+
+                    if (matchingPackages.Length == 0)
                     {
-                        string annullata = LanguageManager.GetTranslation("FormCreazioneISO", "operazioneannullatatoken");
-                        Log(annullata);
-                        break;
+                        Log($"{packagePrefix}: {LanguageManager.GetTranslation("FormCreazioneISO", "nessunpacchetto")}");
                     }
-
-                    Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "rimozionepacchetto")}: \"{nome}\"...");
-
-                    var psi = new ProcessStartInfo
+                    else
                     {
-                        FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-                    psi.ArgumentList.Add("-NoProfile");
-                    psi.ArgumentList.Add("-NonInteractive");
-                    psi.ArgumentList.Add("-ExecutionPolicy");
-                    psi.ArgumentList.Add("RemoteSigned");
-                    psi.ArgumentList.Add("-Command");
-                    psi.ArgumentList.Add($"{comando}; $pkgs.Count");
-
-                    using (var process = Process.Start(psi)
-                        ?? throw new InvalidOperationException("Impossibile avviare PowerShell."))
-                    {
-                        string output = await process.StandardOutput.ReadToEndAsync();
-                        string error = await process.StandardError.ReadToEndAsync();
-                        await process.WaitForExitAsync(token);
-
-                        int.TryParse(output.Trim().Split('\n').LastOrDefault()?.Trim(), out int removedCount);
-
-                        if (removedCount > 0)
-                            Log($"{nome}: {LanguageManager.GetTranslation("FormCreazioneISO", "rimozionesuccesso")}");
-                        else
-                            Log($"{nome}: {LanguageManager.GetTranslation("FormCreazioneISO", "nessunpacchetto")}");
-
-                        progressBar2.Invoke(new Action(() =>
+                        foreach (string packageIdentity in matchingPackages)
                         {
-                            if (progressBar2.Value < progressBar2.MaxValue)
-                                progressBar2.Value += 1;
-                        }));
+                            token.ThrowIfCancellationRequested();
+                            var removal = await RunDismCapturingOutputAsync(
+                                [$"/Image:{mountPath}", "/English", "/Remove-Package", $"/PackageName:{packageIdentity}", "/NoRestart"], token);
+                            if (removal.ExitCode == 0)
+                                Log($"{packageIdentity}: {LanguageManager.GetTranslation("FormCreazioneISO", "rimozionesuccesso")}");
+                            else
+                                Log($"{packageIdentity}: DISM è terminato con codice {removal.ExitCode}. {removal.StandardError}");
+                        }
                     }
 
-                    await Task.Delay(500, token);
+                    progressBar2.Invoke(new Action(() =>
+                    {
+                        if (progressBar2.Value < progressBar2.MaxValue)
+                            progressBar2.Value += 1;
+                    }));
                 }
 
                 Log(LanguageManager.GetTranslation("FormCreazioneISO", "rimozionepacchetticompletata"));
@@ -1030,7 +918,7 @@ namespace WinHubX.Forms.CreaISO
         {
             try
             {
-                string targetDir = @"C:\mount\mount\Windows";
+                string targetDir = Path.Combine(InstallMountRoot, "Windows");
 
                 progressBar2.Invoke(new Action(() =>
                 {
@@ -1133,7 +1021,7 @@ namespace WinHubX.Forms.CreaISO
                                 if (!string.IsNullOrEmpty(driverFolder))
                                 {
                                     var driverResult = await RunDismCapturingOutputAsync(
-                                        ["/Image:C:\\Mount\\mount", "/Add-Driver", $"/Driver:{driverFolder}", "/Recurse"], token);
+                                        [$"/Image:{InstallMountRoot}", "/Add-Driver", $"/Driver:{driverFolder}", "/Recurse"], token);
 
                                     if (driverResult.ExitCode == 0)
                                         Log($"{LanguageManager.GetTranslation("FormCreazioneISO", "driverintegratocartella")}: {driverFolder}");
@@ -1145,8 +1033,8 @@ namespace WinHubX.Forms.CreaISO
                             }
                             else if (driverPref == "DriverQuestoPC")
                             {
-                                string tempDriverDir = Path.Combine(Path.GetTempPath(), "DriverBackup_" + Guid.NewGuid().ToString("N"));
-                                Directory.CreateDirectory(tempDriverDir);
+                                    string tempDriverDir = Path.Combine(WorkspaceRoot, "DriverExport", Guid.NewGuid().ToString("N"));
+                                    Directory.CreateDirectory(tempDriverDir);
 
                                 try
                                 {
@@ -1161,7 +1049,7 @@ namespace WinHubX.Forms.CreaISO
                                     if (exportResult.ExitCode == 0)
                                     {
                                         var addResult = await RunDismCapturingOutputAsync(
-                                            ["/Image:C:\\Mount\\mount", "/Add-Driver", $"/Driver:{tempDriverDir}", "/Recurse"], token);
+                                            [$"/Image:{InstallMountRoot}", "/Add-Driver", $"/Driver:{tempDriverDir}", "/Recurse"], token);
 
                                         if (addResult.ExitCode == 0)
                                             Log(LanguageManager.GetTranslation("FormCreazioneISO", "driverintegrazionesistema"));
@@ -1295,7 +1183,7 @@ namespace WinHubX.Forms.CreaISO
             }
 
             string sourceFolder = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse");
-            string targetFolder = @"C:\mount\mount\Windows";
+            string targetFolder = Path.Combine(InstallMountRoot, "Windows");
 
             Invoke(new Action(() =>
             {
@@ -1354,7 +1242,7 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task CreazioneInstall(CancellationToken token)
         {
-            string mountDir = @"C:\mount\mount";
+            string mountDir = InstallMountRoot;
 
             try
             {
@@ -1412,7 +1300,7 @@ namespace WinHubX.Forms.CreaISO
 
         private async Task CreazioneISO(CancellationToken token)
         {
-            string sourcePath = @"C:\ISO\WinISO";
+            string sourcePath = IsoWorkingRoot;
             string isoOutputPath = formcreaiso.labelpercorso.Text;
             string oscdimgPath = Path.Combine(Path.GetTempPath(), @"RisorseCreaISO\Risorse\oscdimg");
             string destinationPath = isoOutputPath;
@@ -1497,10 +1385,8 @@ namespace WinHubX.Forms.CreaISO
 
                         AggiornaProgress(1);
 
-                        if (Directory.Exists(@"C:\ISO"))
-                            Directory.Delete(@"C:\ISO", true);
-                        if (Directory.Exists(@"C:\mount"))
-                            Directory.Delete(@"C:\mount", true);
+                        if (Directory.Exists(WorkspaceRoot))
+                            Directory.Delete(WorkspaceRoot, recursive: true);
 
                         AggiornaProgress(1);
                         Log(LanguageManager.GetTranslation("FormCreazioneISO", "creazioneisocompletata"));
