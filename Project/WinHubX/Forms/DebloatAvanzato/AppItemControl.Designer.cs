@@ -8,9 +8,10 @@ namespace WinHubX.Forms.DebloatAvanzato
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                _toolTip.Dispose();
+                components?.Dispose();
             }
             base.Dispose(disposing);
         }
