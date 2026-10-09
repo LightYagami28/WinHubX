@@ -8,6 +8,18 @@ namespace WinHubX.Forms.Settaggi
 {
     public partial class FormDefender : Form, IImportedSettingsForm
     {
+        private static bool IsExpectedDefenderOperationFailure(Exception exception) =>
+            exception is IOException
+                or UnauthorizedAccessException
+                or System.Security.SecurityException
+                or System.ComponentModel.Win32Exception
+                or System.Runtime.InteropServices.COMException
+                or System.Management.ManagementException
+                or InvalidOperationException
+                or OperationCanceledException
+                or TimeoutException
+                or ArgumentException;
+
         private sealed record DefenderSelection(HashSet<string> Disable, HashSet<string> Enable);
 
         private readonly Form1 form1;
@@ -216,7 +228,7 @@ namespace WinHubX.Forms.Settaggi
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
                 ApplyPendingRegistryMutations();
             }
-            catch (Exception)
+            catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
             {
                 pendingRegistryMutations = null;
                 MessageBox.Show("Si è verificato un errore durante il ripristino. Controlla i permessi o il registro eventi.",
@@ -337,7 +349,7 @@ namespace WinHubX.Forms.Settaggi
                 {
                     SetMpPreference("EnableControlledFolderAccess", true);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -356,7 +368,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", RegistryView.Registry64);
                     DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     _ = MessageBox.Show($"An error occurred: {ex.Message}");
                 }
@@ -391,7 +403,7 @@ namespace WinHubX.Forms.Settaggi
 
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -410,7 +422,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 1, RegistryView.Registry64);
                     SetDwordRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", 1, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -429,7 +441,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry64);
                     SetDwordRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", 1, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -448,7 +460,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 0, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", 0, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -467,7 +479,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", RegistryView.Registry64);
                     DeleteRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -486,7 +498,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 0, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", 0, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -505,7 +517,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", 0, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -524,7 +536,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", 0, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -545,7 +557,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -576,7 +588,7 @@ namespace WinHubX.Forms.Settaggi
                         DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "SecurityHealth", RegistryView.Registry32);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -605,7 +617,7 @@ namespace WinHubX.Forms.Settaggi
                         GrantRegistryTakeOwnershipRight(path, RegistryView.Registry32);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -620,7 +632,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -639,7 +651,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -674,7 +686,7 @@ namespace WinHubX.Forms.Settaggi
 
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -693,7 +705,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", RegistryView.Registry64);
                     DeleteRegistryValue(@"Software\Microsoft\Windows Security Health\State", "AccountProtection_MicrosoftAccount_Disconnected", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -712,7 +724,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", RegistryView.Registry64);
                     DeleteRegistryValue(@"Software\Microsoft\Windows\CurrentVersion\Policies\Attachments", "SaveZoneInformation", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -731,7 +743,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", RegistryView.Registry64);
                     DeleteRegistryValue(@"SOFTWARE\Microsoft\Windows Script Host\Settings", "Enabled", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -752,7 +764,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry32);
                     SetDwordRegistryValue(@"SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319", "SchUseStrongCrypto", 1, RegistryView.Registry64);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -774,7 +786,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry64);
                     SetDwordRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", 1, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -793,7 +805,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", RegistryView.Registry64);
                     DeleteRegistryValue(@"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "AutoShareWks", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -812,7 +824,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", RegistryView.Registry64);
                     DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\WindowsFirewall\StandardProfile", "EnableFirewall", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -834,7 +846,7 @@ namespace WinHubX.Forms.Settaggi
                     DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", RegistryView.Registry64);
                     DeleteRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -870,7 +882,7 @@ namespace WinHubX.Forms.Settaggi
                         SetStringRegistryValue(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "SecurityHealth", @"%windir%\system32\SecurityHealthSystray.exe", RegistryView.Registry32);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -899,7 +911,7 @@ namespace WinHubX.Forms.Settaggi
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\Sense", "Start", 3, RegistryView.Registry32);
                     SetDwordRegistryValue(@"SYSTEM\CurrentControlSet\Services\Sense", "AutorunsDisabled", 4, RegistryView.Registry32);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
                 {
                     failures.Add(ex.GetBaseException().Message);
                 }
@@ -913,7 +925,7 @@ namespace WinHubX.Forms.Settaggi
             {
                 ApplyPendingRegistryMutations();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
             {
                 failures.Add($"Modifiche Registro Defender (UAC): {ex.GetBaseException().Message}");
             }
@@ -954,7 +966,7 @@ namespace WinHubX.Forms.Settaggi
                 SetDwordRegistryValue(@"SOFTWARE\Policies\Microsoft\Windows Defender\Spynet", "SubmitSamplesConsent", 2, RegistryView.Registry32);
                 ApplyPendingRegistryMutations();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedDefenderOperationFailure(ex))
             {
                 pendingRegistryMutations = null;
                 _ = MessageBox.Show(
