@@ -47,8 +47,9 @@ namespace WinHubX.Forms.Settaggi
             }
 
             progressBar1.Value = 0;
-            cancellationTokenSource = new CancellationTokenSource();
-            CancellationToken token = cancellationTokenSource.Token;
+            using CancellationTokenSource scanCancellation = new();
+            cancellationTokenSource = scanCancellation;
+            CancellationToken token = scanCancellation.Token;
             btn_CreaISOVerdi.Enabled = false;
             label3.Visible = false;
 
@@ -79,10 +80,8 @@ namespace WinHubX.Forms.Settaggi
             {
                 label3.Visible = false;
                 countdownTimer?.Stop();
-                countdownTimer?.Dispose();
-                countdownTimer = null;
-                cancellationTokenSource?.Dispose();
-                cancellationTokenSource = null;
+                if (ReferenceEquals(cancellationTokenSource, scanCancellation))
+                    cancellationTokenSource = null;
                 btn_CreaISOVerdi.Enabled = true;
             }
         }
@@ -303,22 +302,22 @@ namespace WinHubX.Forms.Settaggi
             richTextBox1.Clear();
             cancellationTokenSource?.CancelAfter(TimeSpan.FromMinutes(testDurationMinutes));
 
-            if (countdownTimer == null)
-            {
-                countdownTimer = new System.Windows.Forms.Timer { Interval = 1000 };
-                countdownTimer.Tick += UpdateCountdown;
-            }
-
-            countdownTimer.Start();
+            using System.Windows.Forms.Timer scanTimer = new() { Interval = 1000 };
+            countdownTimer = scanTimer;
+            scanTimer.Tick += UpdateCountdown;
             try
             {
+                scanTimer.Start();
                 await RunStressTestsContinuously(token);
                 token.ThrowIfCancellationRequested();
                 labeltempo.Text = "Completato!";
             }
             finally
             {
-                countdownTimer.Stop();
+                scanTimer.Stop();
+                scanTimer.Tick -= UpdateCountdown;
+                if (ReferenceEquals(countdownTimer, scanTimer))
+                    countdownTimer = null;
                 progressBar1.Visible = false;
             }
         }

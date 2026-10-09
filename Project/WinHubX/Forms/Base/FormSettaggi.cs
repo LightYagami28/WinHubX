@@ -351,21 +351,23 @@ namespace WinHubX.Forms.Base
             {
                 foreach (Form form in createForms.Select(static createForm => (Form)createForm()))
                 {
-                    form.TopLevel = false;
-                    form.FormBorderStyle = FormBorderStyle.None;
-                    form.Dock = DockStyle.Fill;
-                    panel70.Controls.Add(form);
-                    form.Show();
+                    using (form)
+                    {
+                        form.TopLevel = false;
+                        form.FormBorderStyle = FormBorderStyle.None;
+                        form.Dock = DockStyle.Fill;
+                        panel70.Controls.Add(form);
+                        form.Show();
 
-                    try
-                    {
-                        await ((IImportedSettingsForm)form).ApplyImportedSettingsAsync();
-                    }
-                    finally
-                    {
-                        panel70.Controls.Remove(form);
-                        form.Close();
-                        form.Dispose();
+                        try
+                        {
+                            await ((IImportedSettingsForm)form).ApplyImportedSettingsAsync();
+                        }
+                        finally
+                        {
+                            panel70.Controls.Remove(form);
+                            form.Close();
+                        }
                     }
                 }
             }
