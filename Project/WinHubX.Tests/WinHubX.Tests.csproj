@@ -42,6 +42,8 @@
     <Compile Include="..\WinHubX\Impostazioni\IsoResourceWorkspace.cs" Link="Impostazioni\IsoResourceWorkspace.cs" />
     <Compile Include="..\WinHubX\Impostazioni\HardwareSensorReading.cs" Link="Impostazioni\HardwareSensorReading.cs" />
     <Compile Include="..\WinHubX\Impostazioni\NetworkUsageCalculator.cs" Link="Impostazioni\NetworkUsageCalculator.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\NetworkInterfaceRefreshPolicy.cs" Link="Impostazioni\NetworkInterfaceRefreshPolicy.cs" />
+    <Compile Include="..\WinHubX\Impostazioni\TempDirectorySizeCalculator.cs" Link="Impostazioni\TempDirectorySizeCalculator.cs" />
     <Compile Include="..\WinHubX\Impostazioni\ThemeConfig.cs" Link="Impostazioni\ThemeConfig.cs" />
     <Compile Include="..\WinHubX\Impostazioni\LanguageManager.cs" Link="Impostazioni\LanguageManager.cs" />
   </ItemGroup>

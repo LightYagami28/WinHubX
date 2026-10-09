@@ -18,6 +18,8 @@ namespace WinHubX.Forms.Base
         private const string RegistryKey = @"Software\WinHubX-Monitor";
         private const string RegistryValueMonitoraggio = "IsMonitoringOn";
         private const string RegistryValueTemperature = "isTemperatureOn";
+        private static readonly TimeSpan TempDirectoryRefreshInterval = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan NetworkInterfaceRefreshInterval = TimeSpan.FromMinutes(1);
         private readonly string monitoraggioPath =
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "WinHubX", "Impostazioni", "Monitoraggio.json");
@@ -34,6 +36,9 @@ namespace WinHubX.Forms.Base
         private long lastBytesSent;
         private long lastBytesReceived;
         private double networkCapacityKB;
+        private long _lastNetworkInterfaceRefreshTimestamp;
+        private int _networkTopologyChanged;
+        private int _networkChangeEventsSubscribed;
 
 
         private readonly Form1 _mainForm;
@@ -418,7 +423,9 @@ namespace WinHubX.Forms.Base
                     try
                     {
                         // La scansione ricorsiva può attraversare migliaia di file: mai eseguirla sul thread UI.
-                        long totalBytes = await Task.Run(() => GetDirectorySize(tempPath, _monitoringToken), _monitoringToken);
+                        long totalBytes = await Task.Run(
+                            () => TempDirectorySizeCalculator.Calculate(tempPath, _monitoringToken),
+                            _monitoringToken);
                         if (_monitoringCancellation.IsCancellationRequested || IsDisposed || !IsHandleCreated)
                         {
                             return;
@@ -442,7 +449,9 @@ namespace WinHubX.Forms.Base
                         Debug.WriteLine($"Lettura cartella temporanea non riuscita: {ex}");
                     }
 
-                    await Task.Delay(10000, _monitoringToken);
+                    // La dimensione TEMP richiede una scansione ricorsiva; aggiornarla ogni minuto evita
+                    // di saturare un core mentre la scheda è aperta senza rallentare gli altri indicatori.
+                    await Task.Delay(TempDirectoryRefreshInterval, _monitoringToken);
                 }
             }
             catch (OperationCanceledException) when (_monitoringCancellation.IsCancellationRequested)
@@ -462,59 +471,6 @@ namespace WinHubX.Forms.Base
 
             return 2; 
         }
-
-        private long GetDirectorySize(string folderPath, CancellationToken cancellationToken)
-        {
-            long size = 0;
-            var pendingDirectories = new Stack<string>();
-            pendingDirectories.Push(folderPath);
-
-            while (pendingDirectories.TryPop(out string? currentDirectory))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                try
-                {
-                    foreach (string filePath in Directory.EnumerateFiles(currentDirectory))
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        try
-                        {
-                            size += new FileInfo(filePath).Length;
-                        }
-                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                        {
-                            Debug.WriteLine($"Dimensione file TEMP non leggibile: {ex.Message}");
-                        }
-                    }
-
-                    foreach (string subdirectory in Directory.EnumerateDirectories(currentDirectory))
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        try
-                        {
-                            if ((File.GetAttributes(subdirectory) & FileAttributes.ReparsePoint) == 0)
-                            {
-                                pendingDirectories.Push(subdirectory);
-                            }
-                        }
-                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                        {
-                            Debug.WriteLine($"Cartella TEMP non leggibile: {ex.Message}");
-                        }
-                    }
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    Debug.WriteLine($"Scansione cartella TEMP non riuscita: {ex.Message}");
-                }
-            }
-
-            return size;
-        }
-
 
         private async Task StartDiscoMonitoring()
         {
@@ -754,6 +710,7 @@ namespace WinHubX.Forms.Base
         {
             try
             {
+                SubscribeToNetworkChanges();
                 RefreshNetworkInterfaces();
 
                 if (networkInterfaces.Length == 0)
@@ -791,7 +748,17 @@ namespace WinHubX.Forms.Base
         private async Task UpdateNetworkStats()
         {
             string[] previousInterfaceIds = networkInterfaceIds;
-            RefreshNetworkInterfaces();
+            long refreshCheckTimestamp = Stopwatch.GetTimestamp();
+            bool networkChangeObserved = Interlocked.Exchange(ref _networkTopologyChanged, 0) != 0;
+            if (NetworkInterfaceRefreshPolicy.ShouldRefresh(
+                    networkChangeObserved,
+                    _lastNetworkInterfaceRefreshTimestamp,
+                    refreshCheckTimestamp,
+                    NetworkInterfaceRefreshInterval))
+            {
+                RefreshNetworkInterfaces();
+            }
+
             long currentBytesSent = 0;
             long currentBytesReceived = 0;
 
@@ -843,6 +810,39 @@ namespace WinHubX.Forms.Base
             // NetworkInterface.Speed è espresso in bit/s; convertiamo la capacità aggregata in KB/s.
             networkCapacityKB = NetworkUsageCalculator.CalculateCapacityKilobytesPerSecond(
                 networkInterfaces.Select(n => n.Speed));
+            _lastNetworkInterfaceRefreshTimestamp = Stopwatch.GetTimestamp();
+        }
+
+        private void SubscribeToNetworkChanges()
+        {
+            if (Interlocked.CompareExchange(ref _networkChangeEventsSubscribed, 1, 0) != 0)
+            {
+                return;
+            }
+
+            NetworkChange.NetworkAddressChanged += NetworkAddressChanged;
+            NetworkChange.NetworkAvailabilityChanged += NetworkAvailabilityChanged;
+        }
+
+        private void UnsubscribeFromNetworkChanges()
+        {
+            if (Interlocked.Exchange(ref _networkChangeEventsSubscribed, 0) == 0)
+            {
+                return;
+            }
+
+            NetworkChange.NetworkAddressChanged -= NetworkAddressChanged;
+            NetworkChange.NetworkAvailabilityChanged -= NetworkAvailabilityChanged;
+        }
+
+        private void NetworkAddressChanged(object? sender, EventArgs e)
+        {
+            Interlocked.Exchange(ref _networkTopologyChanged, 1);
+        }
+
+        private void NetworkAvailabilityChanged(object? sender, NetworkAvailabilityEventArgs e)
+        {
+            Interlocked.Exchange(ref _networkTopologyChanged, 1);
         }
 
         private double CalculateNetworkUsage(double currentSpeedKB)
@@ -1046,6 +1046,7 @@ namespace WinHubX.Forms.Base
 
         private async Task CleanupResourcesCoreAsync()
         {
+            UnsubscribeFromNetworkChanges();
             _ramMonitorTimer?.Stop();
             try
             {
