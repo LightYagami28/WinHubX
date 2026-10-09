@@ -375,10 +375,10 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
 
             NamedPipeServerStream pipe = pipeOwner.Value;
             await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            StreamReader reader = new(pipe, leaveOpen: true);
-            readerOwner.Set(reader);
-            StreamWriter writer = new(pipe, leaveOpen: true) { AutoFlush = true };
-            writerOwner.Set(writer);
+            readerOwner.Set(new StreamReader(pipe, leaveOpen: true));
+            writerOwner.Set(new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true });
+            StreamReader reader = readerOwner.Value;
+            StreamWriter writer = writerOwner.Value;
             await writer.WriteLineAsync(JsonSerializer.Serialize(new BrokerHandshake(token, workspaceRoot, userSid.Value)).AsMemory(), cancellationToken)
                 .ConfigureAwait(false);
             string? acknowledgement = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
@@ -490,14 +490,40 @@ internal sealed class ElevatedProcessBrokerClient : IAsyncDisposable
                 Debug.WriteLine($"Impossibile terminare il broker privilegiato: {killException.Message}");
             }
         }
-        finally
+        await DisposeResourcesAsync().ConfigureAwait(false);
+    }
+
+    private async ValueTask DisposeResourcesAsync()
+    {
+        try
         {
             _reader.Dispose();
-            _writer.Dispose();
-            await _pipe.DisposeAsync().ConfigureAwait(false);
-            _brokerProcess.Dispose();
-            _requestGate.Dispose();
         }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
+            Debug.WriteLine($"Chiusura reader del broker fallita: {ex.Message}");
+        }
+
+        try
+        {
+            await _writer.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
+            Debug.WriteLine($"Chiusura writer del broker fallita: {ex.Message}");
+        }
+
+        try
+        {
+            await _pipe.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (IOException ex)
+        {
+            Debug.WriteLine($"Chiusura pipe del broker fallita: {ex.Message}");
+        }
+
+        _brokerProcess.Dispose();
+        _requestGate.Dispose();
     }
 
     internal static async Task<int> RunHostAsync(string pipeName, string expectedToken)

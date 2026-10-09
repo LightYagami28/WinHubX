@@ -150,13 +150,13 @@ namespace WinHubX.Forms.Base
         {
             string comboxstr = comboBox1.Text.Trim();
             bool selezioniSistemaValide =
-                (RemProcRad.Checked || NotRemProcRad.Checked) &&
-                (DebAppRad.Checked || StockAppRad.Checked) &&
-                (NotDisWinDefRad.Checked || DisWindDefRad.Checked);
+                IsAnySelected(RemProcRad, NotRemProcRad) &&
+                IsAnySelected(DebAppRad, StockAppRad) &&
+                IsAnySelected(NotDisWinDefRad, DisWindDefRad);
             bool selezioniImmagineValide =
-                (NotRemEdgeRad.Checked || RemEdgeRad.Checked) &&
-                (IsoLite.Checked || IsoLavorWork.Checked || IsoGaming.Checked) &&
-                (DriverCartella.Checked || DriverQuestoPC.Checked || NoDriver.Checked);
+                IsAnySelected(NotRemEdgeRad, RemEdgeRad) &&
+                IsAnySelected(IsoLite, IsoLavorWork, IsoGaming) &&
+                IsAnySelected(DriverCartella, DriverQuestoPC, NoDriver);
             bool selezioniValide = selezioniSistemaValide && selezioniImmagineValide;
             if (comboxstr.Contains("10"))
             {
@@ -297,6 +297,11 @@ namespace WinHubX.Forms.Base
             nuovaForm.Show();
             _resourceSessionTransferred = true;
             Close();
+        }
+
+        private static bool IsAnySelected(params RadioButton[] options)
+        {
+            return options.Any(static option => option.Checked);
         }
 
         private void OnFormClosedCleanupResourceSession(object? sender, FormClosedEventArgs e)
