@@ -15,46 +15,56 @@ public static class TempDirectorySizeCalculator
         while (pendingDirectories.TryPop(out DirectoryInfo? currentDirectory))
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-                foreach (FileSystemInfo entry in currentDirectory.EnumerateFileSystemInfos())
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    try
-                    {
-                        FileAttributes attributes = entry.Attributes;
-                        bool isDirectory = (attributes & FileAttributes.Directory) != 0;
-                        bool isReparsePoint = (attributes & FileAttributes.ReparsePoint) != 0;
-
-                        if (isDirectory)
-                        {
-                            if (!isReparsePoint)
-                            {
-                                pendingDirectories.Push((DirectoryInfo)entry);
-                            }
-
-                            continue;
-                        }
-
-                        if (!isReparsePoint && entry is FileInfo file)
-                        {
-                            size += file.Length;
-                        }
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        Debug.WriteLine($"Elemento TEMP non leggibile: {ex.Message}");
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Debug.WriteLine($"Scansione cartella TEMP non riuscita: {ex.Message}");
-            }
+            size += CalculateDirectorySize(currentDirectory, pendingDirectories, cancellationToken);
         }
 
         return size;
+    }
+
+    private static long CalculateDirectorySize(
+        DirectoryInfo directory,
+        Stack<DirectoryInfo> pendingDirectories,
+        CancellationToken cancellationToken)
+    {
+        long size = 0;
+        try
+        {
+            foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                size += GetEntrySize(entry, pendingDirectories);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Debug.WriteLine($"Scansione cartella TEMP non riuscita: {ex.Message}");
+        }
+
+        return size;
+    }
+
+    private static long GetEntrySize(FileSystemInfo entry, Stack<DirectoryInfo> pendingDirectories)
+    {
+        try
+        {
+            FileAttributes attributes = entry.Attributes;
+            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+            bool isReparsePoint = (attributes & FileAttributes.ReparsePoint) != 0;
+
+            if (isDirectory)
+            {
+                if (!isReparsePoint)
+                    pendingDirectories.Push((DirectoryInfo)entry);
+
+                return 0;
+            }
+
+            return !isReparsePoint && entry is FileInfo file ? file.Length : 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Debug.WriteLine($"Elemento TEMP non leggibile: {ex.Message}");
+            return 0;
+        }
     }
 }

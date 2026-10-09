@@ -133,6 +133,7 @@ namespace WinHubX.Forms.Personalizzazione_office
 
                             if (!string.IsNullOrEmpty(basePath))
                             {
+                                HashSet<string>? nestedExecutableNames = null;
                                 foreach (var app in possibleApps)
                                 {
                                     string appName = GetFriendlyAppName(app);
@@ -145,8 +146,8 @@ namespace WinHubX.Forms.Personalizzazione_office
                                     }
                                     else
                                     {
-                                        string? foundPath = SearchFileInDirectory(basePath, exeName);
-                                        if (!string.IsNullOrEmpty(foundPath))
+                                        nestedExecutableNames ??= FindOfficeExecutableNames(basePath);
+                                        if (nestedExecutableNames.Contains(exeName))
                                         {
                                             apps[appName.ToLower()] = appName;
                                         }
@@ -318,17 +319,28 @@ namespace WinHubX.Forms.Personalizzazione_office
             return exeMap.ContainsKey(appCode) ? exeMap[appCode] : $"{appCode}.EXE";
         }
 
-        private string? SearchFileInDirectory(string directory, string fileName)
+        private static HashSet<string> FindOfficeExecutableNames(string directory)
         {
+            var executableNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                var files = Directory.GetFiles(directory, fileName, SearchOption.AllDirectories);
-                return files.Length > 0 ? files[0] : null;
+                var options = new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true,
+                    AttributesToSkip = FileAttributes.ReparsePoint,
+                    ReturnSpecialDirectories = false
+                };
+
+                foreach (string path in Directory.EnumerateFiles(directory, "*.exe", options))
+                    executableNames.Add(Path.GetFileName(path));
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
-                return null;
+                Debug.WriteLine($"Scansione eseguibili Office in '{directory}' incompleta: {ex}");
             }
+
+            return executableNames;
         }
 
         private bool IsOfficeWithPublisher()
@@ -744,10 +756,6 @@ namespace WinHubX.Forms.Personalizzazione_office
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning
                 );
-            }
-            if (!string.IsNullOrEmpty(product))
-            {
-                DisplayInstalledOfficeApps(product);
             }
         }
     }
