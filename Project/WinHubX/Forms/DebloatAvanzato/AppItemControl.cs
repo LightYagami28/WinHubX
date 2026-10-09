@@ -43,7 +43,8 @@ namespace WinHubX.Forms.DebloatAvanzato
             }
 
             // Tooltip
-            ToolTip tooltip = new ToolTip();
+            components ??= new System.ComponentModel.Container();
+            ToolTip tooltip = new(components);
             tooltip.SetToolTip(lblNome, NomeTecnico);
 
             // Tema
