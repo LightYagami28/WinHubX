@@ -95,7 +95,7 @@ namespace WinHubX.Forms.Base
 
                 _initializationTask = Task.Run(InitializeComputer, _monitoringToken);
                 await _initializationTask;
-                if (_shutdownRequested || IsDisposed || !IsHandleCreated)
+                if (_monitoringToken.IsCancellationRequested || IsDisposed || !IsHandleCreated)
                 {
                     return;
                 }
