@@ -42,7 +42,7 @@ namespace WinHubX.Forms.CreaISO
         }
         private async void FormCreazioneISO_Shown(object? sender, EventArgs e)
         {
-            var cancellationTokenSource = new CancellationTokenSource();
+            using CancellationTokenSource cancellationTokenSource = new();
             _cancellationTokenSource = cancellationTokenSource;
             try
             {
@@ -57,7 +57,6 @@ namespace WinHubX.Forms.CreaISO
             {
                 if (ReferenceEquals(_cancellationTokenSource, cancellationTokenSource))
                     _cancellationTokenSource = null;
-                cancellationTokenSource.Dispose();
             }
         }
 

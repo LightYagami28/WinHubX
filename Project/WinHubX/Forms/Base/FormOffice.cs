@@ -602,11 +602,12 @@ namespace WinHubX
             string? tempFile = null;
             string? savePath = null;
             SetDownloadButtonStyle(true);
-            _cts = new CancellationTokenSource();
+            using CancellationTokenSource downloadCancellation = new();
+            _cts = downloadCancellation;
 
             try
             {
-                _cts.Token.ThrowIfCancellationRequested();
+                downloadCancellation.Token.ThrowIfCancellationRequested();
 
                 var office = officeVersions.FirstOrDefault(o => o.Nome == selectedOfficeVersion);
                 if (office == null)
@@ -647,8 +648,8 @@ namespace WinHubX
                     if (!salva && !installa)
                         throw new Exception("Seleziona almeno una delle opzioni: Salva o Installa.");
                     savePath = Path.Combine(percorsoCompleto, Path.GetFileName(url));
-                    await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, savePath, _cts.Token);
-                    _cts.Token.ThrowIfCancellationRequested();
+                    await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, savePath, downloadCancellation.Token);
+                    downloadCancellation.Token.ThrowIfCancellationRequested();
                     if (installa)
                     {
                         WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = savePath;
@@ -680,8 +681,8 @@ namespace WinHubX
 
                     string cleanFileName = $"OfficeSetup_{product}_{platform}_{lang}_{version}.exe";
                     tempFile = Path.Combine(tempDir, cleanFileName);
-                    await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, tempFile, _cts.Token);
-                    _cts.Token.ThrowIfCancellationRequested();
+                    await WinHubX.Impostazioni.DownloadManager.DownloadFileAsync(url, tempFile, downloadCancellation.Token);
+                    downloadCancellation.Token.ThrowIfCancellationRequested();
                     WinHubX.Impostazioni.OfficeSettings.LastDownloadedFile = tempFile;
                     WinHubX.Impostazioni.OfficeSettings.HasPendingInstallation = true;
                     WinHubX.Impostazioni.OfficeSettings.InstallationType = "Online";
@@ -735,8 +736,8 @@ namespace WinHubX
                 }
                 finally
                 {
-                    _cts?.Dispose();
-                    _cts = null;
+                    if (ReferenceEquals(_cts, downloadCancellation))
+                        _cts = null;
                 }
             }
         }

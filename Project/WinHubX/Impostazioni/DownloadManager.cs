@@ -55,16 +55,17 @@
 
             try
             {
-                globalCts = new CancellationTokenSource();
+                using CancellationTokenSource operationCts = new();
+                globalCts = operationCts;
                 lock (_stateLock)
                 {
-                    _globalCts = globalCts;
+                    _globalCts = operationCts;
                     IsDownloading = true;
                     ProgressPercentage = 0;
                     _totalDownloadedBytes = 0;
                 }
 
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, globalCts.Token);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token, operationCts.Token);
                 CancellationToken linkedToken = linkedCts.Token;
                 stateAnnounced = true;
                 PublishDownloadState(true);
@@ -112,7 +113,6 @@
                         IsDownloading = false;
                         if (ReferenceEquals(_globalCts, globalCts))
                             _globalCts = null;
-                        globalCts?.Dispose();
                     }
 
                     if (stateAnnounced)
