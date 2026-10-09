@@ -521,13 +521,15 @@ namespace WinHubX.Forms.Base
             {
                 using var searcher = new ManagementObjectSearcher("SELECT ProductType FROM Win32_OperatingSystem");
                 using ManagementObjectCollection operatingSystems = searcher.Get();
-                foreach (ManagementObject os in operatingSystems)
+                ManagementObject? operatingSystem = operatingSystems.Cast<ManagementObject>().FirstOrDefault();
+                if (operatingSystem is null)
                 {
-                    using (os)
-                        return Convert.ToInt32(os["ProductType"]) != 1;
+                    Debug.WriteLine("WMI non ha restituito Win32_OperatingSystem; DefendNot viene bloccato per sicurezza.");
+                    return true;
                 }
-                Debug.WriteLine("WMI non ha restituito Win32_OperatingSystem; DefendNot viene bloccato per sicurezza.");
-                return true;
+
+                using (operatingSystem)
+                    return Convert.ToInt32(operatingSystem["ProductType"]) != 1;
             }
             catch (Exception ex)
             {
