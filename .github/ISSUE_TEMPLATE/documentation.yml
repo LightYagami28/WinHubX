@@ -1,21 +1,25 @@
-name: Documentation
-description: Segnala documentazione incompleta o errata
-title: "[Docs] "
-labels: ["documentation"]
+name: Problema o miglioramento documentazione
+description: Segnala documentazione mancante, ambigua o non aggiornata.
+title: "[Docs]: "
+labels: [documentation]
 body:
   - type: input
-    id: location
+    id: page
     attributes:
-      label: File o pagina interessata
+      label: Pagina o file interessato
+      placeholder: README.md, FAQ, docs/wiki/...
     validations:
       required: true
   - type: textarea
-    id: issue
+    id: problem
     attributes:
-      label: Cosa va corretto?
+      label: Problema riscontrato
+      description: Cita il passaggio e spiega perché non è chiaro o corretto.
     validations:
       required: true
   - type: textarea
-    id: improvement
+    id: suggestion
     attributes:
-      label: Testo o miglioramento proposto
+      label: Modifica proposta
+    validations:
+      required: false
